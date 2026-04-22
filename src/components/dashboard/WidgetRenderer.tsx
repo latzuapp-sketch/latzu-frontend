@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { cn } from "@/lib/utils";
 import { AdaptiveCard } from "./AdaptiveCard";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -26,7 +27,9 @@ import {
   PlayCircle,
   Loader2,
   Plus,
+  Sparkles,
 } from "lucide-react";
+import { useUserStats } from "@/hooks/useRecommendations";
 import Link from "next/link";
 
 interface WidgetRendererProps {
@@ -350,10 +353,28 @@ function PlansSummaryWidget({ widget }: { widget: WidgetConfig }) {
 // ─── Static / mock widgets ────────────────────────────────────────────────────
 
 function LearningPathWidget({ widget }: { widget: WidgetConfig }) {
+  const { plans, loading } = usePlans();
+  const { tasks } = useTasks();
+
+  const activePlan = useMemo(() => plans.find((p) => p.status === "active"), [plans]);
+
+  const planTasks = useMemo(() => {
+    if (!activePlan) return { total: 0, done: 0 };
+    const pts = tasks.filter((t) => t.planId === activePlan.id);
+    return { total: pts.length, done: pts.filter((t) => t.status === "done").length };
+  }, [activePlan, tasks]);
+
+  const pct = planTasks.total === 0 ? 0 : Math.round((planTasks.done / planTasks.total) * 100);
+
+  const nextTask = useMemo(() => {
+    if (!activePlan) return null;
+    return tasks.find((t) => t.planId === activePlan.id && t.status !== "done") ?? null;
+  }, [activePlan, tasks]);
+
   return (
     <AdaptiveCard
       title={widget.title}
-      description="Tu progreso actual"
+      description={loading ? "Cargando..." : activePlan ? `${pct}% completado` : "Sin plan activo"}
       icon={<BookOpen className="w-5 h-5 text-primary" />}
       size={widget.size}
       action={
@@ -362,32 +383,61 @@ function LearningPathWidget({ widget }: { widget: WidgetConfig }) {
         </Button>
       }
     >
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Lección actual</span>
-            <span className="text-muted-foreground">3/12</span>
+      {loading ? (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : !activePlan ? (
+        <div className="text-center py-4 space-y-2">
+          <Sparkles className="w-8 h-8 mx-auto text-muted-foreground/30" />
+          <p className="text-xs text-muted-foreground">Crea un plan de estudio desde el chat.</p>
+          <Button size="sm" variant="outline" asChild className="gap-1.5">
+            <Link href="/chat"><Sparkles className="w-3.5 h-3.5" />Crear plan</Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="p-3 rounded-lg bg-secondary/50">
+            <p className="font-medium text-sm truncate">{activePlan.title}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <Progress value={pct} className="h-1.5 flex-1" />
+              <span className="text-xs text-muted-foreground tabular-nums">{pct}%</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">{planTasks.done}/{planTasks.total} tareas</p>
           </div>
-          <Progress value={25} className="h-2" />
+          {nextTask && (
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <Circle className="w-3 h-3 mt-0.5 shrink-0" />
+              <span className="line-clamp-2">Siguiente: {nextTask.title}</span>
+            </div>
+          )}
+          <Button className="w-full gap-1.5" asChild>
+            <Link href="/study">
+              <BookOpen className="w-4 h-4" />
+              Continuar aprendiendo
+            </Link>
+          </Button>
         </div>
-        <div className="p-3 rounded-lg bg-secondary/50">
-          <p className="font-medium text-sm">Fundamentos de IA</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Continúa donde lo dejaste
-          </p>
-        </div>
-        <Button className="w-full" asChild>
-          <Link href="/study">
-            <BookOpen className="w-4 h-4 mr-2" />
-            Continuar aprendiendo
-          </Link>
-        </Button>
-      </div>
+      )}
     </AdaptiveCard>
   );
 }
 
 function StreaksWidget({ widget }: { widget: WidgetConfig }) {
+  const { stats, loading } = useUserStats();
+  const { tasks } = useTasks();
+
+  const doneToday = useMemo(() => {
+    const today = new Date();
+    return tasks.filter(
+      (t) => t.status === "done" && t.dueDate && isSameDay(new Date(t.dueDate + "T00:00:00"), today)
+    ).length;
+  }, [tasks]);
+
+  // Derive a streak approximation from session count (real data)
+  const sessionStreak = Math.min(stats.sessionCount, 30);
+  const dots = Math.min(sessionStreak, 7);
+
   return (
     <AdaptiveCard
       title={widget.title}
@@ -395,20 +445,47 @@ function StreaksWidget({ widget }: { widget: WidgetConfig }) {
       size={widget.size}
       variant="accent"
     >
-      <div className="text-center py-4">
-        <div className="text-5xl font-bold text-orange-500 mb-2">7</div>
-        <p className="text-sm text-muted-foreground">días consecutivos</p>
-        <div className="flex justify-center gap-1 mt-4">
-          {[...Array(7)].map((_, i) => (
-            <div
-              key={i}
-              className="w-8 h-8 rounded-lg flex items-center justify-center bg-orange-500/20"
-            >
-              <Flame className="w-4 h-4 text-orange-500" />
-            </div>
-          ))}
+      {loading ? (
+        <div className="flex items-center justify-center py-6">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         </div>
-      </div>
+      ) : (
+        <div className="text-center py-2 space-y-3">
+          <div>
+            <div className="text-4xl font-bold text-orange-500">{sessionStreak}</div>
+            <p className="text-xs text-muted-foreground mt-1">sesiones de estudio</p>
+          </div>
+          <div className="flex justify-center gap-1">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
+                  i < dots ? "bg-orange-500/20" : "bg-muted/20"
+                )}
+              >
+                <Flame className={cn("w-3.5 h-3.5", i < dots ? "text-orange-500" : "text-muted-foreground/20")} />
+              </div>
+            ))}
+          </div>
+          {doneToday > 0 && (
+            <p className="text-xs text-emerald-400 flex items-center justify-center gap-1">
+              <CheckCircle2 className="w-3 h-3" />
+              {doneToday} tarea{doneToday !== 1 ? "s" : ""} completada{doneToday !== 1 ? "s" : ""} hoy
+            </p>
+          )}
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="rounded-lg bg-muted/20 p-2 text-center">
+              <p className="text-sm font-semibold">{stats.messageCount}</p>
+              <p className="text-[10px] text-muted-foreground">mensajes</p>
+            </div>
+            <div className="rounded-lg bg-muted/20 p-2 text-center">
+              <p className="text-sm font-semibold">{stats.ownedNodes}</p>
+              <p className="text-[10px] text-muted-foreground">conceptos</p>
+            </div>
+          </div>
+        </div>
+      )}
     </AdaptiveCard>
   );
 }
