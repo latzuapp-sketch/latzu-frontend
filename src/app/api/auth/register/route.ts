@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = "https://latzu-api-610441107033.us-central1.run.app";
 
 export async function POST(request: Request) {
   try {

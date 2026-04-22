@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 
-const AI_URL = process.env.NEXT_PUBLIC_AI_URL || "http://localhost:8001";
+const AI_URL = "https://latzu-api-610441107033.us-central1.run.app";
 
 const MUTATION = `
   mutation PersonalizeUser($input: PersonalizeUserInput!) {

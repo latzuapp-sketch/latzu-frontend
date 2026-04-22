@@ -61,7 +61,7 @@ declare module 'next-auth/jwt' {
   }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://latzu-api-610441107033.us-central1.run.app';
+const API_URL = 'https://latzu-api-610441107033.us-central1.run.app';
 
 // ─── Google token refresh ─────────────────────────────────────────────────────
 
