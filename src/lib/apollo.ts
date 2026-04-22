@@ -15,7 +15,7 @@ import { getMainDefinition } from "@apollo/client/utilities";
 import { getSession } from "next-auth/react";
 import { createClient } from "graphql-ws";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://latzu-api-610441107033.us-central1.run.app";
 const WS_URL = API_URL.replace(/^http/, "ws");
 
 // ─── Auth link ─────────────────────────────────────────────────────────────────

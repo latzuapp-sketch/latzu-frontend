@@ -3,7 +3,7 @@ import { io, Socket } from "socket.io-client";
 import { useEventStore } from "@/stores/eventStore";
 import type { UserInteractionEvent, ServerPushEvent } from "@/types/events";
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:8000";
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "https://latzu-api-610441107033.us-central1.run.app";
 
 type EventHandler<T = unknown> = (data: T) => void;
 
