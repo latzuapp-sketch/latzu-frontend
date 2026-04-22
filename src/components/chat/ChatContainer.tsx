@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatSession } from "@/graphql/types";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface ChatContainerProps {
   sessionId?: string;
@@ -124,7 +126,8 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
   const isExecutingTools = isStreaming && lastMessageRole === "agent_action";
 
   // ─── Layout state ────────────────────────────────────────────────────────
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // ─── Scroll state ────────────────────────────────────────────────────────
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -192,9 +195,32 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
 
   return (
     <div className={cn("flex h-full overflow-hidden rounded-xl border border-border/50 bg-background", className)}>
-      {/* ── Sidebar ────────────────────────────────────────────────────── */}
+      {/* ── Sidebar: Sheet en mobile, panel inline en desktop ──────────── */}
+
+      {/* Mobile: Sheet drawer */}
+      <Sheet open={isMobile && sidebarOpen} onOpenChange={(open) => !open && setSidebarOpen(false)}>
+        <SheetContent side="left" className="p-0 w-72 flex flex-col gap-0 [&>button]:hidden">
+          <div className="flex items-center justify-between px-3 py-3 border-b border-border/50">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Chats</span>
+            <Button size="icon" variant="ghost" className="w-7 h-7" onClick={() => { startNewSession(); setSidebarOpen(false); }}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
+            {sessionsLoading && <div className="flex items-center justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>}
+            {!sessionsLoading && sessions.length === 0 && <p className="text-[11px] text-muted-foreground text-center py-6">Sin conversaciones</p>}
+            {sessions.map((s) => (
+              <SessionItem key={s.sessionId} session={s} isActive={s.sessionId === currentSessionId}
+                onSelect={(id) => { loadSession(id); setSidebarOpen(false); }}
+                onDelete={deleteSession} />
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Desktop: inline panel */}
       <AnimatePresence initial={false}>
-        {sidebarOpen && (
+        {!isMobile && sidebarOpen && (
           <motion.aside
             key="sidebar"
             initial={{ width: 0, opacity: 0 }}
@@ -203,42 +229,18 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
             transition={{ duration: 0.2, ease: "easeInOut" }}
             className="flex-shrink-0 border-r border-border/50 flex flex-col overflow-hidden"
           >
-            {/* Sidebar header */}
             <div className="flex items-center justify-between px-3 py-3 border-b border-border/50">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Chats
-              </span>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="w-7 h-7"
-                onClick={startNewSession}
-                title="Nuevo chat"
-              >
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Chats</span>
+              <Button size="icon" variant="ghost" className="w-7 h-7" onClick={startNewSession} title="Nuevo chat">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
-
-            {/* Session list */}
             <div className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
-              {sessionsLoading && (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                </div>
-              )}
-              {!sessionsLoading && sessions.length === 0 && (
-                <p className="text-[11px] text-muted-foreground text-center py-6">
-                  Sin conversaciones
-                </p>
-              )}
+              {sessionsLoading && <div className="flex items-center justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>}
+              {!sessionsLoading && sessions.length === 0 && <p className="text-[11px] text-muted-foreground text-center py-6">Sin conversaciones</p>}
               {sessions.map((s) => (
-                <SessionItem
-                  key={s.sessionId}
-                  session={s}
-                  isActive={s.sessionId === currentSessionId}
-                  onSelect={loadSession}
-                  onDelete={deleteSession}
-                />
+                <SessionItem key={s.sessionId} session={s} isActive={s.sessionId === currentSessionId}
+                  onSelect={loadSession} onDelete={deleteSession} />
               ))}
             </div>
           </motion.aside>
@@ -308,13 +310,13 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
               <p className="text-sm text-muted-foreground max-w-sm mb-6">
                 {template.welcomeMessage}
               </p>
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-2 justify-center w-full max-w-sm">
                 {["¿Qué puedo aprender hoy?", "Crea un plan de estudio para Python", "Organiza mis tareas de esta semana"].map(
                   (prompt) => (
                     <button
                       key={prompt}
                       onClick={() => sendMessage(prompt)}
-                      className="text-xs px-3 py-1.5 rounded-full border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors text-muted-foreground hover:text-foreground"
+                      className="text-xs px-3 py-2.5 sm:py-1.5 rounded-xl sm:rounded-full border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors text-muted-foreground hover:text-foreground text-left sm:text-center"
                     >
                       {prompt}
                     </button>
@@ -389,9 +391,10 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
               placeholder="Escribe un mensaje..."
               rows={1}
               className={cn(
-                "flex-1 resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm",
+                "flex-1 resize-none rounded-xl border border-input bg-background px-3 py-2",
+                "text-base md:text-sm",
                 "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                "min-h-[40px] max-h-[160px] leading-relaxed transition-[height]"
+                "min-h-[44px] max-h-[160px] leading-relaxed transition-[height]"
               )}
             />
             {isStreaming ? (
@@ -417,7 +420,7 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
               </Button>
             )}
           </div>
-          <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
+          <p className="hidden md:block text-[10px] text-muted-foreground mt-1.5 text-center">
             Enter para enviar · Shift+Enter para nueva línea
           </p>
         </form>

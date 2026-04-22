@@ -151,7 +151,7 @@ export function TaskCard({
           onClick={cycleStatus}
           title={`Estado: ${status.label}`}
           className={cn(
-            "mt-0.5 shrink-0 transition-transform hover:scale-110",
+            "mt-0.5 shrink-0 transition-transform hover:scale-110 p-0.5 -m-0.5 rounded",
             status.classes
           )}
         >
@@ -227,7 +227,7 @@ export function TaskCard({
 
         {/* Actions */}
         {!compact && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
             {canPushToCalendar && !task.googleEventId && (
               <Button
                 variant="ghost"
@@ -235,7 +235,7 @@ export function TaskCard({
                 onClick={handlePush}
                 disabled={pushing || justPushed || !task.dueDate}
                 title="Añadir a Google Calendar"
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-blue-400"
+                className="h-8 w-8 md:h-7 md:w-7 p-0 text-muted-foreground hover:text-blue-400"
               >
                 {pushing ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -257,7 +257,7 @@ export function TaskCard({
               onBlur={() => setConfirmDel(false)}
               title={confirmDel ? "Confirmar eliminación" : "Eliminar"}
               className={cn(
-                "h-7 w-7 p-0 transition-colors",
+                "h-8 w-8 md:h-7 md:w-7 p-0 transition-colors",
                 confirmDel
                   ? "text-destructive hover:text-destructive"
                   : "text-muted-foreground hover:text-destructive"

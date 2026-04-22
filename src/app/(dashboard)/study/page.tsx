@@ -712,7 +712,7 @@ function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspac
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(chatInput); } }}
                 placeholder={`Pregunta sobre ${task.title}…`}
                 disabled={chatLoading} rows={1}
-                className="flex-1 bg-transparent text-sm resize-none focus:outline-none placeholder:text-muted-foreground/40 max-h-24 disabled:opacity-40" />
+                className="flex-1 bg-transparent text-base md:text-sm resize-none focus:outline-none placeholder:text-muted-foreground/40 max-h-24 disabled:opacity-40 min-h-[44px] md:min-h-0 py-2.5 md:py-0" />
               <Button size="sm" onClick={() => sendChat(chatInput)} disabled={chatLoading || !chatInput.trim()} className="h-7 w-7 p-0 shrink-0">
                 {chatLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               </Button>
