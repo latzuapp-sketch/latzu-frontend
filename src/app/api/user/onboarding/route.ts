@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://latzuplatform.vercel.app";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function POST(request: Request) {
   try {
@@ -14,15 +14,21 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    // Call backend to save onboarding data
     const response = await fetch(`${API_URL}/api/users/${session.user.id}/onboarding`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        profileType: body.profileType,
-        experience: body.experience,
-        interests: body.interests || [],
-        goals: body.goals || [],
+        profileType:   body.profileType,
+        experience:    body.experience,
+        interests:     body.interests    || [],
+        goals:         body.goals        || [],
+        learning_style: body.learningStyle ?? null,
+        country:       body.country      ?? null,
+        university:    body.university   ?? null,
+        career:        body.career       ?? null,
+        semester:      body.semester     ?? null,
+        organization:  body.organization ?? null,
+        role_title:    body.roleTitle    ?? null,
       }),
     });
 
@@ -45,4 +51,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

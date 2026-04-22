@@ -1,5 +1,6 @@
 // NextAuth.js configuration for Latzu Platform
 
+import type { JWT } from 'next-auth/jwt';
 import type { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
@@ -19,6 +20,12 @@ declare module 'next-auth' {
       needsOnboarding: boolean;
     };
     accessToken?: string;
+    /** Signed JWT issued by the Latzu backend — sent as Bearer token to both GraphQL services */
+    backendToken?: string;
+    /** Set to true when the Google token has calendar scope */
+    hasCalendarScope?: boolean;
+    /** Set when token refresh fails — user must re-authenticate */
+    error?: 'RefreshAccessTokenError';
   }
 
   interface User {
@@ -30,6 +37,8 @@ declare module 'next-auth' {
     tenantId?: string;
     role?: 'user' | 'admin' | 'moderator';
     needsOnboarding?: boolean;
+    /** Backend JWT returned by /api/auth/login and /api/auth/sync */
+    backendToken?: string;
   }
 }
 
@@ -40,13 +49,54 @@ declare module 'next-auth/jwt' {
     tenantId: string;
     role: 'user' | 'admin' | 'moderator';
     needsOnboarding: boolean;
+    /** Latzu backend JWT for authenticating GraphQL requests */
+    backendToken?: string;
     accessToken?: string;
+    refreshToken?: string;
+    /** Unix timestamp (ms) when accessToken expires */
+    accessTokenExpires?: number;
+    /** Whether this token includes Google Calendar scope */
+    hasCalendarScope?: boolean;
+    error?: 'RefreshAccessTokenError';
   }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://latzuplatform.vercel.app';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-// Sync user to backend Neo4j
+// ─── Google token refresh ─────────────────────────────────────────────────────
+
+async function refreshAccessToken(token: JWT): Promise<JWT> {
+  try {
+    const url = 'https://oauth2.googleapis.com/token';
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: process.env.GOOGLE_CLIENT_ID ?? '',
+        client_secret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+        grant_type: 'refresh_token',
+        refresh_token: token.refreshToken ?? '',
+      }),
+    });
+
+    const refreshed = await response.json();
+    if (!response.ok) throw refreshed;
+
+    return {
+      ...token,
+      accessToken: refreshed.access_token,
+      accessTokenExpires: Date.now() + (refreshed.expires_in ?? 3600) * 1000,
+      refreshToken: refreshed.refresh_token ?? token.refreshToken,
+      error: undefined,
+    };
+  } catch (err) {
+    console.error('Failed to refresh Google access token:', err);
+    return { ...token, error: 'RefreshAccessTokenError' };
+  }
+}
+
+// ─── Backend helpers ──────────────────────────────────────────────────────────
+
 async function syncUserToBackend(
   user: { id: string; email: string; name: string; image?: string },
   account: { access_token?: string; refresh_token?: string } | null,
@@ -56,6 +106,7 @@ async function syncUserToBackend(
   tenantId: string;
   role: 'user' | 'admin' | 'moderator';
   needsOnboarding: boolean;
+  backendToken?: string;
 }> {
   try {
     const response = await fetch(`${API_URL}/api/auth/sync`, {
@@ -79,21 +130,16 @@ async function syncUserToBackend(
         tenantId: data.tenant_id || 'default',
         role: data.role || 'user',
         needsOnboarding: !data.profile_type,
+        backendToken: data.backend_token,
       };
     }
   } catch (error) {
     console.error('Failed to sync user to backend:', error);
   }
 
-  // Default values if sync fails
-  return {
-    tenantId: 'default',
-    role: 'user',
-    needsOnboarding: true,
-  };
+  return { tenantId: 'default', role: 'user', needsOnboarding: true };
 }
 
-// Authenticate user with email/password
 async function authenticateUser(
   email: string,
   password: string
@@ -105,6 +151,7 @@ async function authenticateUser(
   tenantId: string;
   role: 'user' | 'admin' | 'moderator';
   needsOnboarding: boolean;
+  backendToken?: string;
 } | null> {
   try {
     const response = await fetch(`${API_URL}/api/auth/login`, {
@@ -123,22 +170,20 @@ async function authenticateUser(
         tenantId: data.tenant_id || 'default',
         role: data.role || 'user',
         needsOnboarding: !data.profile_type,
+        backendToken: data.backend_token,
       };
     }
   } catch (error) {
     console.error('Failed to authenticate user:', error);
   }
-
   return null;
 }
 
-// Fetch user profile type from backend
 async function fetchUserProfileType(userId: string): Promise<ProfileType | undefined> {
   try {
     const response = await fetch(`${API_URL}/api/users/${userId}/profile-type`, {
       headers: { 'Content-Type': 'application/json' },
     });
-
     if (response.ok) {
       const data = await response.json();
       return data.profile_type;
@@ -146,13 +191,38 @@ async function fetchUserProfileType(userId: string): Promise<ProfileType | undef
   } catch (error) {
     console.error('Failed to fetch user profile type:', error);
   }
-
   return undefined;
 }
 
+// ─── Providers ────────────────────────────────────────────────────────────────
+
+const GOOGLE_SCOPES = [
+  'openid',
+  'email',
+  'profile',
+  'https://www.googleapis.com/auth/calendar',
+].join(' ');
+
+const googleProvider =
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? GoogleProvider({
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        authorization: {
+          params: {
+            prompt: 'consent',
+            access_type: 'offline',
+            response_type: 'code',
+            scope: GOOGLE_SCOPES,
+          },
+        },
+      })
+    : null;
+
+// ─── Auth options ─────────────────────────────────────────────────────────────
+
 export const authOptions: NextAuthOptions = {
   providers: [
-    // Email/Password provider
     CredentialsProvider({
       id: 'credentials',
       name: 'Email',
@@ -164,13 +234,8 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Email y contraseña son requeridos');
         }
-
         const user = await authenticateUser(credentials.email, credentials.password);
-        
-        if (!user) {
-          throw new Error('Email o contraseña incorrectos');
-        }
-
+        if (!user) throw new Error('Email o contraseña incorrectos');
         return {
           id: user.id,
           email: user.email,
@@ -179,21 +244,11 @@ export const authOptions: NextAuthOptions = {
           tenantId: user.tenantId,
           role: user.role,
           needsOnboarding: user.needsOnboarding,
+          backendToken: user.backendToken,
         };
       },
     }),
-    // Google OAuth provider
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          prompt: 'consent',
-          access_type: 'offline',
-          response_type: 'code',
-        },
-      },
-    }),
+    ...(googleProvider ? [googleProvider] : []),
   ],
 
   pages: {
@@ -203,52 +258,63 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    async signIn({ user, account, credentials }) {
-      // For credentials provider, user data is already populated
-      if (account?.provider === 'credentials') {
-        return true;
-      }
+    async signIn({ user, account }) {
+      if (account?.provider === 'credentials') return true;
 
-      // For Google OAuth, sync user to backend
       if (account?.provider === 'google') {
         const backendData = await syncUserToBackend(
-          {
-            id: user.id,
-            email: user.email!,
-            name: user.name!,
-            image: user.image ?? undefined,
-          },
+          { id: user.id, email: user.email!, name: user.name!, image: user.image ?? undefined },
           account,
           'google'
         );
-
-        // Attach backend data to user object
         user.profileType = backendData.profileType;
         user.tenantId = backendData.tenantId;
         user.role = backendData.role;
         user.needsOnboarding = backendData.needsOnboarding;
+        user.backendToken = backendData.backendToken;
       }
-
       return true;
     },
 
     async jwt({ token, user, account }) {
-      // Initial sign in
-      if (user) {
+      // ── Initial sign-in ────────────────────────────────────────────────────
+      if (user && account) {
         token.userId = user.id;
         token.profileType = user.profileType;
         token.tenantId = user.tenantId || 'default';
         token.role = user.role || 'user';
         token.needsOnboarding = user.needsOnboarding ?? true;
-        token.accessToken = account?.access_token;
+        token.backendToken = user.backendToken;
+        token.accessToken = account.access_token;
+        token.refreshToken = account.refresh_token;
+        token.accessTokenExpires = account.expires_at
+          ? account.expires_at * 1000
+          : Date.now() + 3600 * 1000;
+        // Detect if calendar scope was granted
+        token.hasCalendarScope =
+          account.provider === 'google' &&
+          typeof account.scope === 'string' &&
+          account.scope.includes('calendar');
+        return token;
       }
 
-      // Refresh profile type periodically
+      // ── Refresh profile type if missing ────────────────────────────────────
       if (!token.profileType && token.userId) {
         token.profileType = await fetchUserProfileType(token.userId);
-        if (token.profileType) {
-          token.needsOnboarding = false;
-        }
+        if (token.profileType) token.needsOnboarding = false;
+      }
+
+      // ── Return token if still valid ────────────────────────────────────────
+      if (
+        !token.accessTokenExpires ||
+        Date.now() < token.accessTokenExpires - 60_000 // 1 min buffer
+      ) {
+        return token;
+      }
+
+      // ── Refresh expired access token ───────────────────────────────────────
+      if (token.refreshToken) {
+        return refreshAccessToken(token);
       }
 
       return token;
@@ -260,18 +326,17 @@ export const authOptions: NextAuthOptions = {
       session.user.tenantId = token.tenantId;
       session.user.role = token.role;
       session.user.needsOnboarding = token.needsOnboarding;
+      session.backendToken = token.backendToken;
       session.accessToken = token.accessToken;
-
+      session.hasCalendarScope = token.hasCalendarScope;
+      session.error = token.error;
       return session;
     },
 
     async redirect({ url, baseUrl }) {
-      // Handle post-login redirect
       if (url.startsWith(baseUrl)) {
         const path = url.replace(baseUrl, '');
-        if (path && path !== '/') {
-          return url;
-        }
+        if (path && path !== '/') return url;
       }
       return `${baseUrl}/dashboard`;
     },
@@ -279,10 +344,9 @@ export const authOptions: NextAuthOptions = {
 
   session: {
     strategy: 'jwt',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: 7 * 24 * 60 * 60,
   },
 
   secret: process.env.NEXTAUTH_SECRET,
-
   debug: process.env.NODE_ENV === 'development',
 };

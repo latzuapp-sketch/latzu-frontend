@@ -11,8 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Brain, Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://latzuplatform.vercel.app";
-
 function RegisterContent() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -55,8 +53,8 @@ function RegisterContent() {
     setIsLoading(true);
 
     try {
-      // Register user in backend
-      const response = await fetch(`${API_URL}/api/auth/register`, {
+      // Register user through Next.js proxy
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

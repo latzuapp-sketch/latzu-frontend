@@ -1,237 +1,427 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback, memo } from "react";
 import { useSession } from "next-auth/react";
 import { useIsGuest } from "@/stores/userStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageBubble } from "./MessageBubble";
-import { ProactiveSuggestions } from "./ProactiveSuggestions";
 import { useChat } from "@/hooks/useChat";
-import { useChatStore } from "@/stores/chatStore";
 import { useUserStore } from "@/stores/userStore";
 import { getTemplate } from "@/config/templates";
-import { Send, Square, Sparkles, Trash2 } from "lucide-react";
+import {
+  Send,
+  Square,
+  Sparkles,
+  Plus,
+  ChevronDown,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Trash2,
+  MessageSquare,
+  Loader2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { ChatSession } from "@/graphql/types";
 
 interface ChatContainerProps {
   sessionId?: string;
   className?: string;
 }
 
+// ─── SessionItem ──────────────────────────────────────────────────────────────
+
+interface SessionItemProps {
+  session: ChatSession;
+  isActive: boolean;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+}
+
+const SessionItem = memo(function SessionItem({
+  session,
+  isActive,
+  onSelect,
+  onDelete,
+}: SessionItemProps) {
+  const [hovered, setHovered] = useState(false);
+
+  const timeAgo = (iso: string | null): string => {
+    if (!iso) return "";
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "ahora";
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h`;
+    return `${Math.floor(hrs / 24)}d`;
+  };
+
+  return (
+    <div
+      className={cn(
+        "group relative flex items-start gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm",
+        isActive
+          ? "bg-primary/10 text-foreground"
+          : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
+      )}
+      onClick={() => onSelect(session.sessionId)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <MessageSquare className="w-4 h-4 flex-shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <p className="truncate font-medium text-xs leading-tight">{session.title}</p>
+        <p className="text-[10px] text-muted-foreground mt-0.5">
+          {timeAgo(session.updatedAt)} · {session.messageCount} msg
+        </p>
+      </div>
+      {hovered && (
+        <button
+          className="flex-shrink-0 p-0.5 rounded hover:text-destructive transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(session.sessionId);
+          }}
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
+});
+
+// ─── ChatContainer ────────────────────────────────────────────────────────────
+
 export function ChatContainer({ sessionId, className }: ChatContainerProps) {
-  const { data: session } = useSession();
+  const { data: authSession } = useSession();
   const isGuest = useIsGuest();
   const profileType = useUserStore((state) => state.profileType);
-  const showSuggestions = useChatStore((state) => state.showSuggestions);
-  const toggleSuggestions = useChatStore((state) => state.toggleSuggestions);
 
-  // Get user info for display
-  const userName = isGuest ? "Invitado" : session?.user?.name;
-  const userImage = isGuest ? undefined : session?.user?.image;
+  const userName = isGuest ? "Invitado" : authSession?.user?.name;
+  const userImage = isGuest ? undefined : authSession?.user?.image;
 
   const {
     messages,
+    sessions,
+    currentSessionId,
     isStreaming,
-    suggestions,
+    sessionsLoading,
     inputValue,
     error,
     sendMessage,
     setInputValue,
-    handleSuggestionClick,
-    dismissSuggestion,
+    startNewSession,
+    loadSession,
+    deleteSession,
     stopGeneration,
-    clearChat,
-  } = useChat({
-    sessionId,
-    autoFetchSuggestions: true,
-  });
+  } = useChat({ sessionId });
 
-  const template = getTemplate(profileType || undefined);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const template = getTemplate(profileType ?? undefined);
+
+  // Detect if the last message is an agent_action (used for status label)
+  const lastMessageRole = messages[messages.length - 1]?.role;
+  const isExecutingTools = isStreaming && lastMessageRole === "agent_action";
+
+  // ─── Layout state ────────────────────────────────────────────────────────
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // ─── Scroll state ────────────────────────────────────────────────────────
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [atBottom, setAtBottom] = useState(true);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  }, []);
+
+  // Track whether user is near the bottom
+  const handleScroll = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 80);
+  }, []);
+
+  // Auto-scroll when new content arrives (only if already at bottom)
+  useEffect(() => {
+    if (atBottom) scrollToBottom();
+  }, [messages, atBottom, scrollToBottom]);
+
+  // ─── Input auto-resize ───────────────────────────────────────────────────
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [inputValue]);
 
-  // Focus input on mount
+  // Re-focus input after streaming completes
+  useEffect(() => {
+    if (!isStreaming) inputRef.current?.focus();
+  }, [isStreaming]);
+
+  // Focus on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
+  // ─── Submit handler ──────────────────────────────────────────────────────
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim() && !isStreaming) {
-      sendMessage(inputValue);
-    }
+    if (inputValue.trim()) sendMessage(inputValue);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      if (inputValue.trim()) sendMessage(inputValue);
     }
   };
 
+  // ─── Personality label ───────────────────────────────────────────────────
+  const personalityLabel =
+    template.chatPersonality === "tutor"
+      ? "Tutor IA"
+      : template.chatPersonality === "mentor"
+      ? "Mentor IA"
+      : template.chatPersonality === "advisor"
+      ? "Asesor IA"
+      : "Asistente IA";
+
   return (
-    <div className={`flex flex-col h-full ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h2 className="font-semibold">
-              {template.chatPersonality === "tutor" && "Tutor IA"}
-              {template.chatPersonality === "mentor" && "Mentor IA"}
-              {template.chatPersonality === "advisor" && "Asesor IA"}
-              {template.chatPersonality === "assistant" && "Asistente IA"}
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              {isStreaming ? "Escribiendo..." : "En línea"}
-            </p>
-          </div>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={clearChat}
-          className="text-muted-foreground hover:text-destructive"
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
-      </div>
-
-      {/* Messages Area */}
-      <ScrollArea
-        ref={scrollRef}
-        className="flex-1 p-4"
-      >
-        {/* Welcome message if no messages */}
-        {messages.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center h-full text-center py-12"
+    <div className={cn("flex h-full overflow-hidden rounded-xl border border-border/50 bg-background", className)}>
+      {/* ── Sidebar ────────────────────────────────────────────────────── */}
+      <AnimatePresence initial={false}>
+        {sidebarOpen && (
+          <motion.aside
+            key="sidebar"
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 256, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="flex-shrink-0 border-r border-border/50 flex flex-col overflow-hidden"
           >
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-4">
-              <Sparkles className="w-8 h-8 text-primary" />
+            {/* Sidebar header */}
+            <div className="flex items-center justify-between px-3 py-3 border-b border-border/50">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Chats
+              </span>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="w-7 h-7"
+                onClick={startNewSession}
+                title="Nuevo chat"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
             </div>
-            <h3 className="text-lg font-semibold mb-2">
-              ¡Hola! Soy tu {template.chatPersonality === "tutor" ? "tutor" :
-                template.chatPersonality === "mentor" ? "mentor" :
-                template.chatPersonality === "advisor" ? "asesor" : "asistente"}
-            </h3>
-            <p className="text-muted-foreground max-w-md mb-6">
-              {template.welcomeMessage}
-            </p>
 
-            {/* Quick actions */}
-            <div className="flex flex-wrap gap-2 justify-center">
-              {[
-                "¿Qué puedo aprender hoy?",
-                "Dame una recomendación",
-                "Explica un concepto",
-              ].map((prompt) => (
-                <Button
-                  key={prompt}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => sendMessage(prompt)}
-                >
-                  {prompt}
-                </Button>
+            {/* Session list */}
+            <div className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
+              {sessionsLoading && (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {!sessionsLoading && sessions.length === 0 && (
+                <p className="text-[11px] text-muted-foreground text-center py-6">
+                  Sin conversaciones
+                </p>
+              )}
+              {sessions.map((s) => (
+                <SessionItem
+                  key={s.sessionId}
+                  session={s}
+                  isActive={s.sessionId === currentSessionId}
+                  onSelect={loadSession}
+                  onDelete={deleteSession}
+                />
               ))}
             </div>
-          </motion.div>
+          </motion.aside>
         )}
+      </AnimatePresence>
 
-        {/* Messages */}
-        <div className="space-y-4">
-          <AnimatePresence mode="popLayout">
-            {messages.map((message) => (
-              <div key={message.id} className="group">
-                <MessageBubble
-                  message={message}
-                  userImage={userImage || undefined}
-                  userName={userName || undefined}
-                />
-              </div>
-            ))}
-          </AnimatePresence>
+      {/* ── Main chat area ──────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col min-w-0 relative">
+        {/* Header */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 flex-shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-8 h-8 flex-shrink-0"
+            onClick={() => setSidebarOpen((v) => !v)}
+            title={sidebarOpen ? "Cerrar panel" : "Abrir panel"}
+          >
+            {sidebarOpen ? (
+              <PanelLeftClose className="w-4 h-4" />
+            ) : (
+              <PanelLeftOpen className="w-4 h-4" />
+            )}
+          </Button>
+
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-semibold text-sm leading-tight">{personalityLabel}</h2>
+            <p className="text-[11px] text-muted-foreground">
+              {isExecutingTools ? "Ejecutando acciones..." : isStreaming ? "Escribiendo..." : "En línea"}
+            </p>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-8 h-8 flex-shrink-0"
+            onClick={startNewSession}
+            title="Nuevo chat"
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
         </div>
 
-        {/* Error message */}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="p-3 mt-4 rounded-lg bg-destructive/10 text-destructive text-sm text-center"
-          >
-            {error}
-          </motion.div>
-        )}
-      </ScrollArea>
+        {/* Messages */}
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto px-4 py-4 space-y-4 relative"
+        >
+          {/* Welcome screen */}
+          {messages.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center justify-center h-full text-center py-12"
+            >
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-4">
+                <Sparkles className="w-7 h-7 text-primary" />
+              </div>
+              <h3 className="text-base font-semibold mb-1">
+                ¡Hola! Soy tu {template.chatPersonality === "tutor" ? "tutor" :
+                  template.chatPersonality === "mentor" ? "mentor" :
+                  template.chatPersonality === "advisor" ? "asesor" : "asistente"}
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-sm mb-6">
+                {template.welcomeMessage}
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {["¿Qué puedo aprender hoy?", "Crea un plan de estudio para Python", "Organiza mis tareas de esta semana"].map(
+                  (prompt) => (
+                    <button
+                      key={prompt}
+                      onClick={() => sendMessage(prompt)}
+                      className="text-xs px-3 py-1.5 rounded-full border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors text-muted-foreground hover:text-foreground"
+                    >
+                      {prompt}
+                    </button>
+                  )
+                )}
+              </div>
+            </motion.div>
+          )}
 
-      {/* Proactive Suggestions */}
-      <div className="px-4">
-        <ProactiveSuggestions
-          suggestions={suggestions}
-          onSuggestionClick={handleSuggestionClick}
-          onDismiss={dismissSuggestion}
-          show={showSuggestions}
-          onToggle={toggleSuggestions}
-        />
-      </div>
+          {/* Message list */}
+          <AnimatePresence mode="popLayout">
+            {messages.map((msg) => (
+              <MessageBubble
+                key={msg.id}
+                message={msg}
+                userImage={userImage ?? undefined}
+                userName={userName ?? undefined}
+              />
+            ))}
+          </AnimatePresence>
 
-      {/* Input Area */}
-      <form onSubmit={handleSubmit} className="p-4 border-t border-border/50">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Textarea
+          {/* Error */}
+          {error && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center text-xs text-destructive py-2"
+            >
+              {error}
+            </motion.p>
+          )}
+
+          {/* Scroll anchor */}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Scroll-to-bottom FAB */}
+        <AnimatePresence>
+          {!atBottom && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="absolute bottom-20 right-6 z-10"
+            >
+              <Button
+                size="icon"
+                variant="secondary"
+                className="w-8 h-8 rounded-full shadow-md"
+                onClick={() => {
+                  setAtBottom(true);
+                  scrollToBottom();
+                }}
+              >
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Input area */}
+        <form
+          onSubmit={handleSubmit}
+          className="flex-shrink-0 border-t border-border/50 p-3"
+        >
+          <div className="flex items-end gap-2">
+            <textarea
               ref={inputRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Escribe un mensaje..."
-              className="min-h-[44px] max-h-32 resize-none pr-12"
-              disabled={isStreaming}
-            />
-            <div className="absolute right-2 bottom-2">
-              {isStreaming ? (
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="w-8 h-8"
-                  onClick={stopGeneration}
-                >
-                  <Square className="w-4 h-4" />
-                </Button>
-              ) : (
-                <Button
-                  type="submit"
-                  size="icon"
-                  className="w-8 h-8"
-                  disabled={!inputValue.trim()}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
+              rows={1}
+              className={cn(
+                "flex-1 resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm",
+                "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                "min-h-[40px] max-h-[160px] leading-relaxed transition-[height]"
               )}
-            </div>
+            />
+            {isStreaming ? (
+              <Button
+                type="button"
+                size="icon"
+                variant="secondary"
+                className="w-9 h-9 flex-shrink-0 rounded-xl"
+                onClick={stopGeneration}
+                title="Detener"
+              >
+                <Square className="w-4 h-4" />
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="icon"
+                className="w-9 h-9 flex-shrink-0 rounded-xl"
+                disabled={!inputValue.trim()}
+                title="Enviar"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            )}
           </div>
-        </div>
-        <p className="text-[10px] text-muted-foreground mt-2 text-center">
-          Presiona Enter para enviar, Shift+Enter para nueva línea
-        </p>
-      </form>
+          <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
+            Enter para enviar · Shift+Enter para nueva línea
+          </p>
+        </form>
+      </div>
     </div>
   );
 }
-

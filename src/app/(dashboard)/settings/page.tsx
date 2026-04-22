@@ -20,9 +20,7 @@ import {
   Shield,
   Globe,
   GraduationCap,
-  Briefcase,
-  Rocket,
-  Building2,
+  Lightbulb,
   Check,
   Moon,
   Sun,
@@ -32,9 +30,7 @@ import { useTheme } from "next-themes";
 
 const profileIcons: Record<ProfileType, typeof GraduationCap> = {
   estudiante: GraduationCap,
-  profesional: Briefcase,
-  emprendedor: Rocket,
-  empleado: Building2,
+  aprendiz: Lightbulb,
 };
 
 export default function SettingsPage() {

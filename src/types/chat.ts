@@ -1,6 +1,6 @@
 // Chat types for Latzu Platform
 
-export type MessageRole = "user" | "assistant" | "system" | "function";
+export type MessageRole = "user" | "assistant" | "system" | "function" | "agent_action";
 
 export interface ChatMessage {
   id: string;

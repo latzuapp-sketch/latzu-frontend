@@ -1,10 +1,13 @@
 "use client";
 
+import { useMemo } from "react";
 import { AdaptiveCard } from "./AdaptiveCard";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import type { WidgetConfig } from "@/config/templates";
+import { useTasks, isSameDay } from "@/hooks/usePlanning";
+import { usePlans } from "@/hooks/usePlans";
 import {
   BookOpen,
   Target,
@@ -18,6 +21,11 @@ import {
   Bell,
   Zap,
   Award,
+  ClipboardList,
+  Circle,
+  PlayCircle,
+  Loader2,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -25,10 +33,15 @@ interface WidgetRendererProps {
   widgets: WidgetConfig[];
 }
 
-export function WidgetRenderer({ widgets }: WidgetRendererProps) {
+export function WidgetRenderer({ widgets: rawWidgets }: WidgetRendererProps) {
+  const sorted = useMemo(
+    () => [...rawWidgets].sort((a, b) => a.priority - b.priority),
+    [rawWidgets]
+  );
+
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {widgets.map((widget) => (
+      {sorted.map((widget) => (
         <WidgetComponent key={widget.id} widget={widget} />
       ))}
     </div>
@@ -61,12 +74,281 @@ function WidgetComponent({ widget }: { widget: WidgetConfig }) {
       return <TeamProgressWidget widget={widget} />;
     case "announcements":
       return <AnnouncementsWidget widget={widget} />;
+    case "plans-summary":
+      return <PlansSummaryWidget widget={widget} />;
     default:
       return null;
   }
 }
 
-// Learning Path Widget
+// ─── Real-data widgets ────────────────────────────────────────────────────────
+
+/** Today's real tasks from Neo4j */
+function DailyGoalsWidget({ widget }: { widget: WidgetConfig }) {
+  const { tasks, loading, setStatus } = useTasks();
+
+  const todayTasks = useMemo(() => {
+    const today = new Date();
+    return tasks
+      .filter((t) => t.dueDate && isSameDay(new Date(t.dueDate + "T00:00:00"), today))
+      .slice(0, 5);
+  }, [tasks]);
+
+  const done = todayTasks.filter((t) => t.status === "done").length;
+
+  return (
+    <AdaptiveCard
+      title={widget.title}
+      description={
+        loading
+          ? "Cargando..."
+          : todayTasks.length === 0
+          ? "Sin tareas para hoy"
+          : `${done}/${todayTasks.length} completadas`
+      }
+      icon={<Target className="w-5 h-5 text-primary" />}
+      size={widget.size}
+      action={
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/planning">Ver todo</Link>
+        </Button>
+      }
+    >
+      {loading ? (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : todayTasks.length === 0 ? (
+        <div className="text-center py-4 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            No tienes tareas programadas para hoy.
+          </p>
+          <Button size="sm" variant="outline" asChild className="gap-1.5">
+            <Link href="/planning">
+              <Plus className="w-3.5 h-3.5" />
+              Añadir tarea
+            </Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {todayTasks.map((task) => (
+            <button
+              key={task.id}
+              onClick={() =>
+                setStatus(task.id, task.status === "done" ? "todo" : "done")
+              }
+              className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-all ${
+                task.status === "done" ? "bg-primary/10" : "bg-secondary/50 hover:bg-secondary"
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                  task.status === "done"
+                    ? "bg-primary"
+                    : "border-2 border-muted-foreground"
+                }`}
+              >
+                {task.status === "done" && (
+                  <CheckCircle2 className="w-3 h-3 text-primary-foreground" />
+                )}
+              </div>
+              <span
+                className={`text-sm flex-1 truncate ${
+                  task.status === "done" ? "line-through text-muted-foreground" : ""
+                }`}
+              >
+                {task.title}
+              </span>
+              {task.priority === "high" && task.status !== "done" && (
+                <span className="text-[10px] text-red-400 shrink-0">Alta</span>
+              )}
+            </button>
+          ))}
+          {done === todayTasks.length && todayTasks.length > 0 && (
+            <p className="text-xs text-center text-emerald-400 pt-1">
+              ¡Todas las tareas completadas! 🎉
+            </p>
+          )}
+        </div>
+      )}
+    </AdaptiveCard>
+  );
+}
+
+/** Real tasks (high priority + todo) — for entrepreneur profile */
+function TasksWidget({ widget }: { widget: WidgetConfig }) {
+  const { tasks, loading, setStatus } = useTasks();
+
+  const pendingTasks = useMemo(
+    () =>
+      tasks
+        .filter((t) => t.status !== "done")
+        .sort((a, b) => {
+          const p = { high: 0, medium: 1, low: 2 };
+          return (p[a.priority] ?? 1) - (p[b.priority] ?? 1);
+        })
+        .slice(0, 4),
+    [tasks]
+  );
+
+  return (
+    <AdaptiveCard
+      title={widget.title}
+      icon={<CheckCircle2 className="w-5 h-5 text-primary" />}
+      size={widget.size}
+      action={
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/planning">Ver todo</Link>
+        </Button>
+      }
+    >
+      {loading ? (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : pendingTasks.length === 0 ? (
+        <div className="text-center py-4 space-y-2">
+          <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
+          <p className="text-xs text-muted-foreground">¡Sin tareas pendientes!</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {pendingTasks.map((task) => (
+            <div
+              key={task.id}
+              className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50"
+            >
+              <button
+                onClick={() => setStatus(task.id, "done")}
+                className="w-5 h-5 rounded-full border-2 border-muted-foreground hover:border-primary transition-colors shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{task.title}</p>
+                {task.dueDate && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {new Date(task.dueDate + "T00:00:00").toLocaleDateString("es-ES", {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </p>
+                )}
+              </div>
+              {task.priority === "high" && (
+                <Badge variant="destructive" className="text-[10px] px-1.5">
+                  Alta
+                </Badge>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </AdaptiveCard>
+  );
+}
+
+/** Real plans summary */
+function PlansSummaryWidget({ widget }: { widget: WidgetConfig }) {
+  const { plans, loading } = usePlans();
+  const { tasks } = useTasks();
+
+  const activePlans = useMemo(
+    () => plans.filter((p) => p.status === "active").slice(0, 3),
+    [plans]
+  );
+
+  const planProgress = useMemo(() => {
+    const map: Record<string, { total: number; done: number }> = {};
+    for (const t of tasks) {
+      if (!t.planId) continue;
+      if (!map[t.planId]) map[t.planId] = { total: 0, done: 0 };
+      map[t.planId].total++;
+      if (t.status === "done") map[t.planId].done++;
+    }
+    return map;
+  }, [tasks]);
+
+  return (
+    <AdaptiveCard
+      title={widget.title}
+      description={
+        loading
+          ? "Cargando..."
+          : activePlans.length === 0
+          ? "Sin planes activos"
+          : `${activePlans.length} activo${activePlans.length !== 1 ? "s" : ""}`
+      }
+      icon={<ClipboardList className="w-5 h-5 text-primary" />}
+      size={widget.size}
+      action={
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/plans">Ver todo</Link>
+        </Button>
+      }
+    >
+      {loading ? (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : activePlans.length === 0 ? (
+        <div className="text-center py-4 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Crea tu primer plan de acción o estudio.
+          </p>
+          <Button size="sm" variant="outline" asChild className="gap-1.5">
+            <Link href="/plans">
+              <Plus className="w-3.5 h-3.5" />
+              Crear plan
+            </Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {activePlans.map((plan) => {
+            const counts = planProgress[plan.id] ?? { total: 0, done: 0 };
+            const pct =
+              counts.total === 0
+                ? 0
+                : Math.round((counts.done / counts.total) * 100);
+            return (
+              <Link key={plan.id} href="/plans" className="block group">
+                <div className="p-2.5 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                      {plan.title}
+                    </p>
+                    <span
+                      className={`text-[10px] shrink-0 px-1.5 py-0.5 rounded border ${
+                        plan.type === "study"
+                          ? "text-blue-400 border-blue-500/20 bg-blue-500/10"
+                          : "text-amber-400 border-amber-500/20 bg-amber-500/10"
+                      }`}
+                    >
+                      {plan.type === "study" ? "Estudio" : "Acción"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Progress value={pct} className="h-1.5 flex-1" />
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {pct}%
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    {counts.done}/{counts.total} tareas
+                  </p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </AdaptiveCard>
+  );
+}
+
+// ─── Static / mock widgets ────────────────────────────────────────────────────
+
 function LearningPathWidget({ widget }: { widget: WidgetConfig }) {
   return (
     <AdaptiveCard
@@ -76,7 +358,7 @@ function LearningPathWidget({ widget }: { widget: WidgetConfig }) {
       size={widget.size}
       action={
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/learn">Ver todo</Link>
+          <Link href="/study">Ver todo</Link>
         </Button>
       }
     >
@@ -95,7 +377,7 @@ function LearningPathWidget({ widget }: { widget: WidgetConfig }) {
           </p>
         </div>
         <Button className="w-full" asChild>
-          <Link href="/learn/current">
+          <Link href="/study">
             <BookOpen className="w-4 h-4 mr-2" />
             Continuar aprendiendo
           </Link>
@@ -105,48 +387,6 @@ function LearningPathWidget({ widget }: { widget: WidgetConfig }) {
   );
 }
 
-// Daily Goals Widget
-function DailyGoalsWidget({ widget }: { widget: WidgetConfig }) {
-  const goals = [
-    { label: "Completar 1 lección", done: true },
-    { label: "Practicar 15 minutos", done: false },
-    { label: "Revisar conceptos", done: false },
-  ];
-  const completed = goals.filter((g) => g.done).length;
-
-  return (
-    <AdaptiveCard
-      title={widget.title}
-      description={`${completed}/${goals.length} completadas`}
-      icon={<Target className="w-5 h-5 text-primary" />}
-      size={widget.size}
-    >
-      <div className="space-y-3">
-        {goals.map((goal, i) => (
-          <div
-            key={i}
-            className={`flex items-center gap-3 p-2 rounded-lg ${
-              goal.done ? "bg-primary/10" : "bg-secondary/50"
-            }`}
-          >
-            <div
-              className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                goal.done ? "bg-primary" : "border-2 border-muted-foreground"
-              }`}
-            >
-              {goal.done && <CheckCircle2 className="w-3 h-3 text-primary-foreground" />}
-            </div>
-            <span className={goal.done ? "line-through text-muted-foreground" : ""}>
-              {goal.label}
-            </span>
-          </div>
-        ))}
-      </div>
-    </AdaptiveCard>
-  );
-}
-
-// Streaks Widget
 function StreaksWidget({ widget }: { widget: WidgetConfig }) {
   return (
     <AdaptiveCard
@@ -162,11 +402,9 @@ function StreaksWidget({ widget }: { widget: WidgetConfig }) {
           {[...Array(7)].map((_, i) => (
             <div
               key={i}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                i < 7 ? "bg-orange-500/20" : "bg-secondary"
-              }`}
+              className="w-8 h-8 rounded-lg flex items-center justify-center bg-orange-500/20"
             >
-              {i < 7 && <Flame className="w-4 h-4 text-orange-500" />}
+              <Flame className="w-4 h-4 text-orange-500" />
             </div>
           ))}
         </div>
@@ -175,7 +413,6 @@ function StreaksWidget({ widget }: { widget: WidgetConfig }) {
   );
 }
 
-// Chat Preview Widget
 function ChatPreviewWidget({ widget }: { widget: WidgetConfig }) {
   return (
     <AdaptiveCard
@@ -188,8 +425,8 @@ function ChatPreviewWidget({ widget }: { widget: WidgetConfig }) {
       <div className="space-y-4">
         <div className="p-3 rounded-lg bg-primary/10 text-sm">
           <p className="italic">
-            &quot;Basándome en tu progreso, te recomiendo practicar el tema de
-            redes neuronales. ¿Te gustaría empezar?&quot;
+            &quot;¿En qué te gustaría trabajar hoy? Puedo ayudarte a crear tareas,
+            buscar información o generar un plan de acción.&quot;
           </p>
         </div>
         <Button className="w-full" asChild>
@@ -203,7 +440,6 @@ function ChatPreviewWidget({ widget }: { widget: WidgetConfig }) {
   );
 }
 
-// Skills Radar Widget
 function SkillsRadarWidget({ widget }: { widget: WidgetConfig }) {
   const skills = [
     { name: "Python", level: 75 },
@@ -233,7 +469,6 @@ function SkillsRadarWidget({ widget }: { widget: WidgetConfig }) {
   );
 }
 
-// Certifications Widget
 function CertificationsWidget({ widget }: { widget: WidgetConfig }) {
   return (
     <AdaptiveCard
@@ -251,15 +486,14 @@ function CertificationsWidget({ widget }: { widget: WidgetConfig }) {
             <p className="text-xs text-muted-foreground">En progreso - 60%</p>
           </div>
         </div>
-        <Button variant="outline" className="w-full">
-          Ver certificaciones
+        <Button variant="outline" className="w-full" asChild>
+          <Link href="/study">Ver certificaciones</Link>
         </Button>
       </div>
     </AdaptiveCard>
   );
 }
 
-// Business Metrics Widget
 function BusinessMetricsWidget({ widget }: { widget: WidgetConfig }) {
   const metrics = [
     { label: "Ingresos", value: "$12,450", change: "+12%" },
@@ -288,46 +522,6 @@ function BusinessMetricsWidget({ widget }: { widget: WidgetConfig }) {
   );
 }
 
-// Tasks Widget
-function TasksWidget({ widget }: { widget: WidgetConfig }) {
-  const tasks = [
-    { title: "Revisar propuesta cliente", priority: "high", due: "Hoy" },
-    { title: "Actualizar landing page", priority: "medium", due: "Mañana" },
-    { title: "Llamada con inversor", priority: "high", due: "Hoy 3pm" },
-  ];
-
-  return (
-    <AdaptiveCard
-      title={widget.title}
-      icon={<CheckCircle2 className="w-5 h-5 text-primary" />}
-      size={widget.size}
-    >
-      <div className="space-y-2">
-        {tasks.map((task, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50"
-          >
-            <div className="w-5 h-5 rounded-full border-2 border-muted-foreground" />
-            <div className="flex-1">
-              <p className="text-sm font-medium">{task.title}</p>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Clock className="w-3 h-3" /> {task.due}
-              </p>
-            </div>
-            <Badge
-              variant={task.priority === "high" ? "destructive" : "secondary"}
-            >
-              {task.priority}
-            </Badge>
-          </div>
-        ))}
-      </div>
-    </AdaptiveCard>
-  );
-}
-
-// Automations Widget
 function AutomationsWidget({ widget }: { widget: WidgetConfig }) {
   return (
     <AdaptiveCard
@@ -338,25 +532,20 @@ function AutomationsWidget({ widget }: { widget: WidgetConfig }) {
       <div className="space-y-3">
         <div className="flex items-center justify-between p-2 rounded-lg bg-secondary/50">
           <span className="text-sm">Email follow-up</span>
-          <Badge variant="outline" className="text-emerald-500">
-            Activo
-          </Badge>
+          <Badge variant="outline" className="text-emerald-500">Activo</Badge>
         </div>
         <div className="flex items-center justify-between p-2 rounded-lg bg-secondary/50">
           <span className="text-sm">Facturación mensual</span>
-          <Badge variant="outline" className="text-emerald-500">
-            Activo
-          </Badge>
+          <Badge variant="outline" className="text-emerald-500">Activo</Badge>
         </div>
-        <Button variant="outline" className="w-full" asChild>
-          <Link href="/automations">Gestionar automatizaciones</Link>
+        <Button variant="outline" className="w-full">
+          Gestionar automatizaciones
         </Button>
       </div>
     </AdaptiveCard>
   );
 }
 
-// Assigned Training Widget
 function AssignedTrainingWidget({ widget }: { widget: WidgetConfig }) {
   return (
     <AdaptiveCard
@@ -375,14 +564,13 @@ function AssignedTrainingWidget({ widget }: { widget: WidgetConfig }) {
           <Progress value={30} className="h-2 mt-2" />
         </div>
         <Button className="w-full" asChild>
-          <Link href="/training">Continuar formación</Link>
+          <Link href="/study">Continuar formación</Link>
         </Button>
       </div>
     </AdaptiveCard>
   );
 }
 
-// Team Progress Widget
 function TeamProgressWidget({ widget }: { widget: WidgetConfig }) {
   return (
     <AdaptiveCard
@@ -416,7 +604,6 @@ function TeamProgressWidget({ widget }: { widget: WidgetConfig }) {
   );
 }
 
-// Announcements Widget
 function AnnouncementsWidget({ widget }: { widget: WidgetConfig }) {
   return (
     <AdaptiveCard
@@ -438,6 +625,3 @@ function AnnouncementsWidget({ widget }: { widget: WidgetConfig }) {
     </AdaptiveCard>
   );
 }
-
-
-

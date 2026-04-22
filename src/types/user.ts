@@ -1,6 +1,8 @@
 // User types for Latzu Platform
 
-export type ProfileType = 'estudiante' | 'profesional' | 'emprendedor' | 'empleado';
+export type ProfileType = 'estudiante' | 'aprendiz';
+
+export type LearningStyle = 'visual' | 'auditivo' | 'lectura' | 'kinestesico';
 
 export interface User {
   id: string;
@@ -45,6 +47,12 @@ export interface OnboardingData {
   goals: string[];
   experience: 'beginner' | 'intermediate' | 'advanced';
   interests: string[];
-  organization?: string;
+  learningStyle?: LearningStyle;
+  // Student-specific
+  country?: string;
+  university?: string;
+  career?: string;
+  semester?: string;
+  // Aprendiz-specific
+  studyFocus?: string;
 }
-

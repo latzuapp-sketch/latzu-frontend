@@ -1,261 +1,126 @@
-// API client for Latzu Platform
+/**
+ * Latzu API client — MIGRATION REFERENCE
+ *
+ * This file documents the original REST-style API client and maps every
+ * function to its replacement GraphQL operation. The REST endpoints listed
+ * here never existed on the Python backends (which are pure GraphQL).
+ *
+ * HOW TO MIGRATE
+ * --------------
+ * 1. Import the Apollo clients:
+ *      import { aiClient, entityClient } from "@/lib/apollo";
+ *
+ * 2. Import the GraphQL operation document:
+ *      import { SEND_MESSAGE } from "@/graphql/ai/operations";
+ *
+ * 3. In a React component or hook, use Apollo's useMutation / useQuery:
+ *      const [send] = useMutation(SEND_MESSAGE, { client: aiClient });
+ *      await send({ variables: { input: { message, session_id } } });
+ *
+ * All operations and their variables are documented in:
+ *   src/graphql/ai/operations.ts  — AI Service (:8001)
+ *   src/graphql/api/operations.ts — Entity API (:8000)
+ *
+ * Full system documentation: docs/ARCHITECTURE.md
+ */
 
-// Backend URLs - In production, both API and AI are served from the same backend
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://latzuplatform.vercel.app";
-const AI_URL = process.env.NEXT_PUBLIC_AI_URL || "https://latzuplatform.vercel.app";
+// ─── REPLACED: Auth API ───────────────────────────────────────────────────────
+//
+// Old:  api.post("/api/auth/sync", data)  → no equivalent endpoint on backend
+// Old:  api.get("/auth/me", { token })    → use NextAuth session instead:
+//         import { useSession } from "next-auth/react";
+//         const { data: session } = useSession();
+//         const user = session?.user;
+//
+// Old:  api.post("/auth/logout")          → use NextAuth signOut:
+//         import { signOut } from "next-auth/react";
+//         signOut();
 
-type RequestOptions = {
-  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-  body?: unknown;
-  headers?: Record<string, string>;
-  token?: string;
-};
+// ─── REPLACED: Chat API ───────────────────────────────────────────────────────
+//
+// Old:  aiApi.post("/ai/chat/sessions", data)
+// New:  mutation sendMessage (omit session_id to auto-create)
+//       → src/graphql/ai/operations.ts › SEND_MESSAGE
+//       → hook: src/hooks/useChat.ts › sendMessage()
+//
+// Old:  aiApi.get("/ai/chat/sessions/:id")
+// New:  query chatHistory(session_id: String!)
+//       → src/graphql/ai/operations.ts › GET_CHAT_HISTORY
+//
+// Old:  aiApi.post("/ai/chat/messages", data)
+// New:  mutation sendMessage(input: SendMessageInput!)
+//       → src/graphql/ai/operations.ts › SEND_MESSAGE
+//       → hook: src/hooks/useChat.ts › sendMessage()
 
-class ApiClient {
-  private baseUrl: string;
+// ─── REPLACED: Knowledge Graph API ───────────────────────────────────────────
+//
+// Old:  aiApi.post("/ai/knowledge-graph/extract/text", data)
+// New:  mutation extractText(input: ExtractTextInput!)
+//       → src/graphql/ai/operations.ts › EXTRACT_TEXT
+//       → hook: src/hooks/useKnowledge.ts › extractText()
+//
+// Old:  aiApi.get("/ai/knowledge-graph/graph/:id")
+// New:  No direct equivalent — knowledge nodes are stored in Neo4j.
+//       Chat sessions serve as an index of what has been ingested.
+//       → query chatSessions › src/graphql/ai/operations.ts › GET_CHAT_SESSIONS
+//
+// Old:  aiApi.post("/ai/knowledge-graph/query/:id", ...)
+// New:  mutation sendMessage with use_rag: true
+//       RAG context is automatically injected into every chat message.
+//       → src/graphql/ai/operations.ts › SEND_MESSAGE
 
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl;
-  }
+// ─── REPLACED: Personalized Learning API ─────────────────────────────────────
+//
+// Old:  aiApi.post("/ai/personalized-learning/personalized-summary", data)
+// Old:  aiApi.get("/ai/personalized-learning/recommend/:userId/:graphId")
+// New:  No backend equivalent yet. Learn page uses static mock data.
+//       See docs/ARCHITECTURE.md — "Known Gaps" for how to add this.
 
-  async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-    const { method = "GET", body, headers = {}, token } = options;
+// ─── REPLACED: Cypher QA API ─────────────────────────────────────────────────
+//
+// Old:  aiApi.post("/ai/cypher-qa/query", data)
+// Old:  aiApi.get("/ai/cypher-qa/examples")
+// New:  No backend equivalent. Use sendMessage with use_rag: true for
+//       natural-language queries against the knowledge graph.
 
-    const requestHeaders: Record<string, string> = {
-      "Content-Type": "application/json",
-      ...headers,
-    };
+// ─── REPLACED: MCP Tools API ─────────────────────────────────────────────────
+//
+// Old:  aiApi.get("/ai/mcp/tools")
+// Old:  aiApi.post("/ai/mcp/execute", data)
+// New:  No backend equivalent.
 
-    if (token) {
-      requestHeaders["Authorization"] = `Bearer ${token}`;
-    }
+// ─── REPLACED: Metrics API ───────────────────────────────────────────────────
+//
+// Old:  api.get("/metrics/interactions/summary")
+// Old:  api.get("/metrics/graph-quality/:graphId")
+// New:  No backend equivalent.
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method,
-      headers: requestHeaders,
-      body: body ? JSON.stringify(body) : undefined,
-    });
+// ─── REPLACED: Dynamic Entities API ──────────────────────────────────────────
+//
+// Old:  api.post("/api/dynamic/:tenantId/:entityType", { data })
+// New:  mutation createEntity(input: CreateEntityInput!)
+//       → src/graphql/api/operations.ts › CREATE_ENTITY
+//
+// Old:  api.get("/api/dynamic/:tenantId/:entityType/:entityId")
+// New:  query entity(id: String!)
+//       → src/graphql/api/operations.ts › GET_ENTITY
+//
+// Old:  api.get("/api/dynamic/:tenantId/:entityType")
+// New:  query entities(entity_type: String, skip: Int, limit: Int)
+//       → src/graphql/api/operations.ts › GET_ENTITIES
+//
+// Old:  api.put("/api/dynamic/:tenantId/:entityType/:entityId", { data })
+// New:  mutation updateEntity(id: String!, input: UpdateEntityInput!)
+//       → src/graphql/api/operations.ts › UPDATE_ENTITY
+//
+// Old:  api.delete("/api/dynamic/:tenantId/:entityType/:entityId")
+// New:  mutation deleteEntity(id: String!)
+//       → src/graphql/api/operations.ts › DELETE_ENTITY
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || `HTTP ${response.status}`);
-    }
+// ─── YouTube (was missing from original api.ts) ───────────────────────────────
+//
+// New:  mutation processYoutube(url: String!)
+//       → src/graphql/ai/operations.ts › PROCESS_YOUTUBE
+//       → hook: src/hooks/useKnowledge.ts › processYoutube()
 
-    // Handle empty responses
-    const text = await response.text();
-    if (!text) return {} as T;
-
-    return JSON.parse(text) as T;
-  }
-
-  get<T>(endpoint: string, options?: Omit<RequestOptions, "method" | "body">) {
-    return this.request<T>(endpoint, { ...options, method: "GET" });
-  }
-
-  post<T>(endpoint: string, body?: unknown, options?: Omit<RequestOptions, "method" | "body">) {
-    return this.request<T>(endpoint, { ...options, method: "POST", body });
-  }
-
-  put<T>(endpoint: string, body?: unknown, options?: Omit<RequestOptions, "method" | "body">) {
-    return this.request<T>(endpoint, { ...options, method: "PUT", body });
-  }
-
-  delete<T>(endpoint: string, options?: Omit<RequestOptions, "method" | "body">) {
-    return this.request<T>(endpoint, { ...options, method: "DELETE" });
-  }
-
-  patch<T>(endpoint: string, body?: unknown, options?: Omit<RequestOptions, "method" | "body">) {
-    return this.request<T>(endpoint, { ...options, method: "PATCH", body });
-  }
-}
-
-// API instances
-export const api = new ApiClient(API_URL);
-export const aiApi = new ApiClient(AI_URL);
-
-// ============= Auth API =============
-export const authApi = {
-  syncUser: (data: {
-    google_id: string;
-    email: string;
-    name: string;
-    picture?: string;
-    access_token?: string;
-    refresh_token?: string;
-  }) => api.post<{ profile_type?: string; tenant_id: string; role: string }>("/api/auth/sync", data),
-
-  getMe: (token: string) =>
-    api.get<{ key: string; email: string; name: string; picture?: string; role: string }>(
-      "/auth/me",
-      { token }
-    ),
-
-  logout: () => api.post("/auth/logout"),
-};
-
-// ============= Chat API =============
-export const chatApi = {
-  createSession: (data: { tenant_id: string; user_id?: string; metadata?: Record<string, unknown> }) =>
-    aiApi.post<{ session_id: string; tenant_id: string; created_at: string }>(
-      "/ai/chat/sessions",
-      data
-    ),
-
-  getSession: (sessionId: string) =>
-    aiApi.get<{
-      session_id: string;
-      tenant_id: string;
-      user_id?: string;
-      message_count: number;
-      messages: Array<{ role: string; content: string; timestamp: string }>;
-      has_active_flow: boolean;
-      created_at: string;
-      updated_at: string;
-    }>(`/ai/chat/sessions/${sessionId}`),
-
-  sendMessage: (data: {
-    session_id: string;
-    tenant_id: string;
-    message: string;
-    user_id?: string;
-    metadata?: Record<string, unknown>;
-  }) =>
-    aiApi.post<{
-      message: string;
-      session_id: string;
-      requires_input: boolean;
-      suggestions: string[];
-      metadata?: Record<string, unknown>;
-      timestamp: string;
-    }>("/ai/chat/messages", data),
-
-  startFlow: (data: { session_id: string; flow_id: string; steps: unknown[] }) =>
-    aiApi.post("/ai/chat/flows/start", data),
-};
-
-// ============= Knowledge Graph API =============
-export const knowledgeApi = {
-  extractFromText: (data: {
-    tenant_id: string;
-    title: string;
-    text: string;
-    config?: { chunk_size?: number; enable_standardization?: boolean; enable_inference?: boolean };
-  }) =>
-    aiApi.post<{
-      graph_id: string;
-      title: string;
-      num_nodes: number;
-      num_edges: number;
-      num_inferred: number;
-      created_at: string;
-    }>("/ai/knowledge-graph/extract/text", data),
-
-  getGraph: (graphId: string) => aiApi.get(`/ai/knowledge-graph/graph/${graphId}`),
-
-  queryGraph: (graphId: string, query: string, tenantId: string = "demo") =>
-    aiApi.post<{ query: string; answer: string; sources: unknown[] }>(
-      `/ai/knowledge-graph/query/${graphId}`,
-      null,
-      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-    ),
-};
-
-// ============= Personalized Learning API =============
-export const learningApi = {
-  getPersonalizedSummary: (data: {
-    graph_id: string;
-    user_id?: string;
-    level?: string;
-    focus_contexts?: string[];
-    goals?: string[];
-  }) =>
-    aiApi.post<{
-      summary: string;
-      key_takeaways: string[];
-      learning_path: unknown[];
-      estimated_time_minutes: number;
-    }>("/ai/personalized-learning/personalized-summary", data),
-
-  getRecommendations: (userId: string, graphId: string) =>
-    aiApi.get<{ user_id: string; graph_id: string; recommendations: unknown[] }>(
-      `/ai/personalized-learning/recommend/${userId}/${graphId}`
-    ),
-};
-
-// ============= Cypher QA API =============
-export const cypherQaApi = {
-  query: (data: { question: string; graph_id?: string; tenant_id: string }) =>
-    aiApi.post<{
-      answer: string;
-      generated_cypher?: string;
-      success: boolean;
-    }>("/ai/cypher-qa/query", data),
-
-  getExamples: () => aiApi.get<string[]>("/ai/cypher-qa/examples"),
-};
-
-// ============= MCP Tools API =============
-export const mcpApi = {
-  listTools: () =>
-    aiApi.get<
-      Array<{
-        tool_id: string;
-        name: string;
-        description: string;
-        tool_type: string;
-        enabled: boolean;
-      }>
-    >("/ai/mcp/tools"),
-
-  executeTool: (data: {
-    tool_id: string;
-    parameters: Record<string, unknown>;
-    context: { tenant_id: string; user_id: string };
-  }) => aiApi.post<{ status: string; result: unknown }>("/ai/mcp/execute", data),
-};
-
-// ============= Metrics API =============
-export const metricsApi = {
-  getInteractionsSummary: (days: number = 7) =>
-    api.get<{
-      total: number;
-      by_type: Record<string, number>;
-      unique_users: number;
-      period_days: number;
-    }>(`/metrics/interactions/summary?days=${days}`),
-
-  getGraphQuality: (graphId: string, days: number = 7) =>
-    api.get<{
-      graph_id: string;
-      period_days: number;
-      metrics: Record<string, unknown>;
-      quality_score: number;
-    }>(`/metrics/graph-quality/${graphId}?days=${days}`),
-};
-
-// ============= Dynamic Entities API =============
-export const entitiesApi = {
-  create: (tenantId: string, entityType: string, data: Record<string, unknown>) =>
-    api.post(`/api/dynamic/${tenantId}/${entityType}`, { data }),
-
-  get: (tenantId: string, entityType: string, entityId: string) =>
-    api.get(`/api/dynamic/${tenantId}/${entityType}/${entityId}`),
-
-  list: (tenantId: string, entityType: string) =>
-    api.get<unknown[]>(`/api/dynamic/${tenantId}/${entityType}`),
-
-  update: (tenantId: string, entityType: string, entityId: string, data: Record<string, unknown>) =>
-    api.put(`/api/dynamic/${tenantId}/${entityType}/${entityId}`, { data }),
-
-  delete: (tenantId: string, entityType: string, entityId: string) =>
-    api.delete(`/api/dynamic/${tenantId}/${entityType}/${entityId}`),
-
-  query: (
-    tenantId: string,
-    entityType: string,
-    filters: Record<string, unknown>,
-    limit: number = 10
-  ) => api.post(`/api/dynamic/${tenantId}/${entityType}/query`, { filters, limit }),
-};
-
-export default api;
+export {};

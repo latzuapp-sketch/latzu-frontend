@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useState } from "react";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -8,8 +9,19 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { ChatMessage } from "@/types/chat";
-import { Brain, User, Copy, Check, ThumbsUp, ThumbsDown } from "lucide-react";
-import { useState } from "react";
+import type { AgentAction, RagSource } from "@/graphql/types";
+import { AgentActionCard } from "./AgentActionCard";
+import {
+  Brain,
+  User,
+  Copy,
+  Check,
+  ThumbsUp,
+  ThumbsDown,
+  Database,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { trackFeedback } from "@/lib/events";
 
 interface MessageBubbleProps {
@@ -18,12 +30,22 @@ interface MessageBubbleProps {
   userName?: string;
 }
 
-export function MessageBubble({ message, userImage, userName }: MessageBubbleProps) {
+function MessageBubbleComponent({ message, userImage, userName }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<"positive" | "negative" | null>(null);
+  const [showSources, setShowSources] = useState(false);
+
+  // Agent action messages get their own compact card rendering
+  if (message.role === "agent_action") {
+    const action = message.metadata?.action as AgentAction | undefined;
+    if (!action) return null;
+    const isPending = message.metadata?.isPending as boolean | undefined;
+    return <AgentActionCard action={action} isPending={isPending} />;
+  }
 
   const isUser = message.role === "user";
-  const isStreaming = message.isStreaming;
+  const streaming = message.isStreaming ?? false;
+  const sources = (message.metadata?.sources ?? []) as RagSource[];
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content);
@@ -41,20 +63,21 @@ export function MessageBubble({ message, userImage, userName }: MessageBubblePro
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.15 }}
       className={cn(
-        "flex gap-3 max-w-4xl",
+        "flex gap-3 max-w-3xl",
         isUser ? "ml-auto flex-row-reverse" : "mr-auto"
       )}
     >
       {/* Avatar */}
-      <Avatar className="w-8 h-8 flex-shrink-0">
+      <Avatar className="w-8 h-8 flex-shrink-0 mt-0.5">
         {isUser ? (
           <>
             <AvatarImage src={userImage} />
             <AvatarFallback className="bg-primary/10 text-primary text-xs">
-              {userName?.[0]?.toUpperCase() || <User className="w-4 h-4" />}
+              {userName?.[0]?.toUpperCase() ?? <User className="w-4 h-4" />}
             </AvatarFallback>
           </>
         ) : (
@@ -64,19 +87,21 @@ export function MessageBubble({ message, userImage, userName }: MessageBubblePro
         )}
       </Avatar>
 
-      {/* Message Content */}
-      <div className={cn("flex flex-col gap-1", isUser ? "items-end" : "items-start")}>
+      {/* Bubble + extras */}
+      <div className={cn("flex flex-col gap-1 min-w-0", isUser ? "items-end" : "items-start")}>
         <div
           className={cn(
-            "rounded-2xl px-4 py-2.5 max-w-lg",
+            "rounded-2xl px-4 py-2.5 text-sm",
             isUser
-              ? "bg-primary text-primary-foreground rounded-br-sm"
-              : "bg-secondary/80 rounded-bl-sm",
-            isStreaming && "animate-pulse"
+              ? "bg-primary text-primary-foreground rounded-br-sm max-w-lg"
+              : "bg-secondary/80 rounded-bl-sm w-full"
           )}
         >
           {isUser ? (
-            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+          ) : streaming && !message.content ? (
+            /* Typing dots while waiting for first character */
+            <TypingDots />
           ) : (
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown
@@ -85,18 +110,27 @@ export function MessageBubble({ message, userImage, userName }: MessageBubblePro
                   p: ({ children }) => (
                     <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>
                   ),
+                  h1: ({ children }) => (
+                    <h1 className="text-base font-bold mb-2 mt-3 first:mt-0">{children}</h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 className="text-sm font-bold mb-2 mt-3 first:mt-0">{children}</h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="text-sm font-semibold mb-1 mt-2 first:mt-0">{children}</h3>
+                  ),
                   code: ({ className, children, ...props }) => {
                     const isInline = !className;
                     return isInline ? (
                       <code
-                        className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono"
+                        className="px-1.5 py-0.5 rounded bg-muted text-xs font-mono"
                         {...props}
                       >
                         {children}
                       </code>
                     ) : (
                       <code
-                        className="block p-3 rounded-lg bg-muted text-sm font-mono overflow-x-auto"
+                        className="block p-3 rounded-lg bg-muted text-xs font-mono overflow-x-auto"
                         {...props}
                       >
                         {children}
@@ -104,14 +138,15 @@ export function MessageBubble({ message, userImage, userName }: MessageBubblePro
                     );
                   },
                   ul: ({ children }) => (
-                    <ul className="list-disc list-inside mb-2 space-y-1">
-                      {children}
-                    </ul>
+                    <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>
                   ),
                   ol: ({ children }) => (
-                    <ol className="list-decimal list-inside mb-2 space-y-1">
+                    <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>
+                  ),
+                  blockquote: ({ children }) => (
+                    <blockquote className="border-l-2 border-primary/50 pl-3 italic text-muted-foreground my-2">
                       {children}
-                    </ol>
+                    </blockquote>
                   ),
                   a: ({ href, children }) => (
                     <a
@@ -123,51 +158,83 @@ export function MessageBubble({ message, userImage, userName }: MessageBubblePro
                       {children}
                     </a>
                   ),
+                  table: ({ children }) => (
+                    <div className="overflow-x-auto my-2">
+                      <table className="text-xs border-collapse w-full">{children}</table>
+                    </div>
+                  ),
+                  th: ({ children }) => (
+                    <th className="border border-border px-2 py-1 bg-muted font-semibold text-left">
+                      {children}
+                    </th>
+                  ),
+                  td: ({ children }) => (
+                    <td className="border border-border px-2 py-1">{children}</td>
+                  ),
                 }}
               >
-                {message.content || "..."}
+                {message.content}
               </ReactMarkdown>
+              {/* Blinking cursor while streaming */}
+              {streaming && (
+                <span className="inline-block w-0.5 h-3.5 bg-current ml-0.5 align-middle animate-pulse" />
+              )}
             </div>
           )}
         </div>
 
-        {/* Suggestions */}
-        {!isUser && message.suggestions && message.suggestions.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-1">
-            {message.suggestions.map((suggestion, i) => (
-              <Badge
-                key={i}
-                variant="outline"
-                className="cursor-pointer hover:bg-secondary transition-colors"
-              >
-                {suggestion}
-              </Badge>
-            ))}
+        {/* RAG sources */}
+        {!isUser && !streaming && sources.length > 0 && (
+          <div className="w-full">
+            <button
+              onClick={() => setShowSources((v) => !v)}
+              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Database className="w-3 h-3" />
+              {sources.length} fuente{sources.length !== 1 && "s"} del grafo
+              {showSources ? (
+                <ChevronUp className="w-3 h-3" />
+              ) : (
+                <ChevronDown className="w-3 h-3" />
+              )}
+            </button>
+            {showSources && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {sources.map((s, i) => (
+                  <Badge
+                    key={i}
+                    variant="outline"
+                    className="text-[10px] gap-1 font-normal"
+                    title={s.content ?? ""}
+                  >
+                    <span className="text-muted-foreground">{s.type}</span>
+                    <span>{s.name}</span>
+                    {s.score !== undefined && (
+                      <span className="text-muted-foreground">
+                        {Math.round(s.score * 100)}%
+                      </span>
+                    )}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Actions */}
-        {!isUser && !isStreaming && message.content && (
-          <div className="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="w-7 h-7"
-              onClick={handleCopy}
-            >
+        {/* Action buttons */}
+        {!isUser && !streaming && message.content && (
+          <div className="flex items-center gap-0.5">
+            <Button variant="ghost" size="icon" className="w-7 h-7" onClick={handleCopy}>
               {copied ? (
                 <Check className="w-3.5 h-3.5 text-emerald-500" />
               ) : (
-                <Copy className="w-3.5 h-3.5" />
+                <Copy className="w-3.5 h-3.5 text-muted-foreground" />
               )}
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className={cn(
-                "w-7 h-7",
-                feedback === "positive" && "text-emerald-500"
-              )}
+              className={cn("w-7 h-7", feedback === "positive" && "text-emerald-500")}
               onClick={() => handleFeedback("positive")}
             >
               <ThumbsUp className="w-3.5 h-3.5" />
@@ -175,10 +242,7 @@ export function MessageBubble({ message, userImage, userName }: MessageBubblePro
             <Button
               variant="ghost"
               size="icon"
-              className={cn(
-                "w-7 h-7",
-                feedback === "negative" && "text-destructive"
-              )}
+              className={cn("w-7 h-7", feedback === "negative" && "text-destructive")}
               onClick={() => handleFeedback("negative")}
             >
               <ThumbsDown className="w-3.5 h-3.5" />
@@ -198,5 +262,18 @@ export function MessageBubble({ message, userImage, userName }: MessageBubblePro
   );
 }
 
+function TypingDots() {
+  return (
+    <div className="flex items-center gap-1 py-1">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="w-1.5 h-1.5 rounded-full bg-current opacity-60 animate-bounce"
+          style={{ animationDelay: `${i * 150}ms`, animationDuration: "900ms" }}
+        />
+      ))}
+    </div>
+  );
+}
 
-
+export const MessageBubble = memo(MessageBubbleComponent);

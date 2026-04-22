@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { useUserStore, useIsGuest } from "@/stores/userStore";
 import { getTemplate, getProactivePrompts } from "@/config/templates";
 import { WidgetRenderer } from "@/components/dashboard/WidgetRenderer";
+import { UserMemoryCard } from "@/components/ai/UserMemoryCard";
+import { RecommendationPanel } from "@/components/ai/RecommendationPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sparkles, X, ArrowRight } from "lucide-react";
@@ -82,7 +84,7 @@ export default function DashboardPage() {
                   </p>
                   <div className="flex gap-2 mt-3">
                     <Button size="sm" className="gap-1" asChild>
-                      <Link href="/learn">
+                      <Link href="/study">
                         Empezar
                         <ArrowRight className="w-3 h-3" />
                       </Link>
@@ -110,8 +112,30 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Adaptive Widgets */}
-      <WidgetRenderer widgets={template.dashboardWidgets} />
+      {/* Main grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Widgets — 2/3 width */}
+        <div className="lg:col-span-2">
+          <WidgetRenderer widgets={template.dashboardWidgets} />
+        </div>
+
+        {/* AI sidebar — 1/3 width */}
+        {!isGuest && (
+          <div className="space-y-4">
+            {/* User AI memory card */}
+            <UserMemoryCard />
+
+            {/* Personalised recommendations */}
+            <div className="rounded-xl border border-border/40 bg-card/60 p-4">
+              <RecommendationPanel
+                onNodeClick={(id) => {
+                  window.location.href = `/library?node=${id}`;
+                }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

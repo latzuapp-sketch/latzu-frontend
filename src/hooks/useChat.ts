@@ -1,12 +1,32 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useMutation, useQuery, useLazyQuery } from "@apollo/client";
 import { useSession } from "next-auth/react";
+import { aiClient, entityClient } from "@/lib/apollo";
+import {
+  CHAT_STREAM,
+  GET_CHAT_SESSIONS,
+  DELETE_CHAT_SESSION,
+  GET_CHAT_HISTORY,
+  SEND_MESSAGE,
+} from "@/graphql/ai/operations";
 import { useChatStore } from "@/stores/chatStore";
 import { useUserStore } from "@/stores/userStore";
-import { chatApi, learningApi } from "@/lib/api";
 import { trackChatMessage } from "@/lib/events";
-import type { ChatMessage, ProactiveSuggestion, StreamChunk } from "@/types/chat";
+import type { ChatMessage } from "@/types/chat";
+import type { AgentAction, ChatStreamEvent, SendMessageResult, ChatSession, RagSource } from "@/graphql/types";
+
+// Tools that modify planning data and should trigger a refetch
+const TASK_TOOLS = new Set(["create_task", "create_multiple_tasks", "update_task"]);
+// Tools that modify the knowledge graph
+const KNOWLEDGE_TOOLS = new Set(["create_knowledge_node"]);
+
+// ~750 chars/s — fast enough to feel alive, slow enough to read
+const STREAM_CHARS_PER_TICK = 12;
+const STREAM_INTERVAL_MS = 16;
+
+const lastSessionKey = (userId: string) => `latzu_last_session_${userId}`;
 
 interface UseChatOptions {
   sessionId?: string;
@@ -14,326 +34,425 @@ interface UseChatOptions {
 }
 
 export function useChat(options: UseChatOptions = {}) {
-  const { data: session } = useSession();
-  const tenantId = useUserStore((state) => state.tenantId);
-  const isGuest = useUserStore((state) => state.isGuest);
-  const guestId = useUserStore((state) => state.guestId);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(
+    options.sessionId ?? null
+  );
+  const [error, setError] = useState<string | null>(null);
 
-  // Get user ID - either from session or guest ID
-  const userId = session?.user?.id || guestId || "anonymous";
+  const { data: session } = useSession();
+  const { profileType, preferences } = useUserStore();
+
+  // Refs for streaming interval management
+  const streamRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const streamingMsgIdRef = useRef<string | null>(null);
+  // Prevent auto-loading the last session more than once per mount
+  const autoLoadedRef = useRef(false);
+  // Map toolName → message id of the pending action card so we can update it on tool_complete
+  const pendingActionIds = useRef<Map<string, string>>(new Map());
+  // Track which tools triggered data changes (resolved when subscription finishes)
+  const toolsUsedRef = useRef<Set<string>>(new Set());
 
   const {
-    currentSession,
     messages,
-    isStreaming,
-    streamingContent,
-    suggestions,
     inputValue,
-    setCurrentSession,
-    addSession,
+    isStreaming,
+    suggestions,
     addMessage,
     updateMessage,
-    setStreaming,
-    appendStreamingContent,
-    clearStreamingContent,
-    setSuggestions,
-    dismissSuggestion,
+    clearMessages,
     setInputValue,
+    setStreaming,
+    dismissSuggestion,
+    reset,
   } = useChatStore();
 
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const userId = (session?.user as { id?: string })?.id ?? null;
 
-  // Initialize or fetch session
+  // ─── Apollo: session list (user-scoped) ─────────────────────────────────
+  const {
+    data: sessionsData,
+    loading: sessionsLoading,
+    refetch: refetchSessions,
+  } = useQuery(GET_CHAT_SESSIONS, {
+    client: aiClient,
+    variables: { userId },
+    fetchPolicy: "cache-and-network",
+  });
+
+  const sessions: ChatSession[] = sessionsData?.chatSessions ?? [];
+
+  // ─── Apollo: lazy history load ───────────────────────────────────────────
+  const [fetchHistory] = useLazyQuery(GET_CHAT_HISTORY, {
+    client: aiClient,
+    fetchPolicy: "network-only",
+  });
+
+  // ─── Apollo: send message (fallback for environments without WebSocket) ──
+  const [sendMessageMutation, { loading: isSending }] = useMutation(
+    SEND_MESSAGE,
+    { client: aiClient }
+  );
+
+  // ─── Apollo: delete session ──────────────────────────────────────────────
+  const [deleteSessionMutation] = useMutation(DELETE_CHAT_SESSION, {
+    client: aiClient,
+    onCompleted: () => refetchSessions(),
+  });
+
+  // ─── Cleanup interval on unmount ────────────────────────────────────────
   useEffect(() => {
-    if (options.sessionId && !currentSession) {
-      fetchSession(options.sessionId);
-    }
-  }, [options.sessionId, currentSession]);
-
-  // Fetch proactive suggestions
-  useEffect(() => {
-    if (options.autoFetchSuggestions && session?.user?.id) {
-      fetchProactiveSuggestions();
-    }
-  }, [options.autoFetchSuggestions, session?.user?.id, messages.length]);
-
-  const fetchSession = async (sessionId: string) => {
-    try {
-      const sessionData = await chatApi.getSession(sessionId);
-      setCurrentSession({
-        sessionId: sessionData.session_id,
-        tenantId: sessionData.tenant_id,
-        userId: sessionData.user_id,
-        createdAt: new Date(sessionData.created_at),
-        updatedAt: new Date(sessionData.updated_at),
-        messageCount: sessionData.message_count,
-        hasActiveFlow: sessionData.has_active_flow,
-      });
-
-      // Load existing messages
-      sessionData.messages.forEach((msg) => {
-        addMessage({
-          id: crypto.randomUUID(),
-          role: msg.role as ChatMessage["role"],
-          content: msg.content,
-          timestamp: new Date(msg.timestamp),
-        });
-      });
-    } catch (err) {
-      console.error("Failed to fetch session:", err);
-      setError("No se pudo cargar la conversación");
-    }
-  };
-
-  const createSession = async (): Promise<string> => {
-    try {
-      const response = await chatApi.createSession({
-        tenant_id: tenantId,
-        user_id: userId,
-        metadata: {
-          source: "web",
-          profileType: session?.user?.profileType,
-          isGuest,
-        },
-      });
-
-      addSession({
-        sessionId: response.session_id,
-        tenantId: response.tenant_id,
-        userId,
-        createdAt: new Date(response.created_at),
-        updatedAt: new Date(response.created_at),
-        messageCount: 0,
-        hasActiveFlow: false,
-      });
-
-      return response.session_id;
-    } catch (err) {
-      console.error("Failed to create session:", err);
-      throw new Error("No se pudo crear la conversación");
-    }
-  };
-
-  const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim() || isStreaming) return;
-
-    setError(null);
-    setIsLoading(true);
-
-    // Get or create session
-    let sessionId = currentSession?.sessionId;
-    if (!sessionId) {
-      try {
-        sessionId = await createSession();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Error creating session");
-        setIsLoading(false);
-        return;
-      }
-    }
-
-    // Add user message
-    const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: content.trim(),
-      timestamp: new Date(),
+    return () => {
+      if (streamRef.current) clearInterval(streamRef.current);
     };
-    addMessage(userMessage);
-    setInputValue("");
+  }, []);
 
-    // Track event for knowledge graph
-    trackChatMessage(content, sessionId, {
-      tenantId,
-      userId,
-    });
-
-    // Create placeholder for assistant response
-    const assistantMessageId = crypto.randomUUID();
-    addMessage({
-      id: assistantMessageId,
-      role: "assistant",
-      content: "",
-      timestamp: new Date(),
-      isStreaming: true,
-    });
-
-    setStreaming(true);
-    clearStreamingContent();
-
-    // Abort any existing request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+  // ─── Persist current session ID to localStorage ─────────────────────────
+  useEffect(() => {
+    if (!userId) return;
+    if (currentSessionId) {
+      localStorage.setItem(lastSessionKey(userId), currentSessionId);
     }
-    abortControllerRef.current = new AbortController();
+  }, [currentSessionId, userId]);
 
-    try {
-      const response = await fetch("/api/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId,
-          message: content,
-          tenantId,
-          userId,
-        }),
-        signal: abortControllerRef.current.signal,
+  // ─── Simulate streaming of a full reply ─────────────────────────────────
+  const startStreaming = useCallback(
+    (msgId: string, fullText: string, onDone: () => void) => {
+      if (streamRef.current) clearInterval(streamRef.current);
+      streamingMsgIdRef.current = msgId;
+      let pos = 0;
+
+      streamRef.current = setInterval(() => {
+        pos += STREAM_CHARS_PER_TICK;
+        const done = pos >= fullText.length;
+
+        updateMessage(msgId, {
+          content: done ? fullText : fullText.slice(0, pos),
+          isStreaming: !done,
+        });
+
+        if (done) {
+          clearInterval(streamRef.current!);
+          streamRef.current = null;
+          streamingMsgIdRef.current = null;
+          onDone();
+        }
+      }, STREAM_INTERVAL_MS);
+    },
+    [updateMessage]
+  );
+
+  // ─── Stop generation (user pressed stop button) ──────────────────────────
+  const stopGeneration = useCallback(() => {
+    if (streamRef.current) {
+      clearInterval(streamRef.current);
+      streamRef.current = null;
+    }
+    if (streamingMsgIdRef.current) {
+      updateMessage(streamingMsgIdRef.current, { isStreaming: false });
+      streamingMsgIdRef.current = null;
+    }
+    setStreaming(false);
+  }, [updateMessage, setStreaming]);
+
+  // ─── Build user profile for personalisation ──────────────────────────────
+  const buildUserProfile = useCallback(() => {
+    if (!userId) return null;
+    return {
+      userId,
+      name: session?.user?.name ?? "",
+      profileType: profileType ?? "estudiante",
+      experience: (session?.user as { experience?: string })?.experience ?? "",
+      goals: (session?.user as { goals?: string[] })?.goals ?? [],
+      interests: preferences?.focusAreas ?? [],
+    };
+  }, [userId, session, profileType, preferences]);
+
+  // ─── Send a message via subscription ────────────────────────────────────
+  const sendMessage = useCallback(
+    async (content: string, useRag = true) => {
+      if (!content.trim() || isSending || isStreaming) return;
+      setError(null);
+
+      addMessage({
+        id: crypto.randomUUID(),
+        role: "user",
+        content: content.trim(),
+        timestamp: new Date(),
+      });
+      setInputValue("");
+      setStreaming(true);
+
+      const assistantId = crypto.randomUUID();
+      addMessage({
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+        isStreaming: true,
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error: ${response.status}`);
-      }
+      pendingActionIds.current.clear();
+      toolsUsedRef.current.clear();
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error("No response body");
+      const userProfile = buildUserProfile();
 
-      const decoder = new TextDecoder();
-      let fullContent = "";
-      let receivedSuggestions: string[] = [];
+      const input = {
+        message: content.trim(),
+        sessionId: currentSessionId,
+        useRag,
+        ...(userProfile && { userProfile }),
+      };
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      // Try subscription (WebSocket) first; fall back to mutation on error
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const sub = aiClient
+            .subscribe<{ chatStream: ChatStreamEvent }>({
+              query: CHAT_STREAM,
+              variables: { input },
+            })
+            .subscribe({
+              next({ data }) {
+                if (!data) return;
+                const event = data.chatStream;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+                if (event.eventType === "tool_start" && event.toolName) {
+                  // Show a pending action card immediately
+                  const cardId = crypto.randomUUID();
+                  pendingActionIds.current.set(event.toolName, cardId);
+                  addMessage({
+                    id: cardId,
+                    role: "agent_action",
+                    content: event.toolName,
+                    timestamp: new Date(),
+                    metadata: {
+                      action: {
+                        toolName: event.toolName,
+                        args: event.args ?? {},
+                        result: {},
+                        status: "success",
+                      } as AgentAction,
+                      isPending: true,
+                    },
+                  });
 
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
+                } else if (event.eventType === "tool_complete" && event.toolName) {
+                  // Update the pending card with the real result
+                  const cardId = pendingActionIds.current.get(event.toolName);
+                  if (cardId) {
+                    updateMessage(cardId, {
+                      metadata: {
+                        action: {
+                          toolName: event.toolName,
+                          args: event.args ?? {},
+                          result: event.result ?? {},
+                          status: event.status ?? "success",
+                        } as AgentAction,
+                        isPending: false,
+                      },
+                    });
+                    pendingActionIds.current.delete(event.toolName);
+                  }
+                  toolsUsedRef.current.add(event.toolName);
 
-          try {
-            const data: StreamChunk = JSON.parse(line.slice(6));
+                } else if (event.eventType === "reply" && event.reply) {
+                  // Stream the final reply text
+                  if (event.sessionId && event.sessionId !== currentSessionId) {
+                    setCurrentSessionId(event.sessionId);
+                  }
+                  startStreaming(assistantId, event.reply, () => {
+                    updateMessage(assistantId, {
+                      metadata: { sources: (event.sources ?? []) as RagSource[] },
+                    });
+                    setStreaming(false);
 
-            switch (data.type) {
-              case "content":
-                fullContent += data.content || "";
-                appendStreamingContent(data.content || "");
-                updateMessage(assistantMessageId, { content: fullContent });
-                break;
+                    // Refetch related data
+                    const tools = toolsUsedRef.current;
+                    if ([...tools].some((t) => TASK_TOOLS.has(t))) {
+                      entityClient.refetchQueries({ include: ["GetEntities"] });
+                    }
+                    if ([...tools].some((t) => KNOWLEDGE_TOOLS.has(t))) {
+                      aiClient.refetchQueries({ include: ["GetKnowledgeNodes", "GetKnowledgeStats"] });
+                    }
 
-              case "suggestions":
-                receivedSuggestions = data.suggestions || [];
-                break;
+                    refetchSessions();
+                    if (event.sessionId) trackChatMessage(content, event.sessionId);
+                  });
 
-              case "done":
-                updateMessage(assistantMessageId, {
-                  content: fullContent,
-                  isStreaming: false,
-                  suggestions: receivedSuggestions,
-                });
-                break;
+                } else if (event.eventType === "done") {
+                  resolve();
+                }
+              },
+              error(err) {
+                reject(err);
+              },
+              complete() {
+                resolve();
+              },
+            });
 
-              case "error":
-                throw new Error(data.error);
-            }
-          } catch (parseError) {
-            console.warn("Failed to parse SSE chunk:", parseError);
+          // Expose unsubscribe so stopGeneration can cancel mid-stream
+          (streamRef as unknown as { _sub?: { unsubscribe(): void } })._sub = sub;
+        });
+      } catch (subscriptionErr) {
+        // Subscription failed (e.g. WebSocket unavailable) — fall back to mutation
+        console.warn("chatStream subscription failed, falling back to mutation:", subscriptionErr);
+        try {
+          const { data } = await sendMessageMutation({ variables: { input } });
+          const result: SendMessageResult = data.sendMessage;
+
+          if (result.sessionId && result.sessionId !== currentSessionId) {
+            setCurrentSessionId(result.sessionId);
           }
+
+          if (result.actions && result.actions.length > 0) {
+            for (const action of result.actions) {
+              addMessage({
+                id: crypto.randomUUID(),
+                role: "agent_action",
+                content: action.toolName,
+                timestamp: new Date(),
+                metadata: { action: action as AgentAction, isPending: false },
+              });
+              await new Promise<void>((r) => setTimeout(r, 120));
+            }
+
+            if (result.actions.some((a) => TASK_TOOLS.has(a.toolName))) {
+              entityClient.refetchQueries({ include: ["GetEntities"] });
+            }
+            if (result.actions.some((a) => KNOWLEDGE_TOOLS.has(a.toolName))) {
+              aiClient.refetchQueries({ include: ["GetKnowledgeNodes", "GetKnowledgeStats"] });
+            }
+          }
+
+          startStreaming(assistantId, result.reply, () => {
+            updateMessage(assistantId, {
+              metadata: { sources: result.sources as RagSource[] },
+            });
+            setStreaming(false);
+            refetchSessions();
+            trackChatMessage(content, result.sessionId);
+          });
+        } catch (mutationErr) {
+          const msg = mutationErr instanceof Error ? mutationErr.message : "Error al enviar el mensaje";
+          setError(msg);
+          updateMessage(assistantId, {
+            content: "Lo siento, hubo un error al procesar tu mensaje. Inténtalo de nuevo.",
+            isStreaming: false,
+          });
+          setStreaming(false);
         }
       }
-    } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") {
-        console.log("Request aborted");
-      } else {
-        console.error("Stream error:", err);
-        setError("Error al enviar el mensaje. Inténtalo de nuevo.");
-        updateMessage(assistantMessageId, {
-          content: "Lo siento, hubo un error al procesar tu mensaje.",
-          isStreaming: false,
-        });
+    },
+    [
+      isSending,
+      isStreaming,
+      currentSessionId,
+      sendMessageMutation,
+      addMessage,
+      updateMessage,
+      setInputValue,
+      setStreaming,
+      startStreaming,
+      refetchSessions,
+      buildUserProfile,
+    ]
+  );
+
+  // ─── New session ─────────────────────────────────────────────────────────
+  const startNewSession = useCallback(() => {
+    stopGeneration();
+    setCurrentSessionId(null);
+    reset();
+    setError(null);
+    autoLoadedRef.current = true; // prevent auto-reload after explicit new session
+    if (userId) localStorage.removeItem(lastSessionKey(userId));
+  }, [reset, stopGeneration, userId]);
+
+  // ─── Load an existing session ────────────────────────────────────────────
+  const loadSession = useCallback(
+    async (sessionId: string) => {
+      if (sessionId === currentSessionId) return;
+      stopGeneration();
+      setCurrentSessionId(sessionId);
+      clearMessages();
+      setError(null);
+
+      try {
+        const { data } = await fetchHistory({ variables: { sessionId } });
+        const msgs: Array<{ role: string; content: string; timestamp: string }> =
+          data?.chatHistory?.messages ?? [];
+        msgs.forEach((m) =>
+          addMessage({
+            id: crypto.randomUUID(),
+            role: m.role as ChatMessage["role"],
+            content: m.content,
+            timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
+          })
+        );
+      } catch (err) {
+        console.error("Failed to load session history", err);
       }
-    } finally {
-      setStreaming(false);
-      setIsLoading(false);
-      clearStreamingContent();
-      abortControllerRef.current = null;
-    }
-  }, [
-    currentSession,
-    isStreaming,
-    tenantId,
-    session,
-    addMessage,
-    updateMessage,
-    setStreaming,
-    appendStreamingContent,
-    clearStreamingContent,
-    setInputValue,
-  ]);
+    },
+    [currentSessionId, clearMessages, fetchHistory, addMessage, stopGeneration]
+  );
 
-  const fetchProactiveSuggestions = async () => {
-    if (!userId || userId === "anonymous") return;
+  // ─── Auto-resume last session on first load ──────────────────────────────
+  useEffect(() => {
+    if (sessionsLoading || sessions.length === 0 || autoLoadedRef.current || currentSessionId) return;
+    autoLoadedRef.current = true;
 
-    try {
-      const response = await learningApi.getRecommendations(
-        userId,
-        "default" // TODO: get active graph ID
-      );
+    const savedId = userId ? localStorage.getItem(lastSessionKey(userId)) : null;
+    const targetId =
+      savedId && sessions.some((s) => s.sessionId === savedId)
+        ? savedId
+        : sessions[0].sessionId;
 
-      const mappedSuggestions: ProactiveSuggestion[] = (
-        response.recommendations as Array<{
-          concept_id: string;
-          concept_name: string;
-          reason: string;
-        }>
-      ).map((rec) => ({
-        id: rec.concept_id,
-        type: "concept" as const,
-        title: rec.concept_name,
-        description: rec.reason,
-        priority: 5,
-        action: {
-          label: "Explorar",
-          prompt: `Cuéntame más sobre ${rec.concept_name}`,
-        },
-      }));
+    loadSession(targetId);
+  }, [sessionsLoading, sessions, userId, currentSessionId, loadSession]);
 
-      setSuggestions(mappedSuggestions);
-    } catch (err) {
-      console.error("Failed to fetch suggestions:", err);
-    }
-  };
+  // ─── Delete a session ────────────────────────────────────────────────────
+  const deleteSession = useCallback(
+    async (sessionId: string) => {
+      await deleteSessionMutation({ variables: { sessionId } });
+      if (sessionId === currentSessionId) startNewSession();
+    },
+    [deleteSessionMutation, currentSessionId, startNewSession]
+  );
 
-  const handleSuggestionClick = (suggestion: ProactiveSuggestion) => {
-    if (suggestion.action?.prompt) {
-      sendMessage(suggestion.action.prompt);
-    }
-    dismissSuggestion(suggestion.id);
-  };
+  // ─── Suggestion helpers ──────────────────────────────────────────────────
+  const handleSuggestionClick = useCallback(
+    (suggestion: { id: string; action?: { prompt?: string } }) => {
+      if (suggestion.action?.prompt) sendMessage(suggestion.action.prompt);
+      dismissSuggestion(suggestion.id);
+    },
+    [sendMessage, dismissSuggestion]
+  );
 
-  const stopGeneration = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setStreaming(false);
-    }
-  };
-
-  const clearChat = () => {
-    useChatStore.getState().reset();
-  };
+  const clearChat = useCallback(() => {
+    stopGeneration();
+    reset();
+    setError(null);
+  }, [reset, stopGeneration]);
 
   return {
-    // State
-    session: currentSession,
     messages,
-    isStreaming,
-    streamingContent,
-    suggestions,
+    sessions,
+    currentSessionId,
     inputValue,
+    isLoading: isSending,
+    isStreaming,
+    sessionsLoading,
+    suggestions,
     error,
-    isLoading,
-
-    // Actions
     sendMessage,
     setInputValue,
+    startNewSession,
+    loadSession,
+    deleteSession,
+    clearChat,
     handleSuggestionClick,
     dismissSuggestion,
     stopGeneration,
-    clearChat,
-    createSession,
-    fetchProactiveSuggestions,
   };
 }
-

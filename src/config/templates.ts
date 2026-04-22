@@ -1,22 +1,13 @@
 // Profile-based template configuration for Latzu Platform
 import type { ProfileType } from "@/types/user";
 import {
-  BookOpen,
-  Briefcase,
-  Rocket,
-  Building2,
   Home,
   MessageSquare,
-  GraduationCap,
-  TrendingUp,
   Library,
-  Target,
-  Award,
-  Users,
-  Settings,
-  BarChart3,
+  CalendarDays,
+  ClipboardList,
+  Layers,
   Zap,
-  Bell,
   type LucideIcon,
 } from "lucide-react";
 
@@ -36,7 +27,8 @@ export interface WidgetConfig {
   title: string;
   type: "learning-path" | "daily-goals" | "streaks" | "skills-radar" |
         "certifications" | "business-metrics" | "tasks" | "automations" |
-        "assigned-training" | "team-progress" | "announcements" | "chat-preview";
+        "assigned-training" | "team-progress" | "announcements" | "chat-preview" |
+        "plans-summary";
   size: "small" | "medium" | "large";
   priority: number;
 }
@@ -61,82 +53,42 @@ export const profileTemplates: Record<ProfileType, TemplateConfig> = {
     proactivePrompts: true,
     dashboardWidgets: [
       { id: "learning-path", title: "Ruta de Aprendizaje", type: "learning-path", size: "large", priority: 1 },
-      { id: "daily-goals", title: "Metas del Día", type: "daily-goals", size: "medium", priority: 2 },
-      { id: "streaks", title: "Racha de Estudio", type: "streaks", size: "small", priority: 3 },
+      { id: "daily-goals", title: "Tareas de Hoy", type: "daily-goals", size: "medium", priority: 2 },
+      { id: "plans-summary", title: "Mis Planes", type: "plans-summary", size: "medium", priority: 3 },
       { id: "chat-preview", title: "Pregúntale al Tutor", type: "chat-preview", size: "medium", priority: 4 },
     ],
     sidebarItems: [
       { id: "home", label: "Inicio", href: "/dashboard", icon: Home },
-      { id: "lessons", label: "Lecciones", href: "/learn", icon: BookOpen },
+      { id: "study", label: "Zona de Estudio", href: "/study", icon: Zap },
       { id: "chat", label: "Tutor IA", href: "/chat", icon: MessageSquare },
-      { id: "knowledge", label: "Conocimiento", href: "/knowledge", icon: TrendingUp },
       { id: "library", label: "Biblioteca", href: "/library", icon: Library },
+      { id: "plans", label: "Planes", href: "/plans", icon: ClipboardList },
+      { id: "planning", label: "Planificación", href: "/planning", icon: CalendarDays },
+      { id: "workspace", label: "Workspace", href: "/workspace", icon: Layers },
     ],
   },
 
-  profesional: {
-    primaryColor: "indigo",
-    accentColor: "emerald",
-    dashboardTitle: "Desarrollo Profesional",
-    welcomeMessage: "Bienvenido. Estoy aquí para ayudarte a desarrollar tus habilidades profesionales.",
-    chatPersonality: "mentor",
+  aprendiz: {
+    primaryColor: "violet",
+    accentColor: "teal",
+    dashboardTitle: "Mi Aprendizaje",
+    welcomeMessage: "¡Hola! Soy tu tutor personal. ¿Qué quieres aprender hoy?",
+    chatPersonality: "tutor",
     proactivePrompts: true,
     dashboardWidgets: [
-      { id: "skills-radar", title: "Mapa de Habilidades", type: "skills-radar", size: "large", priority: 1 },
-      { id: "certifications", title: "Certificaciones", type: "certifications", size: "medium", priority: 2 },
-      { id: "daily-goals", title: "Objetivos", type: "daily-goals", size: "medium", priority: 3 },
-      { id: "chat-preview", title: "Consulta con el Mentor", type: "chat-preview", size: "medium", priority: 4 },
+      { id: "learning-path", title: "Ruta de Aprendizaje", type: "learning-path", size: "large", priority: 1 },
+      { id: "daily-goals", title: "Tareas de Hoy", type: "daily-goals", size: "medium", priority: 2 },
+      { id: "plans-summary", title: "Mis Planes", type: "plans-summary", size: "medium", priority: 3 },
+      { id: "chat-preview", title: "Pregúntale al Tutor", type: "chat-preview", size: "medium", priority: 4 },
     ],
     sidebarItems: [
       { id: "home", label: "Inicio", href: "/dashboard", icon: Home },
-      { id: "skills", label: "Habilidades", href: "/learn", icon: Target },
-      { id: "chat", label: "Mentor IA", href: "/chat", icon: MessageSquare },
-      { id: "knowledge", label: "Conocimiento", href: "/knowledge", icon: Award },
-      { id: "network", label: "Red", href: "/network", icon: Users },
-    ],
-  },
-
-  emprendedor: {
-    primaryColor: "amber",
-    accentColor: "rose",
-    dashboardTitle: "Mi Negocio",
-    welcomeMessage: "¡Emprendedor! Estoy aquí para ayudarte a escalar tu negocio.",
-    chatPersonality: "advisor",
-    proactivePrompts: true,
-    dashboardWidgets: [
-      { id: "business-metrics", title: "Métricas del Negocio", type: "business-metrics", size: "large", priority: 1 },
-      { id: "tasks", title: "Tareas Pendientes", type: "tasks", size: "medium", priority: 2 },
-      { id: "automations", title: "Automatizaciones", type: "automations", size: "medium", priority: 3 },
-      { id: "chat-preview", title: "Asesor Estratégico", type: "chat-preview", size: "medium", priority: 4 },
-    ],
-    sidebarItems: [
-      { id: "home", label: "Inicio", href: "/dashboard", icon: Home },
-      { id: "projects", label: "Proyectos", href: "/learn", icon: Briefcase },
-      { id: "chat", label: "Asesor IA", href: "/chat", icon: MessageSquare },
-      { id: "knowledge", label: "Conocimiento", href: "/knowledge", icon: Zap },
-      { id: "analytics", label: "Analítica", href: "/analytics", icon: BarChart3 },
-    ],
-  },
-
-  empleado: {
-    primaryColor: "blue",
-    accentColor: "violet",
-    dashboardTitle: "Mi Espacio de Trabajo",
-    welcomeMessage: "Hola. ¿En qué puedo ayudarte hoy?",
-    chatPersonality: "assistant",
-    proactivePrompts: false,
-    dashboardWidgets: [
-      { id: "assigned-training", title: "Formación Asignada", type: "assigned-training", size: "large", priority: 1 },
-      { id: "team-progress", title: "Progreso del Equipo", type: "team-progress", size: "medium", priority: 2 },
-      { id: "announcements", title: "Anuncios", type: "announcements", size: "medium", priority: 3 },
-      { id: "chat-preview", title: "Asistente", type: "chat-preview", size: "medium", priority: 4 },
-    ],
-    sidebarItems: [
-      { id: "home", label: "Inicio", href: "/dashboard", icon: Home },
-      { id: "training", label: "Formación", href: "/learn", icon: GraduationCap },
-      { id: "chat", label: "Asistente", href: "/chat", icon: MessageSquare },
-      { id: "knowledge", label: "Conocimiento", href: "/knowledge", icon: Users },
-      { id: "settings", label: "Configuración", href: "/settings", icon: Building2 },
+      { id: "study", label: "Zona de Estudio", href: "/study", icon: Zap },
+      { id: "chat", label: "Tutor IA", href: "/chat", icon: MessageSquare },
+      { id: "library", label: "Biblioteca", href: "/library", icon: Library },
+      { id: "plans", label: "Planes", href: "/plans", icon: ClipboardList },
+      { id: "planning", label: "Planificación", href: "/planning", icon: CalendarDays },
+      { id: "workspace", label: "Workspace", href: "/workspace", icon: Layers },
     ],
   },
 };
@@ -170,32 +122,19 @@ export function getProactivePrompts(profileType: ProfileType, context?: {
       "¡Tienes una racha de {streak} días! ¿Seguimos aprendiendo?",
       "Descubrí un concepto relacionado con lo que estudiaste ayer...",
     ],
-    profesional: [
-      "He identificado una habilidad que podría beneficiar tu perfil...",
-      "Hay una nueva certificación relevante para tu área...",
-      "¿Te gustaría revisar las tendencias de la industria?",
-      "Basándome en tu experiencia, podrías destacar en...",
-    ],
-    emprendedor: [
-      "Tengo algunas ideas para optimizar tu proceso de...",
-      "Basándome en tus métricas, sugiero enfocar en...",
-      "¿Has considerado automatizar esta tarea repetitiva?",
-      "Detecté una oportunidad de mejora en tu flujo de trabajo...",
-    ],
-    empleado: [
-      "Tienes formación pendiente que debes completar",
-      "Hay un nuevo anuncio importante de tu organización",
-      "¿Necesitas ayuda con algún proceso?",
+    aprendiz: [
+      "¿Continuamos con el tema que dejaste pendiente?",
+      "He encontrado nuevo contenido relacionado con tus intereses...",
+      "¡Tienes una racha de {streak} días! ¿Seguimos aprendiendo?",
+      "Tengo una sugerencia basada en lo que exploraste ayer...",
     ],
   };
 
   let prompts = basePrompts[profileType];
 
-  // Customize based on context
   if (context?.currentStreak && context.currentStreak > 0) {
     prompts = prompts.map(p => p.replace("{streak}", String(context.currentStreak)));
   }
 
   return prompts;
 }
-
