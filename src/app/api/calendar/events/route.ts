@@ -30,7 +30,13 @@ function unauthorizedResponse() {
 // ─── GET /api/calendar/events ─────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  let session;
+  try {
+    session = await getServerSession(authOptions);
+  } catch (err) {
+    console.error('[calendar/events GET] getServerSession failed:', err);
+    return NextResponse.json({ error: 'SESSION_ERROR' }, { status: 500 });
+  }
   if (!session?.accessToken) return unauthorizedResponse();
 
   const { searchParams } = req.nextUrl;
