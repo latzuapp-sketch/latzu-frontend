@@ -2,11 +2,12 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { useUserStore, useSidebarCollapsed, useIsGuest } from "@/stores/userStore";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { websocket } from "@/lib/websocket";
 
 interface DashboardLayoutProps {
@@ -17,6 +18,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const collapsed = useSidebarCollapsed();
+  const isMobile = useIsMobile();
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const isGuest = useIsGuest();
   const guestId = useUserStore((state) => state.guestId);
   const setProfileType = useUserStore((state) => state.setProfileType);
@@ -89,21 +92,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gradient-latzu">
-      <Sidebar />
+      <Sidebar
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
+      />
 
       <motion.main
         initial={false}
-        animate={{ marginLeft: collapsed ? 72 : 256 }}
+        animate={{ marginLeft: isMobile ? 0 : (collapsed ? 72 : 256) }}
         transition={{ duration: 0.2, ease: "easeInOut" }}
         className="min-h-screen"
       >
-        <Header />
+        <Header onMenuClick={() => setMobileSidebarOpen(true)} />
 
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="p-6"
+          className="p-3 md:p-6"
         >
           {children}
         </motion.div>

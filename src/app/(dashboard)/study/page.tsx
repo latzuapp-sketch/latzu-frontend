@@ -21,8 +21,9 @@ import {
   BookOpen, Brain, CheckSquare, MessageSquare, RefreshCw,
   CheckCircle2, Globe, Upload, AlertCircle, ArrowLeft,
   CalendarDays, Clock, User, Bot, PanelLeftClose, PanelRightClose,
-  Circle, Bell, Code, Play, Map,
+  Circle, Bell, Code, Play, Map, Library,
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 // ── Content meta ──────────────────────────────────────────────────────────────
 
@@ -83,6 +84,7 @@ interface ChatMsg {
 }
 
 type StudioTab = "flashcards" | "quiz" | "mindmap" | "guide";
+type MobilePanel = "context" | "chat" | "studio";
 
 // ── Stream helpers ────────────────────────────────────────────────────────────
 
@@ -343,6 +345,8 @@ interface TaskWorkspaceProps {
 function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspaceProps) {
   const { data: session } = useSession();
   const userId = (session?.user as { id?: string })?.id ?? null;
+  const isMobile = useIsMobile();
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>("chat");
 
   const effectiveType = (task.contentType ?? task.category) as TaskCategory;
   const meta = CONTENT_META[effectiveType] ?? CONTENT_META.task;
@@ -532,9 +536,9 @@ function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspac
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-7rem)]">
+    <div className="flex flex-col h-[calc(100dvh-6rem)] md:h-[calc(100dvh-7rem)]">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-4 flex-shrink-0">
+      <div className="flex items-center gap-3 mb-3 md:mb-4 flex-shrink-0">
         <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-4 h-4" />
           Volver
@@ -557,15 +561,46 @@ function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspac
         </div>
       </div>
 
+      {/* Mobile panel tabs */}
+      <div className="flex md:hidden border-b border-border/40 bg-background/50 rounded-t-2xl flex-shrink-0 overflow-hidden">
+        {(["context", "chat", "studio"] as MobilePanel[]).map((panel) => {
+          const labels: Record<MobilePanel, string> = { context: "Contexto", chat: "Tutor IA", studio: "Studio" };
+          const icons: Record<MobilePanel, typeof MessageSquare> = { context: Library, chat: MessageSquare, studio: Brain };
+          const Icon = icons[panel];
+          return (
+            <button
+              key={panel}
+              onClick={() => setMobilePanel(panel)}
+              className={cn(
+                "flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors",
+                mobilePanel === panel
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted-foreground"
+              )}
+            >
+              <Icon className="w-4 h-4" />
+              {labels[panel]}
+            </button>
+          );
+        })}
+      </div>
+
       {/* 3-panel workspace */}
-      <div className="flex flex-1 overflow-hidden rounded-2xl border border-border/50 bg-background/50 gap-0">
+      <div className="flex flex-1 overflow-hidden md:rounded-2xl rounded-b-2xl border border-border/50 border-t-0 md:border-t bg-background/50 gap-0">
 
         {/* Left: Context */}
         <AnimatePresence initial={false}>
-          {leftOpen && (
-            <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 250, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-              className="shrink-0 border-r border-border/40 flex flex-col overflow-hidden" style={{ width: 250 }}>
+          {(leftOpen && (!isMobile || mobilePanel === "context")) && (
+            <motion.div
+              initial={isMobile ? { opacity: 0 } : { width: 0, opacity: 0 }}
+              animate={isMobile ? { opacity: 1 } : { width: 250, opacity: 1 }}
+              exit={isMobile ? { opacity: 0 } : { width: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className={cn(
+                "shrink-0 border-r border-border/40 flex flex-col overflow-hidden",
+                isMobile ? "w-full" : ""
+              )}
+              style={isMobile ? {} : { width: 250 }}>
               <div className="px-4 pt-4 pb-3 border-b border-border/40 flex items-center justify-between">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contexto</p>
                 <button onClick={() => setShowAddModal(true)} className="text-xs text-primary hover:text-primary/80 flex items-center gap-1">
@@ -611,8 +646,8 @@ function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspac
         </AnimatePresence>
 
         {/* Center: Chat */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex items-center justify-between px-4 h-11 border-b border-border/40 shrink-0">
+        <div className={cn("flex-1 flex flex-col min-w-0", isMobile && mobilePanel !== "chat" && "hidden")}>
+          <div className="hidden md:flex items-center justify-between px-4 h-11 border-b border-border/40 shrink-0">
             <button onClick={() => setLeftOpen((v) => !v)} className="text-muted-foreground hover:text-foreground transition-colors">
               <PanelLeftClose className={cn("w-4 h-4 transition-transform", !leftOpen && "rotate-180")} />
             </button>
@@ -687,10 +722,17 @@ function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspac
 
         {/* Right: Studio */}
         <AnimatePresence initial={false}>
-          {rightOpen && (
-            <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 320, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-              className="shrink-0 border-l border-border/40 flex flex-col overflow-hidden" style={{ width: 320 }}>
+          {(rightOpen && (!isMobile || mobilePanel === "studio")) && (
+            <motion.div
+              initial={isMobile ? { opacity: 0 } : { width: 0, opacity: 0 }}
+              animate={isMobile ? { opacity: 1 } : { width: 320, opacity: 1 }}
+              exit={isMobile ? { opacity: 0 } : { width: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className={cn(
+                "shrink-0 border-l border-border/40 flex flex-col overflow-hidden",
+                isMobile ? "w-full" : ""
+              )}
+              style={isMobile ? {} : { width: 320 }}>
               {/* Studio tabs */}
               <div className="px-3 pt-3 pb-2 border-b border-border/40">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Studio</p>

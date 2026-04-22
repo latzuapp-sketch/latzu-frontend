@@ -17,13 +17,14 @@ import {
 import { useUserStore, useIsGuest } from "@/stores/userStore";
 import { useEventStore } from "@/stores/eventStore";
 import { getTemplate } from "@/config/templates";
-import { Bell, Search, Sparkles, Wifi, WifiOff, User, LogIn } from "lucide-react";
+import { Bell, Search, Sparkles, Wifi, WifiOff, User, LogIn, Menu } from "lucide-react";
 
 interface HeaderProps {
   title?: string;
+  onMenuClick?: () => void;
 }
 
-export function Header({ title }: HeaderProps) {
+export function Header({ title, onMenuClick }: HeaderProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const profileType = useUserStore((state) => state.profileType);
@@ -68,11 +69,21 @@ export function Header({ title }: HeaderProps) {
     <header className="h-16 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-30">
       <div className="h-full px-6 flex items-center justify-between">
         {/* Left: Title */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Mobile hamburger */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={onMenuClick}
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
+
           <motion.h1
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-xl font-heading font-semibold"
+            className="text-base md:text-xl font-heading font-semibold truncate max-w-[140px] sm:max-w-none"
           >
             {displayTitle}
           </motion.h1>
