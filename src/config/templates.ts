@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Layers,
   Zap,
+  Brain,
   type LucideIcon,
 } from "lucide-react";
 
@@ -63,6 +64,7 @@ export const profileTemplates: Record<ProfileType, TemplateConfig> = {
       { id: "chat", label: "Tutor IA", href: "/chat", icon: MessageSquare },
       { id: "library", label: "Biblioteca", href: "/library", icon: Library },
       { id: "plans", label: "Planes", href: "/plans", icon: ClipboardList },
+      { id: "flashcards", label: "Flashcards", href: "/flashcards", icon: Brain },
       { id: "planning", label: "Planificación", href: "/planning", icon: CalendarDays },
       { id: "workspace", label: "Workspace", href: "/workspace", icon: Layers },
     ],
@@ -87,6 +89,7 @@ export const profileTemplates: Record<ProfileType, TemplateConfig> = {
       { id: "chat", label: "Tutor IA", href: "/chat", icon: MessageSquare },
       { id: "library", label: "Biblioteca", href: "/library", icon: Library },
       { id: "plans", label: "Planes", href: "/plans", icon: ClipboardList },
+      { id: "flashcards", label: "Flashcards", href: "/flashcards", icon: Brain },
       { id: "planning", label: "Planificación", href: "/planning", icon: CalendarDays },
       { id: "workspace", label: "Workspace", href: "/workspace", icon: Layers },
     ],

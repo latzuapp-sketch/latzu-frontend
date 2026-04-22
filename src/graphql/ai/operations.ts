@@ -426,3 +426,92 @@ export const REFRESH_USER_MEMORY = gql`
     }
   }
 `;
+
+// ─── Spaced Repetition ────────────────────────────────────────────────────────
+
+const DECK_FIELDS = gql`
+  fragment DeckFields on DeckGQL {
+    id userId name description color createdAt
+    cardCount dueCount newCount
+  }
+`;
+
+const CARD_FIELDS = gql`
+  fragment CardFields on FlashcardGQL {
+    id deckId front back easeFactor reps interval
+    dueDate createdAt lastReviewedAt sourceNodeId
+  }
+`;
+
+export const GET_DECKS = gql`
+  ${DECK_FIELDS}
+  query GetDecks($userId: String!) {
+    decks(userId: $userId) { ...DeckFields }
+  }
+`;
+
+export const GET_DECK_CARDS = gql`
+  ${CARD_FIELDS}
+  query GetDeckCards($deckId: String!) {
+    deckCards(deckId: $deckId) { ...CardFields }
+  }
+`;
+
+export const GET_DUE_CARDS = gql`
+  ${CARD_FIELDS}
+  query GetDueCards($userId: String!, $deckId: String, $limit: Int) {
+    dueCards(userId: $userId, deckId: $deckId, limit: $limit) { ...CardFields }
+  }
+`;
+
+export const GET_DUE_COUNT = gql`
+  query GetDueCount($userId: String!) {
+    dueCardCount(userId: $userId) { total }
+  }
+`;
+
+export const CREATE_DECK = gql`
+  ${DECK_FIELDS}
+  mutation CreateDeck($userId: String!, $name: String!, $description: String, $color: String) {
+    createDeck(userId: $userId, name: $name, description: $description, color: $color) {
+      ...DeckFields
+    }
+  }
+`;
+
+export const DELETE_DECK = gql`
+  mutation DeleteDeck($deckId: String!, $userId: String!) {
+    deleteDeck(deckId: $deckId, userId: $userId) { success deletedId }
+  }
+`;
+
+export const CREATE_FLASHCARD = gql`
+  ${CARD_FIELDS}
+  mutation CreateFlashcard($deckId: String!, $front: String!, $back: String!, $sourceNodeId: String) {
+    createFlashcard(deckId: $deckId, front: $front, back: $back, sourceNodeId: $sourceNodeId) {
+      ...CardFields
+    }
+  }
+`;
+
+export const DELETE_FLASHCARD = gql`
+  mutation DeleteFlashcard($cardId: String!) {
+    deleteFlashcard(cardId: $cardId) { success deletedId }
+  }
+`;
+
+export const REVIEW_CARD = gql`
+  ${CARD_FIELDS}
+  mutation ReviewCard($cardId: String!, $quality: Int!) {
+    reviewCard(cardId: $cardId, quality: $quality) { ...CardFields }
+  }
+`;
+
+export const GENERATE_FLASHCARDS_FROM_NODE = gql`
+  ${CARD_FIELDS}
+  mutation GenerateFlashcardsFromNode($nodeId: String!, $deckId: String!, $count: Int) {
+    generateFlashcardsFromNode(nodeId: $nodeId, deckId: $deckId, count: $count) {
+      ...CardFields
+    }
+  }
+`;

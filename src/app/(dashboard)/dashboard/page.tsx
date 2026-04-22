@@ -9,13 +9,14 @@ import { DailyDigest } from "@/components/dashboard/DailyDigest";
 import { UserMemoryCard } from "@/components/ai/UserMemoryCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles, X, ArrowRight, Bell } from "lucide-react";
+import { Sparkles, X, ArrowRight, Bell, Brain } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useTasks, isSameDay } from "@/hooks/usePlanning";
 import { usePlans } from "@/hooks/usePlans";
 import { useMemo } from "react";
+import { useDueCount } from "@/hooks/useFlashcards";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
@@ -33,6 +34,7 @@ export default function DashboardPage() {
 
   const { tasks } = useTasks();
   const { plans } = usePlans();
+  const dueFlashcards = useDueCount();
 
   const todayPending = useMemo(() => {
     const today = new Date();
@@ -77,6 +79,14 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {!isGuest && dueFlashcards > 0 && (
+            <Button variant="outline" size="sm" asChild className="gap-1.5">
+              <Link href="/flashcards/review">
+                <Brain className="w-3.5 h-3.5" />
+                {dueFlashcards} flashcard{dueFlashcards !== 1 ? "s" : ""}
+              </Link>
+            </Button>
+          )}
           {!isGuest && todayPending > 0 && (
             <Button variant="outline" size="sm" asChild className="gap-1.5">
               <Link href="/planning">
@@ -104,8 +114,8 @@ export default function DashboardPage() {
         >
           {[
             { label: "Hoy", value: todayPending, sub: "pendientes", href: "/planning" },
+            { label: "Cards", value: dueFlashcards, sub: "repasar", href: "/flashcards/review" },
             { label: "Planes", value: activePlanCount, sub: "activos", href: "/plans" },
-            { label: "Estudio", value: tasks.filter((t) => t.status !== "done").length, sub: "tareas", href: "/study" },
           ].map(({ label, value, sub, href }) => (
             <Link
               key={label}
