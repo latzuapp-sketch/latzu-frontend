@@ -81,9 +81,9 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2 shrink-0">
           {!isGuest && dueFlashcards > 0 && (
             <Button variant="outline" size="sm" asChild className="gap-1.5">
-              <Link href="/flashcards/review">
+              <Link href="/notes/review">
                 <Brain className="w-3.5 h-3.5" />
-                {dueFlashcards} flashcard{dueFlashcards !== 1 ? "s" : ""}
+                {dueFlashcards} nota{dueFlashcards !== 1 ? "s" : ""}
               </Link>
             </Button>
           )}
@@ -114,7 +114,7 @@ export default function DashboardPage() {
         >
           {[
             { label: "Hoy", value: todayPending, sub: "pendientes", href: "/planning" },
-            { label: "Cards", value: dueFlashcards, sub: "repasar", href: "/flashcards/review" },
+            { label: "Notas", value: dueFlashcards, sub: "repasar", href: "/notes/review" },
             { label: "Planes", value: activePlanCount, sub: "activos", href: "/plans" },
           ].map(({ label, value, sub, href }) => (
             <Link
