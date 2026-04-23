@@ -29,6 +29,7 @@ export async function POST(request: Request) {
         semester:      body.semester     ?? null,
         organization:  body.organization ?? null,
         role_title:    body.roleTitle    ?? null,
+        phone_number:  body.phoneNumber  ?? null,
       }),
     });
 

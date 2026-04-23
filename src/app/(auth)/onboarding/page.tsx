@@ -25,6 +25,8 @@ import {
   MapPin,
   School,
   Plus,
+  MessageCircle,
+  Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -464,6 +466,37 @@ export default function OnboardingPage() {
                     </div>
                   </>
                 )}
+
+                {/* ── WhatsApp ── */}
+                <div className="space-y-3 pt-4 border-t border-border/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-green-500/15 flex items-center justify-center flex-shrink-0">
+                      <MessageCircle className="w-5 h-5 text-green-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">
+                        Activa Latzu en WhatsApp
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">(opcional)</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Chatea con tu IA de aprendizaje directo desde WhatsApp
+                      </p>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="tel"
+                      placeholder="Ej. +57 300 123 4567"
+                      className="pl-9"
+                      value={data.phoneNumber ?? ""}
+                      onChange={(e) => set("phoneNumber", e.target.value)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Incluye el código de país. Tus datos son privados y no se compartirán.
+                  </p>
+                </div>
 
                 <p className="text-xs text-muted-foreground text-center pt-2">
                   Puedes dejar estos campos en blanco y completarlos más adelante.

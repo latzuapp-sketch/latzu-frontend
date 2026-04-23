@@ -901,10 +901,12 @@ export default function HomePage() {
             </div>
 
             {/* Links */}
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
               <a href="#features" className="hover:text-foreground transition-colors">Funciones</a>
               <a href="#pricing" className="hover:text-foreground transition-colors">Precios</a>
               <a href="mailto:latzuapp@gmail.com" className="hover:text-foreground transition-colors">Contacto</a>
+              <Link href="/privacidad" className="hover:text-foreground transition-colors">Privacidad</Link>
+              <Link href="/terminos" className="hover:text-foreground transition-colors">Términos</Link>
             </div>
 
             <p className="text-sm text-muted-foreground/60">

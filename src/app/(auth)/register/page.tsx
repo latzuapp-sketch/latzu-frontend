@@ -219,6 +219,17 @@ function RegisterContent() {
                 </>
               )}
             </Button>
+
+            <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+              Al crear una cuenta aceptas nuestros{" "}
+              <Link href="/terminos" className="text-primary hover:underline" target="_blank">
+                Términos de Servicio
+              </Link>{" "}
+              y nuestra{" "}
+              <Link href="/privacidad" className="text-primary hover:underline" target="_blank">
+                Política de Privacidad
+              </Link>.
+            </p>
           </form>
 
           <div className="relative">

@@ -55,4 +55,6 @@ export interface OnboardingData {
   semester?: string;
   // Aprendiz-specific
   studyFocus?: string;
+  // WhatsApp
+  phoneNumber?: string;
 }
