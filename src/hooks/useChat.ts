@@ -169,8 +169,13 @@ export function useChat(options: UseChatOptions = {}) {
 
   // ─── Send a message via subscription ────────────────────────────────────
   const sendMessage = useCallback(
-    async (content: string, useRag = true) => {
-      if (!content.trim() || isSending || isStreaming) return;
+    async (
+      content: string,
+      useRag = true,
+      attachments?: Array<{ type: string; data: string; mimeType?: string; name?: string }>,
+    ) => {
+      if (!content.trim() && !attachments?.length) return;
+      if (isSending || isStreaming) return;
       setError(null);
 
       addMessage({
@@ -178,6 +183,7 @@ export function useChat(options: UseChatOptions = {}) {
         role: "user",
         content: content.trim(),
         timestamp: new Date(),
+        metadata: attachments?.length ? { attachments } : undefined,
       });
       setInputValue("");
       setStreaming(true);
@@ -197,10 +203,18 @@ export function useChat(options: UseChatOptions = {}) {
       const userProfile = buildUserProfile();
 
       const input = {
-        message: content.trim(),
+        message: content.trim() || (attachments?.length ? "Analiza el archivo adjunto." : ""),
         sessionId: currentSessionId,
         useRag,
         ...(userProfile && { userProfile }),
+        ...(attachments?.length && {
+          attachments: attachments.map((a) => ({
+            type: a.type,
+            data: a.data,
+            mimeType: a.mimeType ?? null,
+            name: a.name ?? null,
+          })),
+        }),
       };
 
       // Try subscription (WebSocket) first; fall back to mutation on error

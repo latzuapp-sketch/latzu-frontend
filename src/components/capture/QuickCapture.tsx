@@ -9,9 +9,33 @@ import { QUICK_CAPTURE } from "@/graphql/ai/operations";
 import { cn } from "@/lib/utils";
 import {
   Plus, X, Loader2, CheckCircle2, Brain, ListTodo, Bell,
-  Mic, Send,
+  Send, Paperclip, Link2, FileText,
 } from "lucide-react";
 import Link from "next/link";
+
+interface CaptureAttachment {
+  id: string;
+  type: "image" | "pdf" | "link";
+  name: string;
+  data: string;
+  preview?: string;
+  mimeType?: string;
+}
+
+async function fileToAtt(file: File): Promise<CaptureAttachment | null> {
+  const isImage = file.type.startsWith("image/");
+  const isPdf = file.type === "application/pdf";
+  if (!isImage && !isPdf) return null;
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUri = reader.result as string;
+      resolve({ id: crypto.randomUUID(), type: isImage ? "image" : "pdf", name: file.name, data: dataUri, preview: isImage ? dataUri : undefined, mimeType: file.type });
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
 
 interface CaptureResult {
   type: string;
@@ -48,7 +72,11 @@ export function QuickCapture() {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [result, setResult] = useState<CaptureResult | null>(null);
+  const [attachments, setAttachments] = useState<CaptureAttachment[]>([]);
+  const [linkInput, setLinkInput] = useState("");
+  const [showLink, setShowLink] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [capture, { loading }] = useMutation(QUICK_CAPTURE, { client: aiClient });
 
@@ -70,18 +98,25 @@ export function QuickCapture() {
 
   const handleClose = () => {
     setOpen(false);
-    setTimeout(() => {
-      setText("");
-      setResult(null);
-    }, 300);
+    setTimeout(() => { setText(""); setResult(null); setAttachments([]); setLinkInput(""); setShowLink(false); }, 300);
+  };
+
+  const addLink = () => {
+    const url = linkInput.trim();
+    if (!url) return;
+    const fullUrl = url.startsWith("http") ? url : `https://${url}`;
+    const isYt = fullUrl.includes("youtube.com") || fullUrl.includes("youtu.be");
+    setAttachments((p) => [...p, { id: crypto.randomUUID(), type: "link", name: isYt ? "YouTube" : new URL(fullUrl).hostname, data: fullUrl }]);
+    setLinkInput(""); setShowLink(false);
   };
 
   const handleSubmit = async () => {
-    if (!text.trim() || !userId || loading) return;
+    if (!text.trim() && !attachments.length) return;
+    if (!userId || loading) return;
     try {
-      const res = await capture({ variables: { userId, text: text.trim() } });
+      const res = await capture({ variables: { text: text.trim() || "Analiza el archivo adjunto." } });
       setResult(res.data?.quickCapture ?? null);
-      setText("");
+      setText(""); setAttachments([]);
     } catch {
       setResult({
         type: "note",
@@ -167,6 +202,40 @@ export function QuickCapture() {
                     exit={{ opacity: 0 }}
                     className="p-4 space-y-3"
                   >
+                    {/* Attachment chips */}
+                    {attachments.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pb-1">
+                        {attachments.map((att) => (
+                          <div key={att.id} className="flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md bg-muted/40 border border-border/40 text-xs">
+                            {att.type === "image" && att.preview
+                              ? <img src={att.preview} alt={att.name} className="w-4 h-4 rounded object-cover" />
+                              : att.type === "pdf"
+                              ? <FileText className="w-3 h-3 text-red-400" />
+                              : <Link2 className="w-3 h-3 text-blue-400" />}
+                            <span className="truncate max-w-[100px] text-muted-foreground">{att.name}</span>
+                            <button onClick={() => setAttachments((p) => p.filter((a) => a.id !== att.id))} className="text-muted-foreground/40 hover:text-foreground">
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Link input */}
+                    {showLink && (
+                      <div className="flex gap-2 pb-1">
+                        <input
+                          autoFocus
+                          value={linkInput}
+                          onChange={(e) => setLinkInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addLink(); } if (e.key === "Escape") setShowLink(false); }}
+                          placeholder="https://... o youtube.com/..."
+                          className="flex-1 rounded-lg border border-border/50 bg-muted/30 px-3 py-1.5 text-sm outline-none focus:border-primary/40"
+                        />
+                        <button onClick={addLink} className="px-2 py-1.5 rounded-lg bg-primary/10 text-primary text-xs hover:bg-primary/20 transition-colors">OK</button>
+                      </div>
+                    )}
+
                     <textarea
                       ref={textareaRef}
                       value={text}
@@ -178,32 +247,33 @@ export function QuickCapture() {
                     />
 
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground/50">
-                        <span className="flex items-center gap-1">
-                          <Brain className="w-3 h-3" /> nota
-                        </span>
-                        <span>·</span>
-                        <span className="flex items-center gap-1">
-                          <ListTodo className="w-3 h-3" /> tarea
-                        </span>
-                        <span>·</span>
-                        <span className="flex items-center gap-1">
-                          <Bell className="w-3 h-3" /> recordatorio
-                        </span>
+                      <div className="flex items-center gap-1">
+                        <input ref={fileInputRef} type="file" accept="image/*,.pdf" multiple className="hidden"
+                          onChange={async (e) => {
+                            const files = Array.from(e.target.files ?? []);
+                            const results = await Promise.all(files.map(fileToAtt));
+                            setAttachments((p) => [...p, ...results.filter(Boolean) as CaptureAttachment[]]);
+                            e.target.value = "";
+                          }}
+                        />
+                        <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-muted/30 transition-colors" title="Adjuntar imagen o PDF">
+                          <Paperclip className="w-3.5 h-3.5" />
+                        </button>
+                        <button type="button" onClick={() => setShowLink((v) => !v)} className={cn("p-1.5 rounded-lg transition-colors", showLink ? "text-primary bg-primary/10" : "text-muted-foreground/40 hover:text-foreground hover:bg-muted/30")} title="Adjuntar enlace">
+                          <Link2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                       <button
                         onClick={handleSubmit}
-                        disabled={!text.trim() || loading}
+                        disabled={(!text.trim() && !attachments.length) || loading}
                         className={cn(
                           "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
-                          text.trim() && !loading
+                          (text.trim() || attachments.length) && !loading
                             ? "bg-primary text-primary-foreground hover:bg-primary/90"
                             : "bg-muted/30 text-muted-foreground cursor-not-allowed"
                         )}
                       >
-                        {loading
-                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          : <Send className="w-3.5 h-3.5" />}
+                        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                         {loading ? "Procesando..." : "Capturar"}
                       </button>
                     </div>

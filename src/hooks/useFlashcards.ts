@@ -74,7 +74,7 @@ export function useDecks() {
     async (name: string, description = "", color = "teal") => {
       if (!userId) return null;
       const res = await _createDeck({
-        variables: { userId, name, description, color },
+        variables: { name, description, color },
         refetchQueries: [{ query: GET_DECKS, variables: { userId } }],
       });
       return res.data?.createDeck ? toDeck(res.data.createDeck) : null;
@@ -86,7 +86,7 @@ export function useDecks() {
     async (deckId: string) => {
       if (!userId) return;
       await _deleteDeck({
-        variables: { deckId, userId },
+        variables: { deckId },
         refetchQueries: [{ query: GET_DECKS, variables: { userId } }],
       });
     },

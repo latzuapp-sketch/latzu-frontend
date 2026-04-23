@@ -495,16 +495,16 @@ export const GET_DUE_COUNT = gql`
 
 export const CREATE_DECK = gql`
   ${DECK_FIELDS}
-  mutation CreateDeck($userId: String!, $name: String!, $description: String, $color: String) {
-    createDeck(userId: $userId, name: $name, description: $description, color: $color) {
+  mutation CreateDeck($name: String!, $description: String, $color: String) {
+    createDeck(name: $name, description: $description, color: $color) {
       ...DeckFields
     }
   }
 `;
 
 export const DELETE_DECK = gql`
-  mutation DeleteDeck($deckId: String!, $userId: String!) {
-    deleteDeck(deckId: $deckId, userId: $userId) { success deletedId }
+  mutation DeleteDeck($deckId: String!) {
+    deleteDeck(deckId: $deckId) { success deletedId }
   }
 `;
 
@@ -558,8 +558,8 @@ export const GET_SERENDIPITY = gql`
 `;
 
 export const QUICK_CAPTURE = gql`
-  mutation QuickCapture($userId: String!, $text: String!) {
-    quickCapture(userId: $userId, text: $text) {
+  mutation QuickCapture($text: String!) {
+    quickCapture(text: $text) {
       type saved summary rawTitle rawContent priority dueHint
     }
   }

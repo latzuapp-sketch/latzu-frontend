@@ -10,16 +10,9 @@ import { useChat } from "@/hooks/useChat";
 import { useUserStore } from "@/stores/userStore";
 import { getTemplate } from "@/config/templates";
 import {
-  Send,
-  Square,
-  Sparkles,
-  Plus,
-  ChevronDown,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Trash2,
-  MessageSquare,
-  Loader2,
+  Send, Square, Sparkles, Plus, ChevronDown,
+  PanelLeftClose, PanelLeftOpen, Trash2, MessageSquare,
+  Loader2, Paperclip, Link2, X, FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatSession } from "@/graphql/types";
@@ -93,6 +86,40 @@ const SessionItem = memo(function SessionItem({
   );
 });
 
+// ─── Attachment types ─────────────────────────────────────────────────────────
+
+interface Attachment {
+  id: string;
+  type: "image" | "pdf" | "link";
+  name: string;
+  preview?: string;   // blob URL for images
+  data: string;       // base64 data-URI or URL
+  mimeType?: string;
+}
+
+async function fileToAttachment(file: File): Promise<Attachment | null> {
+  const isImage = file.type.startsWith("image/");
+  const isPdf = file.type === "application/pdf";
+  if (!isImage && !isPdf) return null;
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUri = reader.result as string;
+      resolve({
+        id: crypto.randomUUID(),
+        type: isImage ? "image" : "pdf",
+        name: file.name,
+        preview: isImage ? dataUri : undefined,
+        data: dataUri,
+        mimeType: file.type,
+      });
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
 // ─── ChatContainer ────────────────────────────────────────────────────────────
 
 export function ChatContainer({ sessionId, className }: ChatContainerProps) {
@@ -124,6 +151,12 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
   // Detect if the last message is an agent_action (used for status label)
   const lastMessageRole = messages[messages.length - 1]?.role;
   const isExecutingTools = isStreaming && lastMessageRole === "agent_action";
+
+  // ─── Attachments ────────────────────────────────────────────────────────
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [linkInputOpen, setLinkInputOpen] = useState(false);
+  const [linkDraft, setLinkDraft] = useState("");
 
   // ─── Layout state ────────────────────────────────────────────────────────
   const isMobile = useIsMobile();
@@ -170,16 +203,37 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
     inputRef.current?.focus();
   }, []);
 
+  // ─── Attachment handlers ────────────────────────────────────────────────
+  const addLinkAttachment = () => {
+    const url = linkDraft.trim();
+    if (!url) return;
+    const isYt = url.includes("youtube.com") || url.includes("youtu.be");
+    setAttachments((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), type: "link", name: isYt ? "YouTube" : new URL(url.startsWith("http") ? url : `https://${url}`).hostname, data: url.startsWith("http") ? url : `https://${url}` },
+    ]);
+    setLinkDraft("");
+    setLinkInputOpen(false);
+  };
+
+  const removeAttachment = (id: string) => setAttachments((prev) => prev.filter((a) => a.id !== id));
+
   // ─── Submit handler ──────────────────────────────────────────────────────
+  const doSend = () => {
+    if (!inputValue.trim() && !attachments.length) return;
+    sendMessage(inputValue, true, attachments.map((a) => ({ type: a.type, data: a.data, mimeType: a.mimeType, name: a.name })));
+    setAttachments([]);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim()) sendMessage(inputValue);
+    doSend();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (inputValue.trim()) sendMessage(inputValue);
+      doSend();
     }
   };
 
@@ -378,11 +432,80 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
         </AnimatePresence>
 
         {/* Input area */}
-        <form
-          onSubmit={handleSubmit}
-          className="flex-shrink-0 border-t border-border/50 p-3"
-        >
+        <form onSubmit={handleSubmit} className="flex-shrink-0 border-t border-border/50 p-3 space-y-2">
+
+          {/* Attachment previews */}
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {attachments.map((att) => (
+                <div key={att.id} className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg bg-muted/40 border border-border/40 text-xs max-w-[180px]">
+                  {att.type === "image" && att.preview
+                    ? <img src={att.preview} alt={att.name} className="w-5 h-5 rounded object-cover flex-shrink-0" />
+                    : att.type === "pdf"
+                    ? <FileText className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+                    : <Link2 className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />}
+                  <span className="truncate text-muted-foreground">{att.name}</span>
+                  <button type="button" onClick={() => removeAttachment(att.id)} className="flex-shrink-0 text-muted-foreground/50 hover:text-foreground">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Link input */}
+          {linkInputOpen && (
+            <div className="flex items-center gap-2">
+              <input
+                autoFocus
+                value={linkDraft}
+                onChange={(e) => setLinkDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addLinkAttachment(); } if (e.key === "Escape") setLinkInputOpen(false); }}
+                placeholder="https://... o youtube.com/watch?v=..."
+                className="flex-1 rounded-lg border border-border/50 bg-muted/30 px-3 py-1.5 text-sm outline-none focus:border-primary/40"
+              />
+              <Button type="button" size="sm" onClick={addLinkAttachment} disabled={!linkDraft.trim()} className="h-8 text-xs">Adjuntar</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setLinkInputOpen(false)} className="h-8 text-xs">Cancelar</Button>
+            </div>
+          )}
+
           <div className="flex items-end gap-2">
+            {/* Attach buttons */}
+            <div className="flex items-center gap-1 flex-shrink-0 pb-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.pdf"
+                multiple
+                className="hidden"
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files ?? []);
+                  const results = await Promise.all(files.map(fileToAttachment));
+                  setAttachments((prev) => [...prev, ...results.filter(Boolean) as Attachment[]]);
+                  e.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                title="Adjuntar imagen o PDF"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-muted/40 transition-colors"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                title="Adjuntar enlace o YouTube"
+                onClick={() => setLinkInputOpen((v) => !v)}
+                className={cn(
+                  "p-1.5 rounded-lg transition-colors",
+                  linkInputOpen ? "text-primary bg-primary/10" : "text-muted-foreground/50 hover:text-foreground hover:bg-muted/40"
+                )}
+              >
+                <Link2 className="w-4 h-4" />
+              </button>
+            </div>
+
             <textarea
               ref={inputRef}
               value={inputValue}
@@ -398,30 +521,17 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
               )}
             />
             {isStreaming ? (
-              <Button
-                type="button"
-                size="icon"
-                variant="secondary"
-                className="w-9 h-9 flex-shrink-0 rounded-xl"
-                onClick={stopGeneration}
-                title="Detener"
-              >
+              <Button type="button" size="icon" variant="secondary" className="w-9 h-9 flex-shrink-0 rounded-xl" onClick={stopGeneration} title="Detener">
                 <Square className="w-4 h-4" />
               </Button>
             ) : (
-              <Button
-                type="submit"
-                size="icon"
-                className="w-9 h-9 flex-shrink-0 rounded-xl"
-                disabled={!inputValue.trim()}
-                title="Enviar"
-              >
+              <Button type="submit" size="icon" className="w-9 h-9 flex-shrink-0 rounded-xl" disabled={!inputValue.trim() && !attachments.length} title="Enviar">
                 <Send className="w-4 h-4" />
               </Button>
             )}
           </div>
-          <p className="hidden md:block text-[10px] text-muted-foreground mt-1.5 text-center">
-            Enter para enviar · Shift+Enter para nueva línea
+          <p className="hidden md:block text-[10px] text-muted-foreground text-center">
+            Enter para enviar · Shift+Enter para nueva línea · Adjunta imágenes, PDFs o enlaces
           </p>
         </form>
       </div>
