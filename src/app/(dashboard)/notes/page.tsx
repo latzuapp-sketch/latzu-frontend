@@ -1,315 +1,430 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useDecks, useDueCards } from "@/hooks/useFlashcards";
+import { useSession } from "next-auth/react";
+import { useAllNotes } from "@/hooks/useFlashcards";
+import { useDecks } from "@/hooks/useFlashcards";
+import { useMutation } from "@apollo/client";
+import { aiClient } from "@/lib/apollo";
+import { CREATE_FLASHCARD, DELETE_FLASHCARD } from "@/graphql/ai/operations";
+import { NoteCard } from "@/components/notes/NoteCard";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { deckColorCls, DECK_COLORS, type Deck } from "@/types/flashcards";
 import {
-  BookOpen, Plus, Trash2, Flame, NotebookPen,
-  ChevronRight, Sparkles, X, Loader2, Brain, Clock,
+  NOTE_COLORS, NOTE_COLOR_SWATCHES, noteColorBg,
+  type Flashcard,
+} from "@/types/flashcards";
+import {
+  Search, X, Pin, Archive, ArchiveRestore, Palette,
+  CheckSquare, AlignLeft, Plus, NotebookPen, Loader2,
+  StickyNote, Brain, Flame,
 } from "lucide-react";
 import Link from "next/link";
 
-// ─── Create Notebook Modal ────────────────────────────────────────────────────
+// ─── Quick-create widget (like Google Keep's "Take a note") ───────────────────
 
-function CreateNotebookModal({
-  onClose,
-  onCreate,
+function QuickCreate({
+  defaultDeckId,
+  onCreated,
 }: {
-  onClose: () => void;
-  onCreate: (name: string, description: string, color: string) => Promise<void>;
+  defaultDeckId: string;
+  onCreated: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [color, setColor] = useState("teal");
-  const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [front, setFront] = useState("");
+  const [back, setBack] = useState("");
+  const [color, setColor] = useState("default");
+  const [isChecklist, setIsChecklist] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-    setLoading(true);
-    await onCreate(name.trim(), description.trim(), color);
-    setLoading(false);
-    onClose();
-  };
+  const [_create] = useMutation(CREATE_FLASHCARD, { client: aiClient });
+  const [_delete] = useMutation(DELETE_FLASHCARD, { client: aiClient });
+
+  const colorBg = noteColorBg(color);
+
+  async function submit() {
+    if (!front.trim() && !back.trim()) { setExpanded(false); return; }
+    setSaving(true);
+    await _create({
+      variables: { deckId: defaultDeckId, front: front.trim(), back: back.trim() },
+    });
+    // Update color/checklist if needed via updateNote — omit for simplicity; backend defaults work
+    setFront("");
+    setBack("");
+    setColor("default");
+    setIsChecklist(false);
+    setSaving(false);
+    setExpanded(false);
+    onCreated();
+  }
+
+  // Close on outside click
+  useEffect(() => {
+    if (!expanded) return;
+    function handler(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        submit();
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [expanded, front, back]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!expanded) {
+    return (
+      <button
+        onClick={() => setExpanded(true)}
+        className={cn(
+          "w-full max-w-2xl mx-auto flex items-center gap-3 px-5 py-3.5 rounded-2xl",
+          "glass border border-border/50 text-muted-foreground/50 hover:text-muted-foreground",
+          "text-sm transition-all hover:border-border/80 hover:shadow-md text-left"
+        )}
+      >
+        <span className="flex-1">Toma una nota...</span>
+        <div className="flex items-center gap-1">
+          <CheckSquare className="w-4 h-4" />
+          <AlignLeft className="w-4 h-4" />
+        </div>
+      </button>
+    );
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    <div
+      ref={wrapRef}
+      className={cn(
+        "w-full max-w-2xl mx-auto rounded-2xl border border-border/50 shadow-xl overflow-hidden",
+        colorBg || "glass"
+      )}
     >
-      <motion.div
-        initial={{ scale: 0.95, y: 16 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.95, y: 16 }}
-        className="w-full max-w-md glass rounded-2xl p-6 border border-border/50"
-      >
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="font-heading font-semibold text-lg">Nuevo cuaderno</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X className="w-5 h-5" />
+      <div className="p-4 space-y-2">
+        <input
+          autoFocus
+          value={front}
+          onChange={(e) => setFront(e.target.value)}
+          placeholder="Título"
+          className="w-full bg-transparent font-semibold text-sm outline-none placeholder:text-muted-foreground/40"
+          onKeyDown={(e) => { if (e.key === "Escape") { setExpanded(false); } }}
+        />
+        <textarea
+          value={back}
+          onChange={(e) => setBack(e.target.value)}
+          placeholder={isChecklist ? "Elemento de la lista" : "Toma una nota..."}
+          rows={3}
+          className="w-full bg-transparent text-sm outline-none resize-none placeholder:text-muted-foreground/40"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setExpanded(false);
+            if ((e.ctrlKey || e.metaKey) && e.key === "Enter") submit();
+          }}
+        />
+      </div>
+      <div className="flex items-center justify-between px-3 py-2 border-t border-border/30">
+        <div className="flex items-center gap-0.5 relative">
+          <button
+            onClick={() => setIsChecklist((v) => !v)}
+            className={cn(
+              "p-2 rounded-lg transition-colors text-muted-foreground/50",
+              isChecklist ? "text-primary bg-primary/10" : "hover:bg-foreground/8 hover:text-foreground"
+            )}
+            title="Lista de verificación"
+          >
+            <CheckSquare className="w-4 h-4" />
           </button>
-        </div>
-
-        <form onSubmit={submit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">Nombre *</label>
-            <input
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: Biología Celular"
-              className="w-full rounded-xl border border-border/50 bg-muted/30 px-3.5 py-2.5 text-sm outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">Descripción (opcional)</label>
-            <input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Ej: Notas del semestre de biología"
-              className="w-full rounded-xl border border-border/50 bg-muted/30 px-3.5 py-2.5 text-sm outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-2 block">Color</label>
-            <div className="flex flex-wrap gap-2">
-              {DECK_COLORS.map((c) => (
+          <button
+            onClick={() => setShowColorPicker((v) => !v)}
+            className="p-2 rounded-lg hover:bg-foreground/8 text-muted-foreground/50 hover:text-foreground transition-colors"
+            title="Color"
+          >
+            <Palette className="w-4 h-4" />
+          </button>
+          {showColorPicker && (
+            <div className="absolute bottom-10 left-0 z-50 flex items-center gap-1.5 p-2 rounded-xl glass border border-border/50 shadow-xl">
+              {NOTE_COLORS.map((c) => (
                 <button
                   key={c.value}
-                  type="button"
-                  onClick={() => setColor(c.value)}
-                  className={cn(
-                    "w-8 h-8 rounded-lg border-2 transition-all",
-                    c.cls,
-                    color === c.value ? "border-foreground/60 scale-110" : "border-transparent"
-                  )}
                   title={c.label}
+                  onClick={() => { setColor(c.value); setShowColorPicker(false); }}
+                  className={cn(
+                    "w-6 h-6 rounded-full transition-all border-2",
+                    NOTE_COLOR_SWATCHES[c.value],
+                    color === c.value ? "border-white scale-110" : "border-transparent opacity-80 hover:opacity-100"
+                  )}
                 />
               ))}
             </div>
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" className="flex-1 gap-2" disabled={loading || !name.trim()}>
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Crear cuaderno
-            </Button>
-          </div>
-        </form>
-      </motion.div>
-    </motion.div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setExpanded(false)}
+            className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-foreground/8 transition-colors"
+          >
+            Cerrar
+          </button>
+          <button
+            onClick={submit}
+            disabled={saving}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1.5"
+          >
+            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
-// ─── Notebook Card ────────────────────────────────────────────────────────────
+// ─── Masonry grid section ─────────────────────────────────────────────────────
 
-function NotebookCard({
-  deck,
+function MasonryGrid({
+  notes,
+  onUpdate,
   onDelete,
 }: {
-  deck: Deck;
-  onDelete: (id: string) => void;
+  notes: Flashcard[];
+  onUpdate: (id: string, updates: Partial<Flashcard>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }) {
-  const [confirmDel, setConfirmDel] = useState(false);
-  const colorCls = deckColorCls(deck.color);
-  const pendingCount = deck.dueCount + deck.newCount;
-
+  if (notes.length === 0) return null;
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="group glass rounded-2xl border border-border/50 p-5 hover:border-border transition-all"
-    >
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div className={cn("w-11 h-11 rounded-xl border flex items-center justify-center shrink-0", colorCls)}>
-          <NotebookPen className="w-5 h-5" />
-        </div>
-        <button
-          onClick={() => {
-            if (!confirmDel) { setConfirmDel(true); return; }
-            onDelete(deck.id);
-          }}
-          onBlur={() => setConfirmDel(false)}
-          className={cn(
-            "opacity-0 group-hover:opacity-100 transition-all p-1 rounded text-muted-foreground/50",
-            confirmDel ? "text-destructive opacity-100" : "hover:text-destructive"
-          )}
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
-
-      <h3 className="font-semibold mb-1 line-clamp-1">{deck.name}</h3>
-      {deck.description && (
-        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{deck.description}</p>
-      )}
-
-      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4 flex-wrap">
-        <span className="flex items-center gap-1">
-          <BookOpen className="w-3 h-3" />
-          {deck.cardCount} nota{deck.cardCount !== 1 ? "s" : ""}
-        </span>
-        {deck.dueCount > 0 && (
-          <span className="flex items-center gap-1 text-amber-400">
-            <Flame className="w-3 h-3" />
-            {deck.dueCount} para repasar
-          </span>
-        )}
-        {deck.newCount > 0 && (
-          <span className="flex items-center gap-1 text-primary">
-            <Sparkles className="w-3 h-3" />
-            {deck.newCount} nuevas
-          </span>
-        )}
-      </div>
-
-      <div className="flex gap-2">
-        <Button asChild size="sm" variant="outline" className="flex-1 h-8 text-xs">
-          <Link href={`/notes/${deck.id}`}>Abrir</Link>
-        </Button>
-        {pendingCount > 0 && (
-          <Button asChild size="sm" className="flex-1 h-8 text-xs gap-1">
-            <Link href={`/notes/review?deck=${deck.id}`}>
-              <Brain className="w-3.5 h-3.5" />
-              Repasar
-            </Link>
-          </Button>
-        )}
-      </div>
-    </motion.div>
+    <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-3">
+      <AnimatePresence>
+        {notes.map((note) => (
+          <NoteCard
+            key={note.id}
+            note={note}
+            onUpdate={(updates) => onUpdate(note.id, updates)}
+            onDelete={() => onDelete(note.id)}
+          />
+        ))}
+      </AnimatePresence>
+    </div>
   );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function NotesPage() {
-  const { decks, loading, createDeck, deleteDeck } = useDecks();
-  const { dueCards } = useDueCards(null, 5);
-  const [showCreate, setShowCreate] = useState(false);
+  const { data: session } = useSession();
+  const [search, setSearch] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const totalPending = decks.reduce((s, d) => s + d.dueCount + d.newCount, 0);
-  const totalNotes = decks.reduce((s, d) => s + d.cardCount, 0);
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const { notes, loading, refetch, updateNote } = useAllNotes({
+    search: debouncedSearch || undefined,
+    includeArchived: showArchived,
+  });
+
+  const { decks, loading: decksLoading, createDeck } = useDecks();
+  const [_deleteCard] = useMutation(DELETE_FLASHCARD, { client: aiClient });
+
+  // Default deck for quick-create: first deck, or auto-create "Mis Notas"
+  const [defaultDeckId, setDefaultDeckId] = useState<string | null>(null);
+  useEffect(() => {
+    if (decks.length > 0 && !defaultDeckId) {
+      setDefaultDeckId(decks[0].id);
+    }
+  }, [decks, defaultDeckId]);
+
+  async function ensureDefaultDeck() {
+    if (defaultDeckId) return defaultDeckId;
+    const deck = await createDeck("Mis Notas", "Cuaderno por defecto", "teal");
+    if (deck) { setDefaultDeckId(deck.id); return deck.id; }
+    return null;
+  }
+
+  const handleUpdate = useCallback(async (id: string, updates: Partial<Flashcard>) => {
+    await updateNote(id, {
+      color: updates.color,
+      pinned: updates.pinned,
+      archived: updates.archived,
+      isChecklist: updates.isChecklist,
+      front: updates.front,
+      back: updates.back,
+      labels: updates.labels,
+    });
+  }, [updateNote]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    await _deleteCard({ variables: { cardId: id } });
+    await refetch();
+  }, [_deleteCard, refetch]);
+
+  const pinnedNotes = notes.filter((n) => n.pinned && !n.archived);
+  const regularNotes = notes.filter((n) => !n.pinned && !n.archived);
+  const archivedNotes = notes.filter((n) => n.archived);
+
+  const totalDue = decks.reduce((s, d) => s + d.dueCount, 0);
+
+  // Loading state
+  if (loading && notes.length === 0 && decksLoading) {
+    return (
+      <div className="space-y-4 max-w-6xl">
+        <div className="h-8 bg-muted/30 rounded-xl w-48 animate-pulse" />
+        <div className="h-12 bg-muted/20 rounded-2xl animate-pulse" />
+        <div className="columns-1 sm:columns-2 lg:columns-3 gap-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="break-inside-avoid mb-3 h-32 glass rounded-2xl animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-5 max-w-6xl">
 
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between gap-3"
-      >
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-heading font-bold">Notas</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Escribe, organiza y repasa con repetición espaciada
+            {notes.length} nota{notes.length !== 1 ? "s" : ""}
+            {totalDue > 0 && ` · ${totalDue} para repasar`}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {totalPending > 0 && (
+          {totalDue > 0 && (
             <Button asChild size="sm" className="gap-1.5">
               <Link href="/notes/review">
                 <Flame className="w-3.5 h-3.5" />
-                Repasar {totalPending}
+                Repasar {totalDue}
               </Link>
             </Button>
           )}
-          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setShowCreate(true)}>
-            <Plus className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Nuevo cuaderno</span>
+          <Button asChild size="sm" variant="outline" className="gap-1.5">
+            <Link href="/notes/notebooks">
+              <NotebookPen className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Cuadernos</span>
+            </Link>
           </Button>
         </div>
-      </motion.div>
+      </div>
 
-      {/* Review pending banner */}
-      {totalPending > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0, transition: { delay: 0.05 } }}
-          className="rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-500/8 to-primary/5 p-4"
+      {/* Search bar */}
+      <div className="relative w-full max-w-2xl mx-auto">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar en tus notas..."
+          className="w-full pl-10 pr-10 py-3 rounded-2xl glass border border-border/50 text-sm outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground/40 transition-all"
+        />
+        {search && (
+          <button
+            onClick={() => setSearch("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-muted-foreground/40 hover:text-foreground transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Toolbar: archive toggle */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          onClick={() => setShowArchived((v) => !v)}
+          className={cn(
+            "flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all",
+            showArchived
+              ? "border-primary/50 bg-primary/10 text-primary"
+              : "border-border/40 text-muted-foreground/60 hover:border-border/70 hover:text-foreground"
+          )}
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
-              <Clock className="w-5 h-5 text-amber-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm">Tienes notas pendientes de repasar</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {totalPending} nota{totalPending !== 1 ? "s" : ""} · ~{Math.ceil(totalPending * 0.5)} min estimados
-              </p>
-            </div>
-            <Button asChild size="sm" className="gap-1.5 shrink-0">
-              <Link href="/notes/review">
-                <Brain className="w-3.5 h-3.5" />
-                Empezar
-              </Link>
-            </Button>
-          </div>
-        </motion.div>
+          {showArchived ? <ArchiveRestore className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
+          {showArchived ? "Ver notas activas" : "Ver archivadas"}
+        </button>
+      </div>
+
+      {/* Quick-create */}
+      {!showArchived && !search && (
+        <div className="py-1">
+          {decksLoading ? (
+            <div className="w-full max-w-2xl mx-auto h-12 glass rounded-2xl animate-pulse" />
+          ) : decks.length === 0 ? (
+            <button
+              onClick={async () => { await ensureDefaultDeck(); }}
+              className="w-full max-w-2xl mx-auto flex items-center gap-3 px-5 py-3.5 rounded-2xl glass border border-border/50 text-muted-foreground/50 hover:text-muted-foreground text-sm transition-all hover:border-border/80"
+            >
+              <Plus className="w-4 h-4" />
+              Crea tu primer cuaderno para empezar
+            </button>
+          ) : (
+            <QuickCreate
+              defaultDeckId={defaultDeckId ?? decks[0].id}
+              onCreated={refetch}
+            />
+          )}
+        </div>
       )}
 
-      {/* Notebooks grid */}
-      {loading && decks.length === 0 ? (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="glass rounded-2xl p-5 animate-pulse space-y-3">
-              <div className="w-11 h-11 rounded-xl bg-muted/40" />
-              <div className="h-3.5 bg-muted/40 rounded w-2/3" />
-              <div className="h-2.5 bg-muted/30 rounded w-full" />
-              <div className="h-7 bg-muted/30 rounded-lg" />
-            </div>
-          ))}
-        </div>
-      ) : decks.length === 0 ? (
+      {/* Empty state */}
+      {!loading && notes.length === 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="text-center py-20 space-y-4"
         >
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-            <NotebookPen className="w-8 h-8 text-primary/60" />
+            <StickyNote className="w-8 h-8 text-primary/50" />
           </div>
           <div>
-            <p className="font-semibold">Crea tu primer cuaderno</p>
+            <p className="font-semibold">
+              {showArchived ? "No hay notas archivadas" : search ? "Sin resultados" : "Aún no tienes notas"}
+            </p>
             <p className="text-sm text-muted-foreground mt-1 max-w-xs mx-auto">
-              Organiza tus notas por tema, materia o proyecto y repásalas con IA.
+              {showArchived
+                ? "Archiva notas para guardarlas fuera de tu vista principal."
+                : search
+                ? `No se encontraron notas para "${search}"`
+                : "Haz clic en el campo de arriba para tomar tu primera nota."}
             </p>
           </div>
-          <Button onClick={() => setShowCreate(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Crear cuaderno
-          </Button>
         </motion.div>
-      ) : (
-        <AnimatePresence>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {decks.map((deck) => (
-              <NotebookCard key={deck.id} deck={deck} onDelete={deleteDeck} />
-            ))}
-          </div>
-        </AnimatePresence>
       )}
 
-      {/* Create modal */}
-      <AnimatePresence>
-        {showCreate && (
-          <CreateNotebookModal
-            onClose={() => setShowCreate(false)}
-            onCreate={async (name, desc, color) => {
-              await createDeck(name, desc, color);
-            }}
-          />
-        )}
-      </AnimatePresence>
+      {/* Pinned section */}
+      {pinnedNotes.length > 0 && (
+        <section className="space-y-3">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/40 flex items-center gap-1.5 px-0.5">
+            <Pin className="w-3 h-3" />
+            Fijadas
+          </p>
+          <MasonryGrid notes={pinnedNotes} onUpdate={handleUpdate} onDelete={handleDelete} />
+        </section>
+      )}
+
+      {/* Regular / Archived notes */}
+      {(regularNotes.length > 0 || (showArchived && archivedNotes.length > 0)) && (
+        <section className="space-y-3">
+          {pinnedNotes.length > 0 && !showArchived && (
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/40 px-0.5">
+              Otras
+            </p>
+          )}
+          {showArchived && archivedNotes.length > 0 ? (
+            <>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/40 flex items-center gap-1.5 px-0.5">
+                <Archive className="w-3 h-3" />
+                Archivadas
+              </p>
+              <MasonryGrid notes={archivedNotes} onUpdate={handleUpdate} onDelete={handleDelete} />
+            </>
+          ) : (
+            <MasonryGrid notes={regularNotes} onUpdate={handleUpdate} onDelete={handleDelete} />
+          )}
+        </section>
+      )}
     </div>
   );
 }

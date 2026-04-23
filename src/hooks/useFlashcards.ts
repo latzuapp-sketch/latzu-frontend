@@ -6,8 +6,9 @@ import { useSession } from "next-auth/react";
 import { aiClient } from "@/lib/apollo";
 import {
   GET_DECKS, GET_DECK_CARDS, GET_DUE_CARDS, GET_DUE_COUNT,
-  CREATE_DECK, DELETE_DECK, CREATE_FLASHCARD, DELETE_FLASHCARD,
-  REVIEW_CARD, GENERATE_FLASHCARDS_FROM_NODE,
+  GET_ALL_NOTES, CREATE_DECK, DELETE_DECK, CREATE_FLASHCARD,
+  DELETE_FLASHCARD, REVIEW_CARD, GENERATE_FLASHCARDS_FROM_NODE,
+  UPDATE_NOTE,
 } from "@/graphql/ai/operations";
 import type { Deck, Flashcard } from "@/types/flashcards";
 import type { ReviewQuality } from "@/lib/sm2";
@@ -41,6 +42,13 @@ function toCard(r: Record<string, unknown>): Flashcard {
     createdAt: String(r.createdAt ?? ""),
     lastReviewedAt: r.lastReviewedAt ? String(r.lastReviewedAt) : null,
     sourceNodeId: r.sourceNodeId ? String(r.sourceNodeId) : null,
+    color: String(r.color ?? "default"),
+    pinned: Boolean(r.pinned ?? false),
+    archived: Boolean(r.archived ?? false),
+    isChecklist: Boolean(r.isChecklist ?? false),
+    labels: String(r.labels ?? "[]"),
+    updatedAt: r.updatedAt ? String(r.updatedAt) : null,
+    deckName: r.deckName ? String(r.deckName) : null,
   };
 }
 
@@ -167,6 +175,60 @@ export function useDueCards(deckId?: string | null, limit = 20) {
   );
 
   return { dueCards, loading, refetch, reviewCard };
+}
+
+// ─── useAllNotes ──────────────────────────────────────────────────────────────
+
+export interface NoteFilters {
+  search?: string;
+  includeArchived?: boolean;
+  label?: string;
+}
+
+export function useAllNotes(filters: NoteFilters = {}) {
+  const { data: session } = useSession();
+  const userId = session?.user?.id ?? null;
+
+  const { data, loading, refetch } = useQuery(GET_ALL_NOTES, {
+    client: aiClient,
+    variables: {
+      userId,
+      search: filters.search || null,
+      includeArchived: filters.includeArchived ?? false,
+      label: filters.label || null,
+    },
+    skip: !userId,
+    fetchPolicy: "cache-and-network",
+  });
+
+  const [_updateNote] = useMutation(UPDATE_NOTE, { client: aiClient });
+
+  const notes: Flashcard[] = (data?.allNotes ?? []).map(toCard);
+
+  const updateNote = useCallback(
+    async (cardId: string, updates: {
+      color?: string; pinned?: boolean; archived?: boolean;
+      isChecklist?: boolean; front?: string; back?: string; labels?: string;
+    }) => {
+      const res = await _updateNote({
+        variables: { cardId, ...updates },
+        update(cache, { data: result }) {
+          if (!result?.updateNote) return;
+          cache.modify({
+            id: cache.identify({ __typename: "FlashcardGQL", id: cardId }),
+            fields: Object.fromEntries(
+              Object.keys(updates).map((k) => [k, () => (result.updateNote as Record<string, unknown>)[k]])
+            ),
+          });
+        },
+      });
+      await refetch();
+      return res.data?.updateNote ? toCard(res.data.updateNote as Record<string, unknown>) : null;
+    },
+    [_updateNote, refetch]
+  );
+
+  return { notes, loading, refetch, updateNote };
 }
 
 // ─── useDueCount ──────────────────────────────────────────────────────────────

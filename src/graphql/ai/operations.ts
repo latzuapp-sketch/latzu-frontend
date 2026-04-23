@@ -443,6 +443,29 @@ const CARD_FIELDS = gql`
   }
 `;
 
+export const GET_ALL_NOTES = gql`
+  query GetAllNotes($userId: String!, $search: String, $includeArchived: Boolean, $label: String) {
+    allNotes(userId: $userId, search: $search, includeArchived: $includeArchived, label: $label) {
+      id deckId front back color pinned archived isChecklist labels
+      updatedAt createdAt dueDate reps interval easeFactor deckName sourceNodeId
+    }
+  }
+`;
+
+export const UPDATE_NOTE = gql`
+  mutation UpdateNote(
+    $cardId: String!, $color: String, $pinned: Boolean, $archived: Boolean,
+    $isChecklist: Boolean, $front: String, $back: String, $labels: String
+  ) {
+    updateNote(
+      cardId: $cardId, color: $color, pinned: $pinned, archived: $archived,
+      isChecklist: $isChecklist, front: $front, back: $back, labels: $labels
+    ) {
+      id deckId front back color pinned archived isChecklist labels updatedAt createdAt deckName
+    }
+  }
+`;
+
 export const GET_DECKS = gql`
   ${DECK_FIELDS}
   query GetDecks($userId: String!) {
