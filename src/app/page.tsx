@@ -141,9 +141,13 @@ function PricingCard({ tier }: { tier: PricingTier }) {
       className={cn(
         "relative rounded-2xl p-6 flex flex-col gap-5 border",
         tier.featured
-          ? "bg-gradient-to-b from-primary/20 to-primary/5 border-primary/40 shadow-xl shadow-primary/10"
+          ? "border-primary/50 shadow-2xl"
           : "glass border-border/50"
       )}
+      style={tier.featured ? {
+        background: "linear-gradient(160deg, oklch(0.52 0.27 280 / 0.18) 0%, oklch(0.65 0.27 310 / 0.10) 50%, oklch(0.62 0.26 340 / 0.12) 100%)",
+        boxShadow: "0 20px 60px oklch(0.52 0.27 280 / 0.25), 0 0 0 1px oklch(0.72 0.29 280 / 0.25)",
+      } : undefined}
     >
       {tier.badge && (
         <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[11px] font-semibold px-3 py-1 rounded-full">
@@ -224,36 +228,54 @@ const features = [
     title: "Tutor IA Adaptativo",
     description:
       "Tu asistente personal de aprendizaje que recuerda tu contexto, adapta su estilo pedagógico y está disponible 24/7 para responder tus dudas.",
+    color: "oklch(0.72 0.29 280)",
+    bg: "oklch(0.72 0.29 280 / 0.12)",
+    border: "oklch(0.72 0.29 280 / 0.25)",
   },
   {
     icon: Network,
     title: "Biblioteca de Conocimiento",
     description:
       "Organiza conceptos, notas y recursos en un grafo de conocimiento interconectado. Nunca pierdas una idea importante.",
+    color: "oklch(0.78 0.27 340)",
+    bg: "oklch(0.78 0.27 340 / 0.12)",
+    border: "oklch(0.78 0.27 340 / 0.25)",
   },
   {
     icon: CalendarDays,
     title: "Planificación Inteligente",
     description:
       "Crea planes de estudio y tareas con IA. Sincroniza con Google Calendar y recibe recordatorios personalizados.",
+    color: "oklch(0.75 0.22 200)",
+    bg: "oklch(0.75 0.22 200 / 0.12)",
+    border: "oklch(0.75 0.22 200 / 0.25)",
   },
   {
     icon: Brain,
     title: "Memoria Persistente",
     description:
       "Latzu aprende de ti con cada sesión: tus fortalezas, debilidades, objetivos y preferencias. El contexto nunca se pierde.",
+    color: "oklch(0.72 0.29 280)",
+    bg: "oklch(0.72 0.29 280 / 0.12)",
+    border: "oklch(0.72 0.29 280 / 0.25)",
   },
   {
     icon: BarChart3,
     title: "Analytics de Aprendizaje",
     description:
       "Visualiza tu progreso con métricas detalladas: racha de estudio, conceptos dominados, tiempo invertido y más.",
+    color: "oklch(0.70 0.22 145)",
+    bg: "oklch(0.70 0.22 145 / 0.12)",
+    border: "oklch(0.70 0.22 145 / 0.25)",
   },
   {
     icon: Zap,
     title: "Automatización Integrada",
     description:
       "Agente IA que crea tareas, gestiona tu conocimiento y ejecuta flujos de trabajo complejos directamente desde el chat.",
+    color: "oklch(0.78 0.22 60)",
+    bg: "oklch(0.78 0.22 60 / 0.12)",
+    border: "oklch(0.78 0.22 60 / 0.25)",
   },
 ];
 
@@ -409,10 +431,14 @@ export default function HomePage() {
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-4 pt-24 pb-16 overflow-hidden">
-        {/* Background glow blobs */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden>
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-primary/8 blur-[120px]" />
-          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-accent/8 blur-[100px]" />
+        {/* Dot grid */}
+        <div className="absolute inset-0 bg-dot-grid opacity-100 pointer-events-none" aria-hidden />
+
+        {/* Background glow blobs — vivid & large */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
+          <div className="animate-blob absolute top-[-10%] left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full bg-primary/20 blur-[130px]" />
+          <div className="animate-blob [animation-delay:2s] absolute bottom-[-5%] left-[-10%] w-[600px] h-[600px] rounded-full bg-accent/18 blur-[110px]" />
+          <div className="animate-blob [animation-delay:4s] absolute top-[20%] right-[-8%] w-[500px] h-[500px] rounded-full" style={{background:"oklch(0.75 0.22 200 / 0.14)", filter:"blur(100px)"}} />
         </div>
 
         {/* Badge */}
@@ -420,10 +446,16 @@ export default function HomePage() {
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary"
+          className="mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold"
+          style={{
+            background: "linear-gradient(135deg, oklch(0.52 0.27 280 / 0.15), oklch(0.62 0.26 340 / 0.12))",
+            border: "1px solid oklch(0.52 0.27 280 / 0.40)",
+            color: "var(--primary)",
+          }}
         >
           <Sparkles className="w-3.5 h-3.5" />
           Inteligencia Adaptativa para el Aprendizaje
+          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
         </motion.div>
 
         {/* Headline */}
@@ -434,7 +466,13 @@ export default function HomePage() {
           className="text-4xl sm:text-5xl md:text-7xl font-heading font-bold text-center max-w-4xl mx-auto leading-[1.1] tracking-tight"
         >
           Aprende más rápido con{" "}
-          <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
+          <span
+            className="bg-clip-text text-transparent animate-gradient"
+            style={{
+              backgroundImage: "linear-gradient(135deg, var(--primary), oklch(0.72 0.28 320), var(--accent), oklch(0.75 0.22 200))",
+              backgroundSize: "300% 300%",
+            }}
+          >
             IA que te conoce
           </span>
         </motion.h1>
@@ -457,13 +495,22 @@ export default function HomePage() {
           transition={{ delay: 0.4 }}
           className="mt-8 flex flex-col sm:flex-row items-center gap-3"
         >
-          <Button size="lg" className="gap-2 px-8 h-12 text-base shadow-lg shadow-primary/20" asChild>
+          <Button
+            size="lg"
+            className="gap-2 px-8 h-12 text-base animate-pulse-glow"
+            style={{
+              background: "linear-gradient(135deg, var(--primary), oklch(0.65 0.28 310))",
+              boxShadow: "0 4px 30px oklch(0.52 0.27 280 / 0.45), 0 0 0 1px oklch(0.52 0.27 280 / 0.3)",
+              border: "none",
+            }}
+            asChild
+          >
             <Link href="/login">
               <Sparkles className="w-4 h-4" />
               Empezar gratis — 7 días
             </Link>
           </Button>
-          <Button size="lg" variant="outline" className="gap-2 px-8 h-12 text-base" asChild>
+          <Button size="lg" variant="outline" className="gap-2 px-8 h-12 text-base border-primary/30 hover:bg-primary/8" asChild>
             <Link href="#how">
               <PlayCircle className="w-4 h-4" />
               Cómo funciona
@@ -488,25 +535,31 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 40, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className="glass rounded-2xl border border-border/50 p-4 shadow-2xl"
+            className="rounded-2xl p-4 shadow-2xl"
+            style={{
+              background: "oklch(0.13 0.025 265 / 0.85)",
+              backdropFilter: "blur(24px)",
+              border: "1px solid oklch(0.72 0.29 280 / 0.25)",
+              boxShadow: "0 25px 80px oklch(0.52 0.27 280 / 0.25), 0 0 0 1px oklch(0.72 0.29 280 / 0.15)",
+            }}
           >
             {/* Fake chat UI */}
             <div className="flex items-center gap-2 mb-4 border-b border-border/30 pb-3">
-              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Brain className="w-3.5 h-3.5 text-primary-foreground" />
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:"linear-gradient(135deg, var(--primary), var(--accent))"}}>
+                <Brain className="w-4 h-4 text-white" />
               </div>
               <span className="text-xs font-semibold">Tutor IA — Latzu</span>
-              <div className="ml-auto flex items-center gap-1">
+              <div className="ml-auto flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[10px] text-emerald-400">En línea</span>
+                <span className="text-[10px] text-emerald-400 font-medium">En línea</span>
               </div>
             </div>
             <div className="space-y-3 text-sm">
               <div className="flex gap-2.5">
-                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <Brain className="w-3 h-3 text-primary" />
+                <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{background:"linear-gradient(135deg, oklch(0.72 0.29 280 / 0.25), oklch(0.78 0.27 340 / 0.15))"}}>
+                  <Brain className="w-3.5 h-3.5 text-primary" />
                 </div>
-                <div className="bg-muted/40 rounded-xl rounded-tl-none px-3.5 py-2.5 max-w-sm">
+                <div className="bg-muted/30 rounded-xl rounded-tl-none px-3.5 py-2.5 max-w-sm border border-border/20">
                   <p className="text-xs leading-relaxed text-foreground/80">
                     Hola! Recuerdo que estás preparando tu examen de Redes el viernes.
                     Te recomiendo repasar OSPF y BGP hoy — son los temas donde más te ha costado.
@@ -514,23 +567,23 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="flex gap-2.5 justify-end">
-                <div className="bg-primary/15 border border-primary/20 rounded-xl rounded-tr-none px-3.5 py-2.5 max-w-sm">
+                <div className="rounded-xl rounded-tr-none px-3.5 py-2.5 max-w-sm" style={{background:"oklch(0.72 0.29 280 / 0.18)", border:"1px solid oklch(0.72 0.29 280 / 0.30)"}}>
                   <p className="text-xs leading-relaxed">
                     Perfecto, explícame OSPF desde cero pero rápido
                   </p>
                 </div>
               </div>
               <div className="flex gap-2.5">
-                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <Brain className="w-3 h-3 text-primary" />
+                <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{background:"linear-gradient(135deg, oklch(0.72 0.29 280 / 0.25), oklch(0.78 0.27 340 / 0.15))"}}>
+                  <Brain className="w-3.5 h-3.5 text-primary" />
                 </div>
-                <div className="bg-muted/40 rounded-xl rounded-tl-none px-3.5 py-2.5 max-w-sm">
+                <div className="bg-muted/30 rounded-xl rounded-tl-none px-3.5 py-2.5 max-w-sm border border-border/20">
                   <p className="text-xs leading-relaxed text-foreground/80">
                     OSPF (Open Shortest Path First) es un protocolo de enrutamiento de estado de enlace...
                   </p>
                   <div className="mt-1.5 flex items-center gap-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{animationDelay:"0ms"}}/>
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{animationDelay:"150ms"}}/>
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce" style={{animationDelay:"150ms"}}/>
                     <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{animationDelay:"300ms"}}/>
                   </div>
                 </div>
@@ -538,31 +591,38 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-          {/* Floating cards */}
-          <FloatingCard className="-top-4 -left-4 md:-left-16 gap-2 flex items-center" delay={0.8}>
-            <Brain className="w-4 h-4 text-primary" />
-            <span>Memoria persistente activada</span>
+          {/* Floating cards — more vivid */}
+          <FloatingCard className="-top-4 -left-4 md:-left-20 gap-2 flex items-center animate-float" delay={0.8}>
+            <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style={{background:"linear-gradient(135deg, var(--primary), var(--accent))"}}>
+              <Brain className="w-3 h-3 text-white" />
+            </div>
+            <span className="text-foreground/90">Memoria activada</span>
           </FloatingCard>
 
-          <FloatingCard className="-top-4 -right-4 md:-right-16 gap-2 flex items-center" delay={0.9}>
-            <Star className="w-3.5 h-3.5 text-amber-400" />
-            <span>12 días de racha 🔥</span>
+          <FloatingCard className="-top-4 -right-4 md:-right-20 gap-2 flex items-center animate-float [animation-delay:1s]" delay={0.9}>
+            <Star className="w-3.5 h-3.5 shrink-0" style={{color:"oklch(0.78 0.27 340)"}} />
+            <span className="text-foreground/90">12 días de racha 🔥</span>
           </FloatingCard>
 
-          <FloatingCard className="-bottom-4 left-8 gap-2 flex items-center" delay={1.0}>
-            <GraduationCap className="w-4 h-4 text-primary" />
-            <span>47 conceptos dominados</span>
+          <FloatingCard className="-bottom-4 left-8 gap-2 flex items-center animate-float [animation-delay:2s]" delay={1.0}>
+            <GraduationCap className="w-4 h-4 shrink-0" style={{color:"oklch(0.75 0.22 200)"}} />
+            <span className="text-foreground/90">47 conceptos dominados</span>
           </FloatingCard>
         </div>
       </section>
 
       {/* ── Stats strip ───────────────────────────────────────────────────── */}
-      <section className="py-12 border-y border-border/30">
+      <section className="py-12 border-y border-border/30" style={{background:"oklch(0.52 0.27 280 / 0.04)"}}>
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0">
-            {stats.map((s, i) => (
+            {[
+              { ...stats[0], color: "var(--primary)" },
+              { ...stats[1], color: "var(--accent)" },
+              { ...stats[2], color: "oklch(0.75 0.22 200)" },
+              { ...stats[3], color: "oklch(0.72 0.20 145)" },
+            ].map((s, i) => (
               <FadeIn key={s.label} delay={i * 0.1} className="text-center md:border-r last:border-0 border-border/30 px-4">
-                <p className="text-3xl md:text-4xl font-heading font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                <p className="text-3xl md:text-4xl font-heading font-bold bg-clip-text text-transparent" style={{backgroundImage:`linear-gradient(135deg, ${s.color}, ${s.color.replace(")", " / 0.7)")})`}}>
                   {s.value}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
@@ -590,9 +650,17 @@ export default function HomePage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 max-w-6xl mx-auto">
             {features.map((f, i) => (
               <FadeIn key={f.title} delay={i * 0.07}>
-                <div className="group glass rounded-2xl p-6 h-full hover:border-primary/30 transition-colors">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <f.icon className="w-5 h-5 text-primary" />
+                <div
+                  className="group rounded-2xl p-6 h-full transition-all duration-300 hover:scale-[1.02]"
+                  style={{
+                    background: "oklch(0.13 0.025 265 / 0.6)",
+                    backdropFilter: "blur(12px)",
+                    border: `1px solid ${f.border}`,
+                    boxShadow: `0 4px 24px ${f.bg}`,
+                  }}
+                >
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 group-hover:scale-110" style={{background: f.bg, border: `1px solid ${f.border}`}}>
+                    <f.icon className="w-5 h-5" style={{color: f.color}} />
                   </div>
                   <h3 className="font-semibold mb-2">{f.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
@@ -616,13 +684,17 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto relative">
             {/* Connector line */}
-            <div className="hidden md:block absolute top-10 left-1/3 right-1/3 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+            <div className="hidden md:block absolute top-10 left-1/3 right-1/3 h-px" style={{background:"linear-gradient(90deg, transparent, oklch(0.72 0.29 280 / 0.5), oklch(0.78 0.27 340 / 0.5), transparent)"}} />
 
-            {steps.map((step, i) => (
+            {[
+              { ...steps[0], color: "oklch(0.72 0.29 280)", bg: "oklch(0.72 0.29 280 / 0.15)", badge: "oklch(0.52 0.27 280)" },
+              { ...steps[1], color: "oklch(0.78 0.27 340)", bg: "oklch(0.78 0.27 340 / 0.15)", badge: "oklch(0.62 0.26 340)" },
+              { ...steps[2], color: "oklch(0.75 0.22 200)", bg: "oklch(0.75 0.22 200 / 0.15)", badge: "oklch(0.55 0.22 200)" },
+            ].map((step, i) => (
               <FadeIn key={step.title} delay={i * 0.12} className="text-center">
-                <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 border border-primary/20 mb-5 mx-auto">
-                  <step.icon className="w-8 h-8 text-primary" />
-                  <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-5 mx-auto transition-transform duration-300 hover:scale-105" style={{background: step.bg, border: `1px solid ${step.color.replace(")", " / 0.30)")}`, boxShadow:`0 8px 30px ${step.bg}`}}>
+                  <step.icon className="w-8 h-8" style={{color: step.color}} />
+                  <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full text-white text-[10px] font-bold flex items-center justify-center" style={{background: step.badge}}>
                     {i + 1}
                   </span>
                 </div>
@@ -748,31 +820,56 @@ export default function HomePage() {
       <section className="py-20 md:py-28">
         <div className="container mx-auto px-4">
           <FadeIn>
-            <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 border border-primary/20 p-10 md:p-16 text-center max-w-4xl mx-auto">
-              {/* Glow */}
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full bg-primary/15 blur-[80px]" />
+            <div className="relative rounded-3xl overflow-hidden p-10 md:p-16 text-center max-w-4xl mx-auto"
+              style={{
+                background: "linear-gradient(135deg, oklch(0.52 0.27 280 / 0.20) 0%, oklch(0.65 0.27 310 / 0.15) 40%, oklch(0.62 0.26 340 / 0.20) 100%)",
+                border: "1px solid oklch(0.72 0.29 280 / 0.35)",
+                boxShadow: "0 0 80px oklch(0.52 0.27 280 / 0.30), 0 0 160px oklch(0.62 0.26 340 / 0.15)",
+              }}
+            >
+              {/* Animated glows */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <div className="animate-blob absolute top-[-30%] left-1/2 -translate-x-1/2 w-96 h-96 rounded-full blur-[80px]" style={{background:"oklch(0.52 0.27 280 / 0.35)"}} />
+                <div className="animate-blob [animation-delay:3s] absolute bottom-[-20%] right-[-10%] w-64 h-64 rounded-full blur-[60px]" style={{background:"oklch(0.62 0.26 340 / 0.30)"}} />
+                {/* Shimmer overlay */}
+                <div className="absolute inset-0 animate-shimmer opacity-40" />
               </div>
 
               <div className="relative">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent mb-6 shadow-lg shadow-primary/20">
-                  <Brain className="w-8 h-8 text-primary-foreground" />
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl mb-6 animate-pulse-glow"
+                  style={{
+                    background: "linear-gradient(135deg, var(--primary), oklch(0.68 0.28 310), var(--accent))",
+                    boxShadow: "0 8px 40px oklch(0.52 0.27 280 / 0.50)",
+                  }}
+                >
+                  <Brain className="w-10 h-10 text-white" />
                 </div>
                 <h2 className="text-3xl md:text-5xl font-heading font-bold mb-4">
-                  Tu mejor versión empieza hoy
+                  Tu mejor versión{" "}
+                  <span className="bg-clip-text text-transparent animate-gradient" style={{backgroundImage:"linear-gradient(135deg, var(--primary), oklch(0.72 0.28 320), var(--accent))", backgroundSize:"300% 300%"}}>
+                    empieza hoy
+                  </span>
                 </h2>
                 <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
                   Únete a la nueva generación de estudiantes que aprenden con inteligencia adaptativa.
                   7 días gratis, sin compromisos.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button size="lg" className="gap-2 px-10 h-12 text-base shadow-lg shadow-primary/25" asChild>
+                  <Button
+                    size="lg"
+                    className="gap-2 px-10 h-12 text-base border-none"
+                    style={{
+                      background: "linear-gradient(135deg, var(--primary), oklch(0.65 0.28 310), var(--accent))",
+                      boxShadow: "0 4px 30px oklch(0.52 0.27 280 / 0.50), 0 0 0 1px oklch(0.72 0.29 280 / 0.30)",
+                    }}
+                    asChild
+                  >
                     <Link href="/login">
                       <Sparkles className="w-4 h-4" />
                       Empezar ahora — es gratis
                     </Link>
                   </Button>
-                  <Button size="lg" variant="outline" className="gap-2 px-8 h-12 text-base" asChild>
+                  <Button size="lg" variant="outline" className="gap-2 px-8 h-12 text-base border-primary/40 hover:bg-primary/10" asChild>
                     <Link href="/login">
                       Iniciar sesión
                       <ArrowRight className="w-4 h-4" />
