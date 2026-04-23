@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { QuickCapture } from "@/components/capture/QuickCapture";
 import { useUserStore, useSidebarCollapsed, useIsGuest } from "@/stores/userStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { websocket } from "@/lib/websocket";
@@ -114,6 +115,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {children}
         </motion.div>
       </motion.main>
+
+      {/* Floating quick capture — only for authenticated users */}
+      {!isGuest && <QuickCapture />}
     </div>
   );
 }

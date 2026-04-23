@@ -515,3 +515,29 @@ export const GENERATE_FLASHCARDS_FROM_NODE = gql`
     }
   }
 `;
+
+// ─── Briefing & Serendipity ───────────────────────────────────────────────────
+
+export const GET_DAILY_BRIEFING = gql`
+  query GetDailyBriefing($userId: String!, $userName: String) {
+    dailyBriefing(userId: $userId, userName: $userName) {
+      headline message suggestion mood notesDue activePlans generatedAt
+    }
+  }
+`;
+
+export const GET_SERENDIPITY = gql`
+  query GetSerendipity($userId: String!, $limit: Int) {
+    serendipity(userId: $userId, limit: $limit) {
+      id name type content sourceRef
+    }
+  }
+`;
+
+export const QUICK_CAPTURE = gql`
+  mutation QuickCapture($userId: String!, $text: String!) {
+    quickCapture(userId: $userId, text: $text) {
+      type saved summary rawTitle rawContent priority dueHint
+    }
+  }
+`;

@@ -6,6 +6,8 @@ import { useUserStore, useIsGuest } from "@/stores/userStore";
 import { getTemplate, getProactivePrompts } from "@/config/templates";
 import { WidgetRenderer } from "@/components/dashboard/WidgetRenderer";
 import { DailyDigest } from "@/components/dashboard/DailyDigest";
+import { DailyBriefing } from "@/components/dashboard/DailyBriefing";
+import { Serendipity } from "@/components/dashboard/Serendipity";
 import { UserMemoryCard } from "@/components/ai/UserMemoryCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -180,10 +182,26 @@ export default function DashboardPage() {
         {/* Right sidebar — 1/3 width on desktop, stacked on mobile */}
         {!isGuest && (
           <div className="space-y-4">
-            {/* Daily digest / notifications */}
+            {/* AI-generated daily briefing */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0, transition: { delay: 0.1 } }}
+            >
+              <DailyBriefing />
+            </motion.div>
+
+            {/* Serendipity — resurface forgotten knowledge */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0, transition: { delay: 0.15 } }}
+            >
+              <Serendipity />
+            </motion.div>
+
+            {/* Daily reading recommendations */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0, transition: { delay: 0.2 } }}
             >
               <DailyDigest />
             </motion.div>
@@ -191,7 +209,7 @@ export default function DashboardPage() {
             {/* AI Memory summary */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0, transition: { delay: 0.2 } }}
+              animate={{ opacity: 1, y: 0, transition: { delay: 0.25 } }}
             >
               <UserMemoryCard />
             </motion.div>
