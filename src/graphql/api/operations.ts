@@ -233,3 +233,14 @@ export const DELETE_ENTITY = gql`
     }
   }
 `;
+
+export const GET_USER_SUBSCRIPTION = gql`
+  query GetUserSubscription($userId: String!) {
+    userSubscription(userId: $userId) {
+      plan
+      status
+      currentPeriodEnd
+      stripeCustomerId
+    }
+  }
+`;

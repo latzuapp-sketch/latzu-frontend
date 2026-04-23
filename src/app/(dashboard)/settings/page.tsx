@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUserStore } from "@/stores/userStore";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useBillingActions, useSubscription } from "@/hooks/useBilling";
 import { profileTemplates } from "@/config/templates";
 import type { ProfileType } from "@/types/user";
 import {
@@ -25,21 +26,44 @@ import {
   Moon,
   Sun,
   Monitor,
+  CreditCard,
+  Zap,
+  Loader2,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useSearchParams } from "next/navigation";
 
 const profileIcons: Record<ProfileType, typeof GraduationCap> = {
   estudiante: GraduationCap,
   aprendiz: Lightbulb,
 };
 
+const PRICE_PRO_MONTHLY = process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY ?? "";
+const PRICE_PRO_YEARLY  = process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY  ?? "";
+
 export default function SettingsPage() {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const { profileType, preferences, updatePreferences, updateProfileType, isUpdatingProfileType } =
     useUserProfile();
+  const { subscription, loading: subLoading } = useSubscription();
+  const { startCheckout, openPortal } = useBillingActions();
+  const searchParams = useSearchParams();
+  const billingMsg = searchParams.get("billing");
 
   const [localPrefs, setLocalPrefs] = useState(preferences);
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  const handleCheckout = async (priceId: string, label: string) => {
+    setCheckoutLoading(label);
+    try { await startCheckout(priceId); } finally { setCheckoutLoading(null); }
+  };
+
+  const handlePortal = async () => {
+    setPortalLoading(true);
+    try { await openPortal(); } finally { setPortalLoading(false); }
+  };
 
   const handleNotificationToggle = (key: keyof typeof preferences.notifications) => {
     const newPrefs = {
@@ -287,6 +311,98 @@ export default function SettingsPage() {
                 </button>
               ))}
             </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Billing Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
+      >
+        <Card className="glass">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-primary" />
+              <CardTitle>Plan y Facturación</CardTitle>
+            </div>
+            <CardDescription>Gestiona tu suscripción</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {billingMsg === "success" && (
+              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 text-sm text-emerald-400">
+                ¡Suscripción activada correctamente!
+              </div>
+            )}
+            {billingMsg === "cancel" && (
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-amber-400">
+                Proceso de pago cancelado.
+              </div>
+            )}
+
+            {/* Current plan badge */}
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/40">
+              <div className="flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                  subscription.plan === "pro" ? "bg-violet-500/20" : "bg-muted"
+                }`}>
+                  <Zap className={`w-4 h-4 ${subscription.plan === "pro" ? "text-violet-400" : "text-muted-foreground"}`} />
+                </div>
+                <div>
+                  <p className="font-semibold capitalize">{subscription.plan === "pro" ? "Pro" : "Gratis"}</p>
+                  {subscription.status && (
+                    <p className="text-xs text-muted-foreground capitalize">{subscription.status}</p>
+                  )}
+                  {subscription.currentPeriodEnd && (
+                    <p className="text-xs text-muted-foreground">
+                      Renueva {new Date(subscription.currentPeriodEnd).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}
+                    </p>
+                  )}
+                </div>
+              </div>
+              {subLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+            </div>
+
+            {subscription.plan === "free" ? (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Actualizar a Pro</p>
+                  <p className="text-xs text-muted-foreground">Acceso completo a todas las funcionalidades: agente IA ilimitado, knowledge graph ampliado, análisis avanzados.</p>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Button
+                    onClick={() => handleCheckout(PRICE_PRO_MONTHLY, "monthly")}
+                    disabled={checkoutLoading !== null || !PRICE_PRO_MONTHLY}
+                    className="gap-2"
+                  >
+                    {checkoutLoading === "monthly" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                    Pro Mensual
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleCheckout(PRICE_PRO_YEARLY, "yearly")}
+                    disabled={checkoutLoading !== null || !PRICE_PRO_YEARLY}
+                    className="gap-2"
+                  >
+                    {checkoutLoading === "yearly" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                    Pro Anual
+                    <Badge variant="secondary" className="text-[10px]">Ahorra 20%</Badge>
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={handlePortal}
+                disabled={portalLoading}
+                className="w-full gap-2"
+              >
+                {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+                Gestionar suscripción
+              </Button>
+            )}
           </CardContent>
         </Card>
       </motion.div>
