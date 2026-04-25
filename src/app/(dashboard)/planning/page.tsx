@@ -303,8 +303,6 @@ export default function PlanningPage() {
 
   const { weekStart, weekEnd, days, prevWeek, nextWeek, goToToday } = useWeekNavigation();
 
-  const { tasks, loading: tasksLoading, createTask, updateTask, deleteTask, setStatus } = useTasks();
-
   const timeMin = useMemo(() => {
     const d = new Date(weekStart); d.setDate(d.getDate() - 1); return d;
   }, [weekStart]);
@@ -312,20 +310,36 @@ export default function PlanningPage() {
     const d = new Date(weekEnd); d.setDate(d.getDate() + 1); return d;
   }, [weekEnd]);
 
-  const { events: calendarEvents, connected: calendarConnected, loading: calendarLoading, pushEvent, refetch: refetchCalendar } =
-    useCalendarEvents(timeMin, timeMax);
+  const {
+    events: calendarEvents,
+    connected: calendarConnected,
+    loading: calendarLoading,
+    pushEvent,
+    updateEvent,
+    deleteEvent,
+    refetch: refetchCalendar,
+  } = useCalendarEvents(timeMin, timeMax);
 
+  const calendarActions = useMemo(
+    () => ({ connected: calendarConnected, pushEvent, updateEvent, deleteEvent }),
+    [calendarConnected, pushEvent, updateEvent, deleteEvent],
+  );
+
+  const { tasks, loading: tasksLoading, createTask, updateTask, deleteTask, setStatus } =
+    useTasks(calendarActions);
+
+  // Manual push for tasks that were created before Calendar was connected
   const handlePushToCalendar = useCallback(
     async (task: PlanningTask) => {
       const eventId = await pushEvent(task);
       if (eventId) await updateTask(task.id, { googleEventId: eventId });
     },
-    [pushEvent, updateTask]
+    [pushEvent, updateTask],
   );
 
   const handleCreateTask = useCallback(
     async (input: CreateTaskInput) => { await createTask(input); setShowTaskForm(false); },
-    [createTask]
+    [createTask],
   );
 
   const filteredTasks = useMemo(() => {

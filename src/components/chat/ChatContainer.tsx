@@ -382,12 +382,17 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
 
           {/* Message list */}
           <AnimatePresence mode="popLayout">
-            {messages.map((msg) => (
+            {messages.map((msg, i) => (
               <MessageBubble
                 key={msg.id}
                 message={msg}
                 userImage={userImage ?? undefined}
                 userName={userName ?? undefined}
+                isLast={i === messages.length - 1}
+                onSuggestionClick={(text) => {
+                  setInputValue("");
+                  sendMessage(text);
+                }}
               />
             ))}
           </AnimatePresence>

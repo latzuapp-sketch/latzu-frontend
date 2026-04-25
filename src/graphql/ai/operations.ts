@@ -81,6 +81,7 @@ export const CHAT_STREAM = gql`
       reply
       sessionId
       sources
+      quickReplies
     }
   }
 `;
@@ -104,6 +105,7 @@ export const SEND_MESSAGE = gql`
       sessionId
       reply
       sources
+      quickReplies
       actions {
         toolName
         args

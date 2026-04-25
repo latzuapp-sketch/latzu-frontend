@@ -28,9 +28,11 @@ interface MessageBubbleProps {
   message: ChatMessage;
   userImage?: string;
   userName?: string;
+  isLast?: boolean;
+  onSuggestionClick?: (text: string) => void;
 }
 
-function MessageBubbleComponent({ message, userImage, userName }: MessageBubbleProps) {
+function MessageBubbleComponent({ message, userImage, userName, isLast, onSuggestionClick }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<"positive" | "negative" | null>(null);
   const [showSources, setShowSources] = useState(false);
@@ -46,6 +48,7 @@ function MessageBubbleComponent({ message, userImage, userName }: MessageBubbleP
   const isUser = message.role === "user";
   const streaming = message.isStreaming ?? false;
   const sources = (message.metadata?.sources ?? []) as RagSource[];
+  const quickReplies = (message.metadata?.quickReplies ?? []) as string[];
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content);
@@ -247,6 +250,21 @@ function MessageBubbleComponent({ message, userImage, userName }: MessageBubbleP
             >
               <ThumbsDown className="w-3.5 h-3.5" />
             </Button>
+          </div>
+        )}
+
+        {/* Quick reply chips — only on last AI message when done streaming */}
+        {!isUser && !streaming && isLast && quickReplies.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {quickReplies.map((qr) => (
+              <button
+                key={qr}
+                onClick={() => onSuggestionClick?.(qr)}
+                className="text-xs px-3 py-1.5 rounded-full border border-border hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-foreground transition-all"
+              >
+                {qr}
+              </button>
+            ))}
           </div>
         )}
 

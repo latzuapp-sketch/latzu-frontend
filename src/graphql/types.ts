@@ -109,6 +109,7 @@ export interface ChatStreamEvent {
   reply?: string | null;
   sessionId?: string | null;
   sources?: RagSource[] | null;
+  quickReplies?: string[] | null;
 }
 
 /** Full return value of the `sendMessage` mutation. */
@@ -119,6 +120,8 @@ export interface SendMessageResult {
   sources: RagSource[];
   /** Tool calls executed by the agent. Empty for plain chat responses. */
   actions: AgentAction[];
+  /** Contextual follow-up suggestions for the user. */
+  quickReplies: string[];
 }
 
 /** A knowledge node that was retrieved during RAG context building. */

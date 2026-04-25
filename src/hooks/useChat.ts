@@ -274,9 +274,13 @@ export function useChat(options: UseChatOptions = {}) {
                   if (event.sessionId && event.sessionId !== currentSessionId) {
                     setCurrentSessionId(event.sessionId);
                   }
+                  const capturedQuickReplies = event.quickReplies ?? [];
                   startStreaming(assistantId, event.reply, () => {
                     updateMessage(assistantId, {
-                      metadata: { sources: (event.sources ?? []) as RagSource[] },
+                      metadata: {
+                        sources: (event.sources ?? []) as RagSource[],
+                        quickReplies: capturedQuickReplies,
+                      },
                     });
                     setStreaming(false);
 
@@ -341,7 +345,10 @@ export function useChat(options: UseChatOptions = {}) {
 
           startStreaming(assistantId, result.reply, () => {
             updateMessage(assistantId, {
-              metadata: { sources: result.sources as RagSource[] },
+              metadata: {
+                sources: result.sources as RagSource[],
+                quickReplies: result.quickReplies ?? [],
+              },
             });
             setStreaming(false);
             refetchSessions();
