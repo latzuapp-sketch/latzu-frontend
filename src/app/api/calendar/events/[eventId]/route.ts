@@ -23,8 +23,9 @@ function unauthorizedResponse() {
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { eventId: string } },
+  { params }: { params: Promise<{ eventId: string }> },
 ) {
+  const { eventId } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.accessToken) return unauthorizedResponse();
 
@@ -33,7 +34,7 @@ export async function PATCH(
 
   // Fetch the existing event first so we can do a partial update
   const existing = await fetch(
-    `${GCAL_BASE}/calendars/primary/events/${params.eventId}`,
+    `${GCAL_BASE}/calendars/primary/events/${eventId}`,
     { headers: { Authorization: `Bearer ${session.accessToken}` } },
   );
 
@@ -62,7 +63,7 @@ export async function PATCH(
   }
 
   const res = await fetch(
-    `${GCAL_BASE}/calendars/primary/events/${params.eventId}`,
+    `${GCAL_BASE}/calendars/primary/events/${eventId}`,
     {
       method: 'PATCH',
       headers: {
@@ -100,13 +101,14 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { eventId: string } },
+  { params }: { params: Promise<{ eventId: string }> },
 ) {
+  const { eventId } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.accessToken) return unauthorizedResponse();
 
   const res = await fetch(
-    `${GCAL_BASE}/calendars/primary/events/${params.eventId}`,
+    `${GCAL_BASE}/calendars/primary/events/${eventId}`,
     {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${session.accessToken}` },
