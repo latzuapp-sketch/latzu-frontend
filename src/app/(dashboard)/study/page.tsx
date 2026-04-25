@@ -20,9 +20,11 @@ import {
   Zap, FileText, Plus, Trash2, X, Loader2, Send, Sparkles,
   BookOpen, Brain, CheckSquare, MessageSquare, RefreshCw,
   CheckCircle2, Globe, Upload, AlertCircle, ArrowLeft,
-  CalendarDays, Clock, User, Bot, PanelLeftClose, PanelRightClose,
-  Circle, Bell, Code, Play, Map, Library,
+  CalendarDays, Clock, Library,
+  Circle, Bell, Code, Play, Map,
 } from "lucide-react";
+import { FloatingChat } from "@/components/study/FloatingChat";
+import { TaskMainContent } from "@/components/study/TaskViews";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 // ── Content meta ──────────────────────────────────────────────────────────────
@@ -74,22 +76,7 @@ function urlTitle(url: string): string {
   try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return url.slice(0, 40); }
 }
 
-// ── Chat types ────────────────────────────────────────────────────────────────
-
-interface ChatMsg {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  streaming?: boolean;
-}
-
 type StudioTab = "flashcards" | "quiz" | "mindmap" | "guide";
-type MobilePanel = "context" | "chat" | "studio";
-
-// ── Stream helpers ────────────────────────────────────────────────────────────
-
-const STREAM_CHARS = 14;
-const STREAM_MS = 16;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // TASK LIST VIEW
@@ -345,30 +332,20 @@ interface TaskWorkspaceProps {
 function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspaceProps) {
   const { data: session } = useSession();
   const userId = (session?.user as { id?: string })?.id ?? null;
-  const isMobile = useIsMobile();
-  const [mobilePanel, setMobilePanel] = useState<MobilePanel>("chat");
 
   const effectiveType = (task.contentType ?? task.category) as TaskCategory;
   const meta = CONTENT_META[effectiveType] ?? CONTENT_META.task;
   const Icon = meta.icon;
 
-  // ── Sources ───────────────────────────────────────────────────────────────
+  // ── Sources panel ─────────────────────────────────────────────────────────
   const [sources, setSources] = useState<NotebookSource[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [leftOpen, setLeftOpen] = useState(true);
-  const [rightOpen, setRightOpen] = useState(true);
+  const [leftOpen, setLeftOpen] = useState(false);
+  const [rightOpen, setRightOpen] = useState(false);
   const fileQueueRef = useRef<Record<string, File>>({});
 
-  // ── Chat ──────────────────────────────────────────────────────────────────
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
-  const [chatInput, setChatInput] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
-  const streamRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const sessionIdRef = useRef<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  // ── Studio ────────────────────────────────────────────────────────────────
-  const [studioTab, setStudioTab] = useState<StudioTab>("flashcards");
+  // ── Studio panel ──────────────────────────────────────────────────────────
+  const [studioTab, setStudioTab] = useState<StudioTab>("guide");
   const [studioContent, setStudioContent] = useState<Record<StudioTab, string>>({
     flashcards: "", quiz: "", mindmap: "", guide: "",
   });
@@ -376,123 +353,64 @@ function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspac
     flashcards: false, quiz: false, mindmap: false, guide: false,
   });
   const [flashcardMode, setFlashcardMode] = useState(false);
+  const studioSessionRef = useRef<string | null>(null);
 
   // ── Apollo ────────────────────────────────────────────────────────────────
   const [extractText] = useMutation(EXTRACT_TEXT, { client: aiClient });
   const [scrapeUrl] = useMutation(SCRAPE_URL, { client: aiClient });
   const [sendMsg] = useMutation(SEND_MESSAGE, { client: aiClient });
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  useEffect(() => () => { if (streamRef.current) clearInterval(streamRef.current); }, []);
-
-  // Build context from task + sources
+  // Build context for AI (shared by type-views and chat)
   const buildContext = useCallback(() => {
-    const parts: string[] = [];
-    parts.push(`Tema: ${task.title}`);
+    const parts: string[] = [`Tema: ${task.title}`];
     if (task.description) parts.push(`Contexto: ${task.description}`);
-    const readySources = sources.filter((s) => s.status === "ready" && s.summary);
-    for (const s of readySources) parts.push(`Fuente "${s.title}": ${s.summary}`);
+    for (const s of sources.filter((s) => s.status === "ready" && s.summary))
+      parts.push(`Fuente "${s.title}": ${s.summary}`);
     return parts.join("\n");
   }, [task, sources]);
 
-  // Stream text into a message
-  const streamText = useCallback((msgId: string, text: string, onDone: () => void) => {
-    if (streamRef.current) clearInterval(streamRef.current);
-    let pos = 0;
-    streamRef.current = setInterval(() => {
-      pos += STREAM_CHARS;
-      const done = pos >= text.length;
-      setMessages((prev) => prev.map((m) =>
-        m.id === msgId ? { ...m, content: done ? text : text.slice(0, pos), streaming: !done } : m
-      ));
-      if (done) { clearInterval(streamRef.current!); streamRef.current = null; onDone(); }
-    }, STREAM_MS);
-  }, []);
-
-  // Send chat message
-  const sendChat = useCallback(async (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed || chatLoading) return;
-    setChatInput("");
-    setChatLoading(true);
-
-    setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "user", content: trimmed }]);
-    const assistId = crypto.randomUUID();
-    setMessages((prev) => [...prev, { id: assistId, role: "assistant", content: "", streaming: true }]);
-
-    try {
-      const ctx = buildContext();
-      const fullMsg = `${ctx}\n\nPregunta del estudiante: ${trimmed}`;
-      const { data } = await sendMsg({
-        variables: {
-          input: { message: fullMsg, sessionId: sessionIdRef.current ?? undefined, useRag: true,
-            userProfile: userId ? { userId } : undefined },
-        },
-      });
-      const result = data?.sendMessage;
-      if (result?.sessionId) sessionIdRef.current = result.sessionId;
-      streamText(assistId, result?.reply ?? "No pude procesar tu pregunta.", () => setChatLoading(false));
-    } catch {
-      setMessages((prev) => prev.map((m) =>
-        m.id === assistId ? { ...m, content: "Error de conexión. Intenta de nuevo.", streaming: false } : m
-      ));
-      setChatLoading(false);
-    }
-  }, [chatLoading, buildContext, sendMsg, streamText, userId]);
-
   // Generate studio content
-  const generate = useCallback(async (tab: StudioTab) => {
+  const generateStudio = useCallback(async (tab: StudioTab) => {
     if (studioLoading[tab]) return;
     setStudioLoading((prev) => ({ ...prev, [tab]: true }));
     setStudioContent((prev) => ({ ...prev, [tab]: "" }));
     setFlashcardMode(false);
-
     const ctx = buildContext();
     const prompts: Record<StudioTab, string> = {
-      flashcards: `${ctx}\n\nGenera 12 flashcards de estudio sobre este tema. Formato exacto (una por bloque):\n\nFRENTE: [concepto o pregunta]\nREVERSO: [definición o respuesta]\n\nSepara con línea en blanco.`,
-      quiz: `${ctx}\n\nCrea un quiz de 8 preguntas de opción múltiple sobre este tema. Para cada pregunta:\n\n[N]. [Pregunta]\na) [opción]\nb) [opción]*\nc) [opción]\nd) [opción]\n\nMarca la correcta con *. Incluye una breve explicación al final.`,
-      mindmap: `${ctx}\n\nGenera un mapa mental en JSON con la siguiente estructura exacta:\n{\n  "topic": "Título del tema",\n  "children": [\n    {\n      "topic": "Rama principal",\n      "children": [\n        { "topic": "Sub-concepto" }\n      ]\n    }\n  ]\n}\nMáximo 3 niveles, 6 ramas principales, 4 hijos por rama. Responde SOLO con el JSON.`,
-      guide: `${ctx}\n\nCrea una guía de estudio completa y estructurada. Incluye: 📌 Resumen ejecutivo, 🔑 Conceptos clave, 📖 Explicación detallada, 💡 Ejemplos prácticos, ❓ Preguntas de repaso. Usa emojis para separar secciones.`,
+      flashcards: `${ctx}\n\nGenera 12 flashcards de estudio. Formato:\n\nFRENTE: [concepto]\nREVERSO: [definición]\n\nSepara con línea en blanco.`,
+      quiz: `${ctx}\n\nCrea un quiz de 8 preguntas de opción múltiple.\n[N]. [Pregunta]\na) [opción]\nb) [opción]*\nc) [opción]\nd) [opción]\nMarca la correcta con *.`,
+      mindmap: `${ctx}\n\nGenera un mapa mental en JSON:\n{"topic":"Título","children":[{"topic":"Rama","children":[{"topic":"Sub"}]}]}\nMáximo 3 niveles, 6 ramas. Solo JSON.`,
+      guide: `${ctx}\n\nCrea una guía de estudio completa: 📌 Resumen, 🔑 Conceptos clave, 📖 Explicación, 💡 Ejemplos, ❓ Preguntas de repaso.`,
     };
-
     try {
       const { data } = await sendMsg({
-        variables: {
-          input: { message: prompts[tab], sessionId: sessionIdRef.current ?? undefined, useRag: true,
-            userProfile: userId ? { userId } : undefined },
-        },
+        variables: { input: { message: prompts[tab], sessionId: studioSessionRef.current ?? undefined, useRag: true, userProfile: userId ? { userId } : undefined } },
       });
-      const result = data?.sendMessage;
-      if (result?.sessionId) sessionIdRef.current = result.sessionId;
-      setStudioContent((prev) => ({ ...prev, [tab]: result?.reply ?? "" }));
+      const r = data?.sendMessage;
+      if (r?.sessionId) studioSessionRef.current = r.sessionId;
+      setStudioContent((prev) => ({ ...prev, [tab]: r?.reply ?? "" }));
     } catch {
-      setStudioContent((prev) => ({ ...prev, [tab]: "Error al generar. Intenta de nuevo." }));
+      setStudioContent((prev) => ({ ...prev, [tab]: "Error al generar." }));
     } finally {
       setStudioLoading((prev) => ({ ...prev, [tab]: false }));
     }
   }, [studioLoading, buildContext, sendMsg, userId]);
 
-  // Auto-generate on tab switch if no content
   useEffect(() => {
-    if (!studioContent[studioTab] && !studioLoading[studioTab]) {
-      generate(studioTab);
+    if (rightOpen && !studioContent[studioTab] && !studioLoading[studioTab]) {
+      generateStudio(studioTab);
     }
-  }, [studioTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [studioTab, rightOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Add source
   const addSource = useCallback(async (type: NotebookSource["type"], title: string, content: string, file?: File) => {
     const id = crypto.randomUUID();
     if (file) fileQueueRef.current[id] = file;
     setSources((prev) => [...prev, { id, title, type, status: "processing" }]);
-
     const markReady = (summary: string, nodes: number) =>
       setSources((prev) => prev.map((s) => s.id === id ? { ...s, status: "ready" as const, summary, nodesCreated: nodes } : s));
     const markError = (msg?: string) =>
       setSources((prev) => prev.map((s) => s.id === id ? { ...s, status: "error" as const, errorMsg: msg } : s));
-
     try {
       if (type === "text") {
         const { data } = await extractText({ variables: { input: { text: content, sourceRef: id, visibility: "private" } } });
@@ -520,28 +438,24 @@ function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspac
     }
   }, [extractText, scrapeUrl]);
 
-  // ── Studio panel content ──────────────────────────────────────────────────
   const mindMapData = useMemo(() => parseMindMap(studioContent.mindmap), [studioContent.mindmap]);
-  const flashcards = useMemo(() => parseFlashcards(studioContent.flashcards), [studioContent.flashcards]);
+  const studioFlashcards = useMemo(() => parseFlashcards(studioContent.flashcards), [studioContent.flashcards]);
 
   const STUDIO_TABS: { id: StudioTab; icon: typeof Brain; label: string }[] = [
-    { id: "flashcards", icon: Brain,       label: "Flashcards" },
-    { id: "quiz",       icon: CheckSquare, label: "Quiz"       },
-    { id: "mindmap",    icon: Map,         label: "Mapa Mental" },
-    { id: "guide",      icon: BookOpen,    label: "Guía"       },
+    { id: "guide",      icon: BookOpen,    label: "Guía"        },
+    { id: "flashcards", icon: Brain,       label: "Flashcards"  },
+    { id: "quiz",       icon: CheckSquare, label: "Quiz"        },
+    { id: "mindmap",    icon: Map,         label: "Mapa"        },
   ];
 
-  const SOURCE_ICONS: Record<NotebookSource["type"], typeof FileText> = {
-    text: FileText, url: Globe, file: Upload,
-  };
+  const SOURCE_ICONS: Record<NotebookSource["type"], typeof FileText> = { text: FileText, url: Globe, file: Upload };
 
   return (
     <div className="flex flex-col h-[calc(100dvh-6rem)] md:h-[calc(100dvh-7rem)]">
       {/* Header */}
       <div className="flex items-center gap-3 mb-3 md:mb-4 flex-shrink-0">
         <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          Volver
+          <ArrowLeft className="w-4 h-4" />Volver
         </button>
         <div className="flex-1 flex items-center gap-2 min-w-0">
           <span className={cn("p-1.5 rounded-lg border shrink-0", meta.bg)}>
@@ -550,72 +464,51 @@ function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspac
           <h1 className="font-bold text-base truncate">{task.title}</h1>
           {planTitle && <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">· {planTitle}</span>}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button title="Fuentes" onClick={() => setLeftOpen((v) => !v)}
+            className={cn("p-1.5 rounded-lg border transition-colors text-xs",
+              leftOpen ? "bg-primary/10 border-primary/30 text-primary" : "border-border/50 text-muted-foreground hover:text-foreground")}>
+            <Library className="w-3.5 h-3.5" />
+          </button>
+          <button title="Studio" onClick={() => { setRightOpen((v) => !v); }}
+            className={cn("p-1.5 rounded-lg border transition-colors text-xs",
+              rightOpen ? "bg-primary/10 border-primary/30 text-primary" : "border-border/50 text-muted-foreground hover:text-foreground")}>
+            <Brain className="w-3.5 h-3.5" />
+          </button>
           {task.status !== "done" ? (
-            <Button size="sm" variant="outline" onClick={() => onStatusChange("done")} className="gap-1.5 h-7 text-xs">
-              <CheckCircle2 className="w-3.5 h-3.5" />Marcar hecha
+            <Button size="sm" variant="outline" onClick={() => onStatusChange("done")} className="gap-1.5 h-7 text-xs ml-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />Hecha
             </Button>
           ) : (
-            <span className="text-xs text-emerald-400 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" />Completada</span>
+            <span className="text-xs text-emerald-400 flex items-center gap-1 ml-1"><CheckCircle2 className="w-3.5 h-3.5" />Completada</span>
           )}
         </div>
       </div>
 
-      {/* Mobile panel tabs */}
-      <div className="flex md:hidden border-b border-border/40 bg-background/50 rounded-t-2xl flex-shrink-0 overflow-hidden">
-        {(["context", "chat", "studio"] as MobilePanel[]).map((panel) => {
-          const labels: Record<MobilePanel, string> = { context: "Contexto", chat: "Tutor IA", studio: "Studio" };
-          const icons: Record<MobilePanel, typeof MessageSquare> = { context: Library, chat: MessageSquare, studio: Brain };
-          const Icon = icons[panel];
-          return (
-            <button
-              key={panel}
-              onClick={() => setMobilePanel(panel)}
-              className={cn(
-                "flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors",
-                mobilePanel === panel
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-muted-foreground"
-              )}
-            >
-              <Icon className="w-4 h-4" />
-              {labels[panel]}
-            </button>
-          );
-        })}
-      </div>
-
       {/* 3-panel workspace */}
-      <div className="flex flex-1 overflow-hidden md:rounded-2xl rounded-b-2xl border border-border/50 border-t-0 md:border-t bg-background/50 gap-0">
+      <div className="flex flex-1 overflow-hidden rounded-2xl border border-border/50 bg-background/50">
 
-        {/* Left: Context */}
+        {/* Left: Sources */}
         <AnimatePresence initial={false}>
-          {(leftOpen && (!isMobile || mobilePanel === "context")) && (
+          {leftOpen && (
             <motion.div
-              initial={isMobile ? { opacity: 0 } : { width: 0, opacity: 0 }}
-              animate={isMobile ? { opacity: 1 } : { width: 250, opacity: 1 }}
-              exit={isMobile ? { opacity: 0 } : { width: 0, opacity: 0 }}
+              initial={{ width: 0, opacity: 0 }} animate={{ width: 240, opacity: 1 }} exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className={cn(
-                "shrink-0 border-r border-border/40 flex flex-col overflow-hidden",
-                isMobile ? "w-full" : ""
-              )}
-              style={isMobile ? {} : { width: 250 }}>
+              className="shrink-0 border-r border-border/40 flex flex-col overflow-hidden"
+              style={{ width: 240 }}>
               <div className="px-4 pt-4 pb-3 border-b border-border/40 flex items-center justify-between">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contexto</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fuentes</p>
                 <button onClick={() => setShowAddModal(true)} className="text-xs text-primary hover:text-primary/80 flex items-center gap-1">
-                  <Plus className="w-3.5 h-3.5" />Fuente
+                  <Plus className="w-3.5 h-3.5" />Agregar
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                {/* Task description */}
                 {task.description && (
                   <div className="rounded-xl bg-muted/20 border border-border/30 p-3">
                     <p className="text-xs font-medium text-muted-foreground mb-1">Descripción</p>
                     <p className="text-xs text-foreground/80 leading-relaxed">{task.description}</p>
                   </div>
                 )}
-                {/* Added sources */}
                 {sources.map((s) => {
                   const SIcon = SOURCE_ICONS[s.type] ?? FileText;
                   return (
@@ -638,119 +531,39 @@ function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspac
                   );
                 })}
                 {sources.length === 0 && !task.description && (
-                  <p className="text-xs text-muted-foreground text-center py-4">Agrega fuentes para enriquecer el estudio</p>
+                  <p className="text-xs text-muted-foreground text-center py-4">Agrega texto, URL o archivo para enriquecer el contenido</p>
                 )}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Center: Chat */}
-        <div className={cn("flex-1 flex flex-col min-w-0", isMobile && mobilePanel !== "chat" && "hidden")}>
-          <div className="hidden md:flex items-center justify-between px-4 h-11 border-b border-border/40 shrink-0">
-            <button onClick={() => setLeftOpen((v) => !v)} className="text-muted-foreground hover:text-foreground transition-colors">
-              <PanelLeftClose className={cn("w-4 h-4 transition-transform", !leftOpen && "rotate-180")} />
-            </button>
-            <span className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-              <MessageSquare className="w-3.5 h-3.5" />Tutor IA
-            </span>
-            <button onClick={() => setRightOpen((v) => !v)} className="text-muted-foreground hover:text-foreground transition-colors">
-              <PanelRightClose className={cn("w-4 h-4 transition-transform", !rightOpen && "rotate-180")} />
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-            {messages.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-center gap-4 py-12">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                  <Bot className="w-7 h-7 text-primary/60" />
-                </div>
-                <div>
-                  <p className="font-semibold">Tutor de Estudio</p>
-                  <p className="text-sm text-muted-foreground mt-1 max-w-xs">Pregúntame sobre <strong>{task.title}</strong> y te ayudaré a entender el tema en profundidad.</p>
-                </div>
-                <div className="flex flex-col gap-2 w-full max-w-sm">
-                  {[`Explícame ${task.title}`, "¿Cuáles son los conceptos más importantes?", "Dame un ejemplo práctico"].map((q) => (
-                    <button key={q} onClick={() => sendChat(q)}
-                      className="text-left px-3 py-2 rounded-xl border border-border/50 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-primary/5 transition-all">
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <AnimatePresence initial={false}>
-              {messages.map((msg) => {
-                const isUser = msg.role === "user";
-                return (
-                  <motion.div key={msg.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                    className={cn("flex gap-2.5", isUser && "flex-row-reverse")}>
-                    <div className={cn("w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5",
-                      isUser ? "bg-primary/20" : "bg-accent/20")}>
-                      {isUser ? <User className="w-3 h-3 text-primary" /> : <Bot className="w-3 h-3" />}
-                    </div>
-                    <div className={cn("max-w-[82%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed",
-                      isUser ? "bg-primary text-primary-foreground rounded-tr-sm"
-                              : "bg-muted/60 border border-border/40 rounded-tl-sm")}>
-                      {msg.streaming && !msg.content
-                        ? <span className="flex gap-1">{[0,150,300].map((d) => <span key={d} className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />)}</span>
-                        : isUser
-                          ? <span style={{ whiteSpace: "pre-wrap" }}>{msg.content}</span>
-                          : <MarkdownRenderer>{msg.content}</MarkdownRenderer>}
-                      {msg.streaming && msg.content && <span className="inline-block w-0.5 h-3.5 bg-current ml-0.5 animate-pulse" />}
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-            <div ref={bottomRef} />
-          </div>
-
-          <div className="px-4 py-3 border-t border-border/40 shrink-0">
-            <div className="flex items-end gap-2 rounded-xl border border-border/50 bg-muted/20 px-3 py-2 focus-within:border-primary/50 transition-colors">
-              <textarea value={chatInput} onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(chatInput); } }}
-                placeholder={`Pregunta sobre ${task.title}…`}
-                disabled={chatLoading} rows={1}
-                className="flex-1 bg-transparent text-base md:text-sm resize-none focus:outline-none placeholder:text-muted-foreground/40 max-h-24 disabled:opacity-40 min-h-[44px] md:min-h-0 py-2.5 md:py-0" />
-              <Button size="sm" onClick={() => sendChat(chatInput)} disabled={chatLoading || !chatInput.trim()} className="h-7 w-7 p-0 shrink-0">
-                {chatLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              </Button>
-            </div>
-          </div>
+        {/* Center: Type-specific content */}
+        <div className="flex-1 overflow-hidden min-w-0">
+          <TaskMainContent task={task} userId={userId} buildContext={buildContext} />
         </div>
 
         {/* Right: Studio */}
         <AnimatePresence initial={false}>
-          {(rightOpen && (!isMobile || mobilePanel === "studio")) && (
+          {rightOpen && (
             <motion.div
-              initial={isMobile ? { opacity: 0 } : { width: 0, opacity: 0 }}
-              animate={isMobile ? { opacity: 1 } : { width: 320, opacity: 1 }}
-              exit={isMobile ? { opacity: 0 } : { width: 0, opacity: 0 }}
+              initial={{ width: 0, opacity: 0 }} animate={{ width: 300, opacity: 1 }} exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className={cn(
-                "shrink-0 border-l border-border/40 flex flex-col overflow-hidden",
-                isMobile ? "w-full" : ""
-              )}
-              style={isMobile ? {} : { width: 320 }}>
-              {/* Studio tabs */}
+              className="shrink-0 border-l border-border/40 flex flex-col overflow-hidden"
+              style={{ width: 300 }}>
               <div className="px-3 pt-3 pb-2 border-b border-border/40">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Studio</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Studio IA</p>
                 <div className="grid grid-cols-2 gap-1">
                   {STUDIO_TABS.map(({ id, icon: SIcon, label }) => (
                     <button key={id} onClick={() => setStudioTab(id)}
                       className={cn("flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-all border",
-                        studioTab === id
-                          ? "bg-primary/10 border-primary/30 text-primary"
-                          : "border-border/40 text-muted-foreground hover:text-foreground hover:border-border")}>
+                        studioTab === id ? "bg-primary/10 border-primary/30 text-primary" : "border-border/40 text-muted-foreground hover:text-foreground hover:border-border")}>
                       <SIcon className="w-3.5 h-3.5" />{label}
                       {studioLoading[id] && <Loader2 className="w-2.5 h-2.5 animate-spin ml-0.5" />}
                     </button>
                   ))}
                 </div>
               </div>
-
-              {/* Studio content */}
               <div className="flex-1 overflow-y-auto p-3">
                 {studioLoading[studioTab] && (
                   <div className="flex flex-col items-center justify-center h-40 gap-3">
@@ -758,78 +571,56 @@ function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspac
                     <p className="text-xs text-muted-foreground">Generando con IA…</p>
                   </div>
                 )}
-
                 {!studioLoading[studioTab] && studioContent[studioTab] && (
                   <div className="space-y-3">
-                    <button onClick={() => generate(studioTab)}
-                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    <button onClick={() => generateStudio(studioTab)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
                       <RefreshCw className="w-3 h-3" />Regenerar
                     </button>
-
-                    {/* Flashcards */}
-                    {studioTab === "flashcards" && flashcards.length > 0 && (
-                      <>
-                        {!flashcardMode ? (
-                          <>
-                            <Button size="sm" variant="outline" onClick={() => setFlashcardMode(true)}
-                              className="w-full gap-2 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 hover:text-amber-400">
-                              <Brain className="w-3.5 h-3.5" />Practicar ({flashcards.length} tarjetas)
-                            </Button>
-                            <div className="space-y-1.5 max-h-72 overflow-y-auto">
-                              {flashcards.map((fc, i) => (
-                                <div key={i} className="rounded-lg border border-border/40 bg-muted/20 p-2.5 text-xs">
-                                  <p className="font-medium">{fc.front}</p>
-                                  <p className="text-muted-foreground mt-1">{fc.back}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </>
-                        ) : (
-                          <FlashcardSession cards={flashcards} onComplete={() => setFlashcardMode(false)} onClose={() => setFlashcardMode(false)} />
-                        )}
-                      </>
+                    {studioTab === "flashcards" && studioFlashcards.length > 0 && (
+                      !flashcardMode ? (
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => setFlashcardMode(true)}
+                            className="w-full gap-2 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 hover:text-amber-400">
+                            <Brain className="w-3.5 h-3.5" />Practicar ({studioFlashcards.length} tarjetas)
+                          </Button>
+                          <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                            {studioFlashcards.map((fc, i) => (
+                              <div key={i} className="rounded-lg border border-border/40 bg-muted/20 p-2.5 text-xs">
+                                <p className="font-medium">{fc.front}</p>
+                                <p className="text-muted-foreground mt-1">{fc.back}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <FlashcardSession cards={studioFlashcards} onComplete={() => setFlashcardMode(false)} onClose={() => setFlashcardMode(false)} />
+                      )
                     )}
-
-                    {/* Mind map */}
                     {studioTab === "mindmap" && mindMapData && (
-                      <div className="rounded-xl border border-border/40 bg-muted/10 overflow-hidden" style={{ minHeight: 260 }}>
+                      <div className="rounded-xl border border-border/40 bg-muted/10 overflow-hidden" style={{ minHeight: 240 }}>
                         <MindMap data={mindMapData} />
                       </div>
                     )}
                     {studioTab === "mindmap" && !mindMapData && (
-                      <div className="text-xs text-muted-foreground bg-muted/20 rounded-xl p-3 leading-relaxed max-h-80 overflow-y-auto">
+                      <div className="text-xs bg-muted/20 rounded-xl p-3 max-h-80 overflow-y-auto">
                         <MarkdownRenderer>{studioContent.mindmap}</MarkdownRenderer>
                       </div>
                     )}
-
-                    {/* Quiz & Guide */}
                     {(studioTab === "quiz" || studioTab === "guide") && (
-                      <div className="text-xs leading-relaxed text-foreground/85 bg-muted/20 rounded-xl p-3 border border-border/30 max-h-[calc(100vh-22rem)] overflow-y-auto">
+                      <div className="text-xs bg-muted/20 rounded-xl p-3 border border-border/30 max-h-[calc(100vh-22rem)] overflow-y-auto">
                         <MarkdownRenderer>{studioContent[studioTab]}</MarkdownRenderer>
                       </div>
                     )}
-
-                    {/* Flashcards raw if no cards parsed */}
-                    {studioTab === "flashcards" && flashcards.length === 0 && (
-                      <div className="text-xs leading-relaxed text-foreground/85 bg-muted/20 rounded-xl p-3 border border-border/30 max-h-72 overflow-y-auto">
+                    {studioTab === "flashcards" && studioFlashcards.length === 0 && (
+                      <div className="text-xs bg-muted/20 rounded-xl p-3 border border-border/30 max-h-72 overflow-y-auto">
                         <MarkdownRenderer>{studioContent.flashcards}</MarkdownRenderer>
                       </div>
                     )}
-
-                    <button onClick={() => sendChat(
-                      studioTab === "flashcards" ? "Explícame más los conceptos de las flashcards"
-                      : studioTab === "quiz" ? "Explícame las respuestas del quiz"
-                      : studioTab === "mindmap" ? "Explícame el mapa mental en detalle"
-                      : "Profundiza en la guía de estudio"
-                    )} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mt-1">
-                      <MessageSquare className="w-3 h-3" />Preguntar al tutor
-                    </button>
                   </div>
                 )}
-
                 {!studioLoading[studioTab] && !studioContent[studioTab] && (
                   <div className="flex flex-col items-center justify-center h-40 gap-3">
-                    <Button size="sm" onClick={() => generate(studioTab)} className="gap-2">
+                    <Button size="sm" onClick={() => generateStudio(studioTab)} className="gap-2">
                       <Sparkles className="w-3.5 h-3.5" />Generar
                     </Button>
                   </div>
@@ -840,10 +631,11 @@ function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspac
         </AnimatePresence>
       </div>
 
+      {/* Floating chat */}
+      <FloatingChat task={task} userId={userId} buildContext={buildContext} />
+
       <AnimatePresence>
-        {showAddModal && (
-          <AddSourceModal onAdd={addSource} onClose={() => setShowAddModal(false)} />
-        )}
+        {showAddModal && <AddSourceModal onAdd={addSource} onClose={() => setShowAddModal(false)} />}
       </AnimatePresence>
     </div>
   );
