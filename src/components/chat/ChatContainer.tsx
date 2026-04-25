@@ -382,19 +382,27 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
 
           {/* Message list */}
           <AnimatePresence mode="popLayout">
-            {messages.map((msg, i) => (
-              <MessageBubble
-                key={msg.id}
-                message={msg}
-                userImage={userImage ?? undefined}
-                userName={userName ?? undefined}
-                isLast={i === messages.length - 1}
-                onSuggestionClick={(text) => {
-                  setInputValue("");
-                  sendMessage(text);
-                }}
-              />
-            ))}
+            {(() => {
+              // Last assistant message index — agent_action cards can follow it, so we
+              // can't use messages.length - 1 directly.
+              const lastAsstIdx = messages.reduce(
+                (last, msg, i) => (msg.role === "assistant" ? i : last),
+                -1,
+              );
+              return messages.map((msg, i) => (
+                <MessageBubble
+                  key={msg.id}
+                  message={msg}
+                  userImage={userImage ?? undefined}
+                  userName={userName ?? undefined}
+                  isLast={i === lastAsstIdx}
+                  onSuggestionClick={(text) => {
+                    setInputValue("");
+                    sendMessage(text);
+                  }}
+                />
+              ));
+            })()}
           </AnimatePresence>
 
           {/* Error */}
