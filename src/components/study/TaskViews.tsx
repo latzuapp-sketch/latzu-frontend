@@ -149,7 +149,7 @@ export function ReadingView({ task, userId, buildContext }: ViewProps) {
 export function QuizView({ task, userId, buildContext }: ViewProps) {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [rawFallback, setRawFallback] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<Record<number, string>>({});
   const [checked, setChecked] = useState(false);
@@ -244,6 +244,7 @@ export function QuizView({ task, userId, buildContext }: ViewProps) {
   }
 
   const q = questions[idx];
+  if (!q) return null;
   const isLast = idx === questions.length - 1;
 
   return (
