@@ -4,7 +4,7 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
+import katex from "katex";
 import { Copy, Check, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +42,6 @@ export function MarkdownRenderer({ children, className }: MarkdownRendererProps)
     <div className={cn("text-sm leading-relaxed", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
         components={{
           h1: ({ children }) => (
             <h1 className="text-2xl font-bold font-heading mt-8 mb-4 first:mt-0 text-foreground">
@@ -99,9 +98,37 @@ export function MarkdownRenderer({ children, className }: MarkdownRendererProps)
             </blockquote>
           ),
           code: ({ className: codeClass, children }) => {
+            const mathStr = String(children).replace(/\n$/, "");
+            if (codeClass?.includes("math-inline")) {
+              try {
+                return (
+                  <span
+                    dangerouslySetInnerHTML={{
+                      __html: katex.renderToString(mathStr, { throwOnError: false }),
+                    }}
+                  />
+                );
+              } catch {
+                return <code>{children}</code>;
+              }
+            }
+            if (codeClass?.includes("math-display")) {
+              try {
+                return (
+                  <span
+                    className="block my-4 overflow-x-auto text-center"
+                    dangerouslySetInnerHTML={{
+                      __html: katex.renderToString(mathStr, { displayMode: true, throwOnError: false }),
+                    }}
+                  />
+                );
+              } catch {
+                return <code>{children}</code>;
+              }
+            }
+
             const isBlock = !!codeClass?.includes("language-");
             const lang = codeClass?.replace("language-", "") ?? "";
-            const codeText = String(children).replace(/\n$/, "");
 
             if (isBlock) {
               return (
@@ -110,11 +137,11 @@ export function MarkdownRenderer({ children, className }: MarkdownRendererProps)
                     <span className="text-xs font-mono font-medium text-zinc-400 uppercase tracking-wider">
                       {lang || "código"}
                     </span>
-                    <CopyButton text={codeText} />
+                    <CopyButton text={mathStr} />
                   </div>
                   <pre className="overflow-x-auto p-4 scrollbar-thin">
                     <code className="font-mono text-xs text-zinc-100 leading-relaxed">
-                      {codeText}
+                      {mathStr}
                     </code>
                   </pre>
                 </div>

@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
+import katexLib from "katex";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -111,7 +111,6 @@ function MessageBubbleComponent({ message, userImage, userName, isLast, onSugges
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeKatex]}
                 components={{
                   p: ({ children }) => (
                     <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>
@@ -125,22 +124,22 @@ function MessageBubbleComponent({ message, userImage, userName, isLast, onSugges
                   h3: ({ children }) => (
                     <h3 className="text-sm font-semibold mb-1 mt-2 first:mt-0">{children}</h3>
                   ),
-                  code: ({ className, children, ...props }) => {
-                    const isInline = !className;
-                    return isInline ? (
-                      <code
-                        className="px-1.5 py-0.5 rounded bg-muted text-xs font-mono"
-                        {...props}
-                      >
-                        {children}
-                      </code>
+                  code: ({ className, children }) => {
+                    const mathStr = String(children).replace(/\n$/, "");
+                    if (className?.includes("math-inline")) {
+                      try {
+                        return <span dangerouslySetInnerHTML={{ __html: katexLib.renderToString(mathStr, { throwOnError: false }) }} />;
+                      } catch { return <code>{children}</code>; }
+                    }
+                    if (className?.includes("math-display")) {
+                      try {
+                        return <span className="block my-2 overflow-x-auto text-center" dangerouslySetInnerHTML={{ __html: katexLib.renderToString(mathStr, { displayMode: true, throwOnError: false }) }} />;
+                      } catch { return <code>{children}</code>; }
+                    }
+                    return className ? (
+                      <code className="block p-3 rounded-lg bg-muted text-xs font-mono overflow-x-auto">{children}</code>
                     ) : (
-                      <code
-                        className="block p-3 rounded-lg bg-muted text-xs font-mono overflow-x-auto"
-                        {...props}
-                      >
-                        {children}
-                      </code>
+                      <code className="px-1.5 py-0.5 rounded bg-muted text-xs font-mono">{children}</code>
                     );
                   },
                   ul: ({ children }) => (
