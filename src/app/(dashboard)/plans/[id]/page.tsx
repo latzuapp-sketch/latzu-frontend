@@ -27,6 +27,9 @@ import type {
   PlanningTask,
   PlanStatus,
   TaskStatus,
+  StudySchedule,
+  StudyPhase,
+  StudySubPhase,
 } from "@/types/planning";
 import {
   ArrowLeft,
@@ -57,8 +60,28 @@ import {
   Bell,
   AlarmClock,
   ChevronRight,
+  X,
+  Layers,
+  CalendarRange,
+  LayoutList,
 } from "lucide-react";
-import type { StudySchedule, StudyPhase } from "@/types/planning";
+
+// ─── Phase color palette ───────────────────────────────────────────────────────
+
+const PHASE_COLORS = [
+  { name: "indigo",  border: "border-l-indigo-500",  bg: "bg-indigo-500/10",  text: "text-indigo-400",  dot: "bg-indigo-400"  },
+  { name: "violet",  border: "border-l-violet-500",  bg: "bg-violet-500/10",  text: "text-violet-400",  dot: "bg-violet-400"  },
+  { name: "teal",    border: "border-l-teal-500",    bg: "bg-teal-500/10",    text: "text-teal-400",    dot: "bg-teal-400"    },
+  { name: "emerald", border: "border-l-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-400" },
+  { name: "amber",   border: "border-l-amber-500",   bg: "bg-amber-500/10",   text: "text-amber-400",   dot: "bg-amber-400"   },
+  { name: "rose",    border: "border-l-rose-500",    bg: "bg-rose-500/10",    text: "text-rose-400",    dot: "bg-rose-400"    },
+  { name: "sky",     border: "border-l-sky-500",     bg: "bg-sky-500/10",     text: "text-sky-400",     dot: "bg-sky-400"     },
+  { name: "orange",  border: "border-l-orange-500",  bg: "bg-orange-500/10",  text: "text-orange-400",  dot: "bg-orange-400"  },
+];
+
+function getPhaseColor(color?: string) {
+  return PHASE_COLORS.find((c) => c.name === color) ?? PHASE_COLORS[0];
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -94,6 +117,7 @@ function entityToTask(e: { id: string; properties: Record<string, unknown>; crea
     contentType: p.contentType ? (p.contentType as PlanningTask["contentType"]) : undefined,
     contentRef: p.contentRef ? String(p.contentRef) : undefined,
     phaseIndex: p.phaseIndex != null ? Number(p.phaseIndex) : undefined,
+    subPhaseId: p.subPhaseId ? String(p.subPhaseId) : undefined,
     planId: p.planId ? String(p.planId) : undefined,
     lessonRef: p.lessonRef ? String(p.lessonRef) : undefined,
     googleEventId: p.googleEventId ? String(p.googleEventId) : undefined,
@@ -145,6 +169,31 @@ function formatDate(iso: string | null): string {
   return new Date(iso + "T00:00:00").toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 }
 
+// ─── Weekly map helpers ────────────────────────────────────────────────────────
+
+function getISOWeekKey(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+function getWeekRange(weekKey: string): string {
+  const [yearStr, weekStr] = weekKey.split("-W");
+  const year = parseInt(yearStr);
+  const week = parseInt(weekStr);
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const dayOfWeek = jan4.getUTCDay() || 7;
+  const weekStart = new Date(jan4);
+  weekStart.setUTCDate(jan4.getUTCDate() - dayOfWeek + 1 + (week - 1) * 7);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
+  const fmt = (d: Date) => d.toLocaleDateString("es-ES", { day: "numeric", month: "short", timeZone: "UTC" });
+  return `${fmt(weekStart)} – ${fmt(weekEnd)}`;
+}
+
 // ─── Content templates ────────────────────────────────────────────────────────
 
 function makeStudyTemplate(goal: string): string {
@@ -189,13 +238,9 @@ function isEmptyDescription(raw: string): boolean {
   return false;
 }
 
-// ─── Property row (Notion-style) ──────────────────────────────────────────────
+// ─── Property row ─────────────────────────────────────────────────────────────
 
-function PropertyRow({
-  icon,
-  label,
-  children,
-}: {
+function PropertyRow({ icon, label, children }: {
   icon: React.ReactNode;
   label: string;
   children: React.ReactNode;
@@ -248,14 +293,9 @@ function InlineEdit({
         if (e.key === "Enter" && !multiline) { e.preventDefault(); commit(); }
         if (e.key === "Escape") { setDraft(value); setEditing(false); }
       },
-      className: cn(
-        "w-full bg-transparent border-b border-primary/40 outline-none resize-none",
-        className
-      ),
+      className: cn("w-full bg-transparent border-b border-primary/40 outline-none resize-none", className),
     };
-    return multiline
-      ? <textarea {...props} rows={3} />
-      : <input {...props} />;
+    return multiline ? <textarea {...props} rows={3} /> : <input {...props} />;
   }
 
   return (
@@ -274,11 +314,7 @@ function InlineEdit({
 
 // ─── Inline title ─────────────────────────────────────────────────────────────
 
-function InlineTitle({
-  value,
-  onSave,
-  placeholder,
-}: {
+function InlineTitle({ value, onSave, placeholder }: {
   value: string;
   onSave: (v: string) => void;
   placeholder?: string;
@@ -362,7 +398,6 @@ function TaskRow({ task, onToggle, onUpdate, onDelete, onPushCalendar, pushingId
         }
       </button>
 
-      {/* Content type icon */}
       {(() => {
         const meta = getContentMeta(task.category, task.contentType);
         return (
@@ -470,16 +505,20 @@ function TaskRow({ task, onToggle, onUpdate, onDelete, onPushCalendar, pushingId
   );
 }
 
-// ─── Inline new task form ─────────────────────────────────────────────────────
+// ─── New task inline form ─────────────────────────────────────────────────────
 
 function NewTaskRow({
   planId,
   userId,
   onCreated,
+  defaultPhaseIndex,
+  defaultSubPhaseId,
 }: {
   planId: string;
   userId: string;
   onCreated: () => void;
+  defaultPhaseIndex?: number;
+  defaultSubPhaseId?: string;
 }) {
   const [active, setActive] = useState(false);
   const [title, setTitle] = useState("");
@@ -507,6 +546,8 @@ function NewTaskRow({
             dueTime: dueTime || null,
             category: "task",
             planId,
+            phaseIndex: defaultPhaseIndex ?? null,
+            subPhaseId: defaultSubPhaseId ?? null,
             lessonRef: null,
             googleEventId: null,
             userId,
@@ -568,6 +609,414 @@ function NewTaskRow({
   );
 }
 
+// ─── Phases view ──────────────────────────────────────────────────────────────
+
+interface PhasesViewProps {
+  phases: StudyPhase[];
+  tasks: PlanningTask[];
+  taskFilter: "all" | "todo" | "done";
+  planId: string;
+  userId: string;
+  onToggle: (id: string, status: TaskStatus) => void;
+  onUpdate: (id: string, props: Partial<PlanningTask>) => void;
+  onDelete: (id: string) => void;
+  onPushCalendar: (task: PlanningTask) => Promise<void>;
+  pushingId: string | null;
+  onUpdatePhase: (phaseId: string, updates: Partial<StudyPhase>) => void;
+  onAddPhase: () => void;
+  onDeletePhase: (phaseId: string) => void;
+  onAddSubPhase: (phaseId: string) => void;
+  onUpdateSubPhase: (phaseId: string, subPhaseId: string, updates: Partial<StudySubPhase>) => void;
+  onDeleteSubPhase: (phaseId: string, subPhaseId: string) => void;
+  onTaskCreated: () => void;
+}
+
+function PhasesView({
+  phases, tasks, taskFilter, planId, userId,
+  onToggle, onUpdate, onDelete, onPushCalendar, pushingId,
+  onUpdatePhase, onAddPhase, onDeletePhase,
+  onAddSubPhase, onUpdateSubPhase, onDeleteSubPhase,
+  onTaskCreated,
+}: PhasesViewProps) {
+  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(
+    () => new Set(phases.slice(0, 6).map((p) => p.id))
+  );
+  const [expandedSubPhases, setExpandedSubPhases] = useState<Set<string>>(new Set());
+
+  const togglePhase = (id: string) => {
+    setExpandedPhases((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSubPhase = (id: string) => {
+    setExpandedSubPhases((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const filterTasks = (ts: PlanningTask[]) => {
+    if (taskFilter === "done") return ts.filter((t) => t.status === "done");
+    if (taskFilter === "todo") return ts.filter((t) => t.status !== "done");
+    return ts;
+  };
+
+  return (
+    <div className="space-y-3">
+      {phases.map((phase, phaseIdx) => {
+        const pc = getPhaseColor(phase.color);
+        const phaseTasks = tasks.filter((t) => t.phaseIndex === phaseIdx);
+        const phaseDone = phaseTasks.filter((t) => t.status === "done").length;
+        const isExpanded = expandedPhases.has(phase.id);
+
+        const subPhases = phase.subPhases ?? [];
+        const assignedSubPhaseIds = new Set(subPhases.map((sp) => sp.id));
+        const unassignedTasks = phaseTasks.filter((t) => !t.subPhaseId || !assignedSubPhaseIds.has(t.subPhaseId));
+
+        return (
+          <div
+            key={phase.id}
+            className={cn("rounded-xl border border-border/40 overflow-hidden border-l-2", pc.border)}
+          >
+            {/* Phase header */}
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/20 hover:bg-muted/30 transition-colors group/phase">
+              <button onClick={() => togglePhase(phase.id)} className="flex-shrink-0">
+                <ChevronRight className={cn(
+                  "w-3.5 h-3.5 text-muted-foreground/60 transition-transform",
+                  isExpanded && "rotate-90"
+                )} />
+              </button>
+
+              {/* Color picker */}
+              <div className="flex gap-1 opacity-0 group-hover/phase:opacity-100 transition-opacity flex-shrink-0">
+                {PHASE_COLORS.map((c) => (
+                  <button
+                    key={c.name}
+                    onClick={() => onUpdatePhase(phase.id, { color: c.name })}
+                    className={cn(
+                      "w-2.5 h-2.5 rounded-full transition-transform hover:scale-125",
+                      c.dot,
+                      phase.color === c.name && "ring-1 ring-white/60"
+                    )}
+                  />
+                ))}
+              </div>
+
+              {/* Title */}
+              <div className="flex-1 min-w-0" onClick={() => togglePhase(phase.id)}>
+                <InlineEdit
+                  value={phase.title}
+                  onSave={(v) => onUpdatePhase(phase.id, { title: v })}
+                  className={cn("text-sm font-medium", pc.text)}
+                  placeholder="Sin título"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {phase.durationWeeks > 0 && (
+                  <span className="text-[11px] text-muted-foreground/50">
+                    {phase.durationWeeks} sem.
+                  </span>
+                )}
+                <span className="text-[11px] text-muted-foreground/60">
+                  {phaseDone}/{phaseTasks.length}
+                </span>
+                <button
+                  onClick={() => onDeletePhase(phase.id)}
+                  className="opacity-0 group-hover/phase:opacity-100 transition-opacity text-muted-foreground/40 hover:text-destructive"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Phase body */}
+            {isExpanded && (
+              <div className="px-2 py-1.5 space-y-2">
+                {/* Sub-phases */}
+                {subPhases.map((subPhase) => {
+                  const spTasks = filterTasks(phaseTasks.filter((t) => t.subPhaseId === subPhase.id));
+                  const isSpExpanded = expandedSubPhases.has(subPhase.id);
+
+                  return (
+                    <div key={subPhase.id} className="rounded-lg border border-border/30 bg-muted/10">
+                      {/* Sub-phase header */}
+                      <div className="flex items-center gap-2 px-3 py-2 group/sp">
+                        <button onClick={() => toggleSubPhase(subPhase.id)} className="flex-shrink-0">
+                          <ChevronRight className={cn(
+                            "w-3 h-3 text-muted-foreground/50 transition-transform",
+                            isSpExpanded && "rotate-90"
+                          )} />
+                        </button>
+                        <div className="flex-1 min-w-0" onClick={() => toggleSubPhase(subPhase.id)}>
+                          <InlineEdit
+                            value={subPhase.title}
+                            onSave={(v) => onUpdateSubPhase(phase.id, subPhase.id, { title: v })}
+                            className="text-xs font-medium text-muted-foreground"
+                            placeholder="Sin título"
+                          />
+                        </div>
+                        <span className="text-[11px] text-muted-foreground/40 flex-shrink-0">
+                          {spTasks.filter((t) => t.status === "done").length}/{spTasks.length}
+                        </span>
+                        <button
+                          onClick={() => onDeleteSubPhase(phase.id, subPhase.id)}
+                          className="opacity-0 group-hover/sp:opacity-100 transition-opacity text-muted-foreground/40 hover:text-destructive flex-shrink-0"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      {/* Sub-phase tasks */}
+                      {isSpExpanded && (
+                        <div className="px-2 pb-1.5 space-y-0.5">
+                          <AnimatePresence>
+                            {spTasks.map((task) => (
+                              <TaskRow
+                                key={task.id}
+                                task={task}
+                                onToggle={onToggle}
+                                onUpdate={onUpdate}
+                                onDelete={onDelete}
+                                onPushCalendar={onPushCalendar}
+                                pushingId={pushingId}
+                              />
+                            ))}
+                          </AnimatePresence>
+                          <NewTaskRow
+                            planId={planId}
+                            userId={userId}
+                            defaultPhaseIndex={phaseIdx}
+                            defaultSubPhaseId={subPhase.id}
+                            onCreated={onTaskCreated}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Tasks not assigned to any sub-phase */}
+                {(subPhases.length === 0 || unassignedTasks.length > 0) && (
+                  <div className="space-y-0.5">
+                    {subPhases.length > 0 && unassignedTasks.length > 0 && (
+                      <p className="text-[11px] text-muted-foreground/40 px-2 pb-0.5">Sin sub-fase</p>
+                    )}
+                    <AnimatePresence>
+                      {filterTasks(unassignedTasks).map((task) => (
+                        <TaskRow
+                          key={task.id}
+                          task={task}
+                          onToggle={onToggle}
+                          onUpdate={onUpdate}
+                          onDelete={onDelete}
+                          onPushCalendar={onPushCalendar}
+                          pushingId={pushingId}
+                        />
+                      ))}
+                    </AnimatePresence>
+                    {subPhases.length === 0 && (
+                      <NewTaskRow
+                        planId={planId}
+                        userId={userId}
+                        defaultPhaseIndex={phaseIdx}
+                        onCreated={onTaskCreated}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Add sub-phase */}
+                <button
+                  onClick={() => {
+                    onAddSubPhase(phase.id);
+                    // auto-expand the new sub-phase
+                  }}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors py-1 px-2 rounded hover:bg-muted/30 w-full"
+                >
+                  <Plus className="w-3 h-3" />
+                  Añadir sub-fase
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Unphased tasks */}
+      {(() => {
+        const unphasedTasks = filterTasks(tasks.filter((t) => t.phaseIndex == null));
+        if (unphasedTasks.length === 0 && phases.length > 0) return null;
+        return (
+          <div className="space-y-0.5">
+            {phases.length > 0 && (
+              <p className="text-xs text-muted-foreground/40 px-1 mb-1">Sin fase asignada</p>
+            )}
+            <AnimatePresence>
+              {unphasedTasks.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  onToggle={onToggle}
+                  onUpdate={onUpdate}
+                  onDelete={onDelete}
+                  onPushCalendar={onPushCalendar}
+                  pushingId={pushingId}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        );
+      })()}
+
+      {/* Add phase */}
+      <button
+        onClick={onAddPhase}
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2 px-3 rounded-xl border border-dashed border-border/40 hover:border-border/70 w-full"
+      >
+        <Plus className="w-4 h-4" />
+        Añadir fase
+      </button>
+    </div>
+  );
+}
+
+// ─── Weekly map view ──────────────────────────────────────────────────────────
+
+function WeeklyMapView({
+  tasks,
+  taskFilter,
+  onToggle,
+  onUpdate,
+  onDelete,
+  onPushCalendar,
+  pushingId,
+}: {
+  tasks: PlanningTask[];
+  taskFilter: "all" | "todo" | "done";
+  onToggle: (id: string, status: TaskStatus) => void;
+  onUpdate: (id: string, props: Partial<PlanningTask>) => void;
+  onDelete: (id: string) => void;
+  onPushCalendar: (task: PlanningTask) => Promise<void>;
+  pushingId: string | null;
+}) {
+  const filtered = useMemo(() => {
+    if (taskFilter === "done") return tasks.filter((t) => t.status === "done");
+    if (taskFilter === "todo") return tasks.filter((t) => t.status !== "done");
+    return tasks;
+  }, [tasks, taskFilter]);
+
+  const { weeks, unscheduled } = useMemo(() => {
+    const weekMap = new Map<string, PlanningTask[]>();
+    const unscheduled: PlanningTask[] = [];
+
+    for (const task of filtered) {
+      if (!task.dueDate) {
+        unscheduled.push(task);
+        continue;
+      }
+      const key = getISOWeekKey(task.dueDate);
+      if (!weekMap.has(key)) weekMap.set(key, []);
+      weekMap.get(key)!.push(task);
+    }
+
+    const sortedKeys = Array.from(weekMap.keys()).sort();
+    return { weeks: sortedKeys.map((k) => ({ key: k, tasks: weekMap.get(k)! })), unscheduled };
+  }, [filtered]);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const currentWeekKey = getISOWeekKey(today);
+
+  if (weeks.length === 0 && unscheduled.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground/40 text-center py-8 italic">
+        Sin tareas para mostrar
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {weeks.map(({ key, tasks: weekTasks }) => {
+        const isCurrent = key === currentWeekKey;
+        const [, weekNum] = key.split("-W");
+        const range = getWeekRange(key);
+
+        return (
+          <div key={key} className={cn(
+            "rounded-xl border overflow-hidden",
+            isCurrent ? "border-primary/30 bg-primary/5" : "border-border/40"
+          )}>
+            <div className={cn(
+              "px-4 py-2.5 flex items-center justify-between",
+              isCurrent ? "bg-primary/10" : "bg-muted/20"
+            )}>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "text-xs font-semibold px-2 py-0.5 rounded-full",
+                  isCurrent ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"
+                )}>
+                  Sem. {weekNum}
+                </span>
+                <span className="text-xs text-muted-foreground">{range}</span>
+                {isCurrent && (
+                  <span className="text-[10px] text-primary font-medium">Esta semana</span>
+                )}
+              </div>
+              <span className="text-xs text-muted-foreground/60">
+                {weekTasks.filter((t) => t.status === "done").length}/{weekTasks.length}
+              </span>
+            </div>
+            <div className="px-2 py-1 space-y-0.5">
+              <AnimatePresence>
+                {weekTasks
+                  .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
+                  .map((task) => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      onToggle={onToggle}
+                      onUpdate={onUpdate}
+                      onDelete={onDelete}
+                      onPushCalendar={onPushCalendar}
+                      pushingId={pushingId}
+                    />
+                  ))}
+              </AnimatePresence>
+            </div>
+          </div>
+        );
+      })}
+
+      {unscheduled.length > 0 && (
+        <div className="rounded-xl border border-border/40 border-dashed">
+          <div className="px-4 py-2 bg-muted/10 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground/60 font-medium">Sin fecha programada</span>
+            <span className="text-xs text-muted-foreground/40">{unscheduled.length}</span>
+          </div>
+          <div className="px-2 py-1 space-y-0.5">
+            {unscheduled.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                onToggle={onToggle}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+                onPushCalendar={onPushCalendar}
+                pushingId={pushingId}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Plan page ────────────────────────────────────────────────────────────────
 
 export default function PlanDetailPage() {
@@ -580,9 +1029,11 @@ export default function PlanDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskFilter, setTaskFilter] = useState<"all" | "todo" | "done">("all");
   const [editingDueDate, setEditingDueDate] = useState(false);
-  const [phaseView, setPhaseView] = useState(true);
-  const [expandedPhases, setExpandedPhases] = useState<Set<number>>(new Set([0, 1, 2, 3, 4]));
+  const [viewMode, setViewMode] = useState<"fases" | "semanas" | "lista">("fases");
+  const [localPhases, setLocalPhases] = useState<StudyPhase[]>([]);
+  const [phasesLoaded, setPhasesLoaded] = useState(false);
   const templateInitialized = useRef(false);
+  const savePhaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: planData, loading: planLoading } = useQuery(GET_ENTITY, {
     client: entityClient,
@@ -603,6 +1054,42 @@ export default function PlanDetailPage() {
     if (!planData?.entity) return null;
     return entityToPlan(planData.entity);
   }, [planData]);
+
+  const parsedSchedule = useMemo((): StudySchedule | null => {
+    if (!plan?.schedule) return null;
+    try { return JSON.parse(plan.schedule); } catch { return null; }
+  }, [plan?.schedule]);
+
+  const parsedPhases = useMemo((): StudyPhase[] => {
+    if (!plan?.phases) return [];
+    try {
+      const raw = JSON.parse(plan.phases);
+      return (raw as Array<Record<string, unknown>>).map((p, i) => ({
+        id: String(p.id ?? `ph-${i}`),
+        title: String(p.title ?? ""),
+        description: p.description ? String(p.description) : undefined,
+        durationWeeks: Number(p.durationWeeks ?? 1),
+        topics: Array.isArray(p.topics) ? (p.topics as string[]) : undefined,
+        color: p.color ? String(p.color) : PHASE_COLORS[i % PHASE_COLORS.length].name,
+        subPhases: Array.isArray(p.subPhases)
+          ? (p.subPhases as Array<Record<string, unknown>>).map((sp, j) => ({
+              id: String(sp.id ?? `sp-${i}-${j}`),
+              title: String(sp.title ?? ""),
+              topics: Array.isArray(sp.topics) ? (sp.topics as string[]) : undefined,
+            }))
+          : [],
+      }));
+    } catch { return []; }
+  }, [plan?.phases]);
+
+  // Load phases into local state once per plan
+  useEffect(() => {
+    if (!phasesLoaded && plan) {
+      setLocalPhases(parsedPhases);
+      setPhasesLoaded(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan?.id]);
 
   // Auto-initialize content template for new/empty plans
   useEffect(() => {
@@ -643,28 +1130,6 @@ export default function PlanDetailPage() {
   const doneTasks = useMemo(() => planTasks.filter((t) => t.status === "done").length, [planTasks]);
   const progress = planTasks.length === 0 ? 0 : Math.round((doneTasks / planTasks.length) * 100);
 
-  const parsedSchedule = useMemo((): StudySchedule | null => {
-    if (!plan?.schedule) return null;
-    try { return JSON.parse(plan.schedule); } catch { return null; }
-  }, [plan?.schedule]);
-
-  const parsedPhases = useMemo((): StudyPhase[] => {
-    if (!plan?.phases) return [];
-    try { return JSON.parse(plan.phases); } catch { return []; }
-  }, [plan?.phases]);
-
-  const hasPhases = parsedPhases.length > 0;
-
-  const tasksByPhase = useMemo(() => {
-    const map = new Map<number | "none", PlanningTask[]>();
-    for (const t of planTasks) {
-      const key = t.phaseIndex != null ? t.phaseIndex : "none";
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(t);
-    }
-    return map;
-  }, [planTasks]);
-
   const updatePlanProp = useCallback(async (props: Partial<ActionPlan>) => {
     if (!plan) return;
     const current: Record<string, unknown> = {
@@ -686,7 +1151,8 @@ export default function PlanDetailPage() {
       title: task.title, description: task.description, status: task.status,
       priority: task.priority, dueDate: task.dueDate, dueTime: task.dueTime,
       category: task.category, contentType: task.contentType, contentRef: task.contentRef,
-      phaseIndex: task.phaseIndex, planId: task.planId, lessonRef: task.lessonRef,
+      phaseIndex: task.phaseIndex, subPhaseId: task.subPhaseId ?? null,
+      planId: task.planId, lessonRef: task.lessonRef,
       googleEventId: task.googleEventId, userId: task.userId,
     };
     await updateEntity({ variables: { id: taskId, input: { properties: { ...current, ...props } } } });
@@ -732,7 +1198,86 @@ export default function PlanDetailPage() {
     }
   }, [updateTask]);
 
-  // ── Loading / not found ───────────────────────────────────────────────────────
+  // ─── Phase CRUD ───────────────────────────────────────────────────────────────
+
+  const savePhases = useCallback((phases: StudyPhase[]) => {
+    if (savePhaseTimerRef.current) clearTimeout(savePhaseTimerRef.current);
+    savePhaseTimerRef.current = setTimeout(() => {
+      updatePlanProp({ phases: JSON.stringify(phases) });
+    }, 700);
+  }, [updatePlanProp]);
+
+  const addPhase = useCallback(() => {
+    setLocalPhases((prev) => {
+      const next: StudyPhase[] = [
+        ...prev,
+        {
+          id: `ph-${Date.now()}`,
+          title: "Nueva fase",
+          durationWeeks: 1,
+          color: PHASE_COLORS[prev.length % PHASE_COLORS.length].name,
+          subPhases: [],
+        },
+      ];
+      savePhases(next);
+      return next;
+    });
+  }, [savePhases]);
+
+  const updatePhase = useCallback((phaseId: string, updates: Partial<StudyPhase>) => {
+    setLocalPhases((prev) => {
+      const next = prev.map((p) => p.id === phaseId ? { ...p, ...updates } : p);
+      savePhases(next);
+      return next;
+    });
+  }, [savePhases]);
+
+  const deletePhase = useCallback((phaseId: string) => {
+    setLocalPhases((prev) => {
+      const next = prev.filter((p) => p.id !== phaseId);
+      savePhases(next);
+      return next;
+    });
+  }, [savePhases]);
+
+  const addSubPhase = useCallback((phaseId: string) => {
+    setLocalPhases((prev) => {
+      const next = prev.map((p) => p.id === phaseId ? {
+        ...p,
+        subPhases: [
+          ...(p.subPhases ?? []),
+          { id: `sp-${Date.now()}`, title: "Nueva sub-fase", topics: [] },
+        ],
+      } : p);
+      savePhases(next);
+      return next;
+    });
+  }, [savePhases]);
+
+  const updateSubPhase = useCallback((phaseId: string, subPhaseId: string, updates: Partial<StudySubPhase>) => {
+    setLocalPhases((prev) => {
+      const next = prev.map((p) => p.id === phaseId ? {
+        ...p,
+        subPhases: (p.subPhases ?? []).map((sp) => sp.id === subPhaseId ? { ...sp, ...updates } : sp),
+      } : p);
+      savePhases(next);
+      return next;
+    });
+  }, [savePhases]);
+
+  const deleteSubPhase = useCallback((phaseId: string, subPhaseId: string) => {
+    setLocalPhases((prev) => {
+      const next = prev.map((p) => p.id === phaseId ? {
+        ...p,
+        subPhases: (p.subPhases ?? []).filter((sp) => sp.id !== subPhaseId),
+      } : p);
+      savePhases(next);
+      return next;
+    });
+  }, [savePhases]);
+
+  // ─── Loading / not found ──────────────────────────────────────────────────────
+
   if (planLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -755,13 +1300,11 @@ export default function PlanDetailPage() {
   const { label: statusLabel, dot: statusDot } = STATUS_META[plan.status];
   const TypeIcon = plan.type === "study" ? BookOpen : Zap;
   const typeLabel = plan.type === "study" ? "Estudio" : "Acción";
-  const typeColor = plan.type === "study"
-    ? "text-blue-400 bg-blue-500/10"
-    : "text-amber-400 bg-amber-500/10";
+  const typeColor = plan.type === "study" ? "text-blue-400 bg-blue-500/10" : "text-amber-400 bg-amber-500/10";
 
   return (
     <div className="max-w-3xl mx-auto pb-20">
-      {/* ── Back ── */}
+      {/* Back */}
       <button
         onClick={() => router.push("/plans")}
         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
@@ -770,7 +1313,7 @@ export default function PlanDetailPage() {
         Planes
       </button>
 
-      {/* ── Page icon + Title ── */}
+      {/* Title */}
       <div className="mb-6 space-y-2">
         <div className={cn(
           "inline-flex items-center justify-center w-12 h-12 rounded-xl mb-3",
@@ -785,10 +1328,8 @@ export default function PlanDetailPage() {
         />
       </div>
 
-      {/* ── Properties (Notion-style) ── */}
+      {/* Properties */}
       <div className="rounded-xl border border-border/40 bg-card/30 p-4 mb-8 space-y-0.5">
-
-        {/* Estado */}
         <PropertyRow icon={<Circle className="w-3.5 h-3.5" />} label="Estado">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -813,7 +1354,6 @@ export default function PlanDetailPage() {
           </DropdownMenu>
         </PropertyRow>
 
-        {/* Tipo */}
         <PropertyRow icon={<Tag className="w-3.5 h-3.5" />} label="Tipo">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -843,7 +1383,6 @@ export default function PlanDetailPage() {
           </DropdownMenu>
         </PropertyRow>
 
-        {/* Objetivo */}
         <PropertyRow icon={<Target className="w-3.5 h-3.5" />} label="Objetivo">
           <InlineEdit
             value={plan.goal}
@@ -853,7 +1392,6 @@ export default function PlanDetailPage() {
           />
         </PropertyRow>
 
-        {/* Fecha límite */}
         <PropertyRow icon={<CalendarDays className="w-3.5 h-3.5" />} label="Fecha límite">
           {editingDueDate ? (
             <input
@@ -877,7 +1415,6 @@ export default function PlanDetailPage() {
           )}
         </PropertyRow>
 
-        {/* Horario de estudio */}
         {parsedSchedule && (
           <PropertyRow icon={<AlarmClock className="w-3.5 h-3.5" />} label="Horario">
             <span className="text-sm text-muted-foreground px-2 py-0.5 block">
@@ -889,7 +1426,6 @@ export default function PlanDetailPage() {
           </PropertyRow>
         )}
 
-        {/* Generado con IA */}
         {plan.aiGenerated && (
           <PropertyRow icon={<Sparkles className="w-3.5 h-3.5" />} label="Origen">
             <span className="flex items-center gap-1.5 text-sm text-violet-400 px-2 py-0.5">
@@ -899,7 +1435,6 @@ export default function PlanDetailPage() {
           </PropertyRow>
         )}
 
-        {/* Creado */}
         <PropertyRow icon={<Hash className="w-3.5 h-3.5" />} label="Creado">
           <span className="text-sm text-muted-foreground/60 px-2 py-0.5 block">
             {new Date(plan.createdAt).toLocaleDateString("es-ES", {
@@ -909,7 +1444,7 @@ export default function PlanDetailPage() {
         </PropertyRow>
       </div>
 
-      {/* ── Block content editor ── */}
+      {/* Block editor */}
       <div className="mb-10">
         <BlockEditor
           nodeId={plan.id}
@@ -918,7 +1453,7 @@ export default function PlanDetailPage() {
         />
       </div>
 
-      {/* ── Progress ── */}
+      {/* Progress */}
       {planTasks.length > 0 && (
         <div className="mb-8 space-y-2">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -938,26 +1473,39 @@ export default function PlanDetailPage() {
         </div>
       )}
 
-      {/* ── Tasks ── */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between mb-3">
+      {/* Tasks section */}
+      <div className="space-y-3">
+        {/* Header with view toggle */}
+        <div className="flex items-center justify-between">
           <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
             Tareas
           </h2>
           <div className="flex items-center gap-2">
-            {hasPhases && (
-              <button
-                onClick={() => setPhaseView((v) => !v)}
-                className={cn(
-                  "px-2.5 py-0.5 rounded-full text-xs transition-all border",
-                  phaseView
-                    ? "border-primary/40 text-primary bg-primary/10"
-                    : "border-border text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {phaseView ? "Por fases" : "Por fases"}
-              </button>
-            )}
+            {/* View mode */}
+            <div className="flex rounded-lg border border-border/40 overflow-hidden">
+              {([
+                { mode: "fases" as const,   Icon: Layers,       label: "Fases" },
+                { mode: "semanas" as const, Icon: CalendarRange, label: "Semanas" },
+                { mode: "lista" as const,   Icon: LayoutList,    label: "Lista" },
+              ]).map(({ mode, Icon, label }) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  title={label}
+                  className={cn(
+                    "flex items-center gap-1 px-2.5 py-1 text-xs transition-colors",
+                    viewMode === mode
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  )}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Filter */}
             <div className="flex gap-1">
               {(["all", "todo", "done"] as const).map((f) => (
                 <button
@@ -970,7 +1518,7 @@ export default function PlanDetailPage() {
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {f === "all" ? "Todas" : f === "todo" ? "Pendientes" : "Completadas"}
+                  {f === "all" ? "Todas" : f === "todo" ? "Pendientes" : "Hechas"}
                 </button>
               ))}
             </div>
@@ -983,102 +1531,42 @@ export default function PlanDetailPage() {
           </div>
         )}
 
-        {/* Phase-grouped view */}
-        {hasPhases && phaseView ? (
-          <div className="space-y-4">
-            {parsedPhases.map((phase, phaseIdx) => {
-              const phaseTasks = (tasksByPhase.get(phaseIdx) ?? []).filter((t) => {
-                if (taskFilter === "done") return t.status === "done";
-                if (taskFilter === "todo") return t.status !== "done";
-                return true;
-              });
-              const phaseDone = phaseTasks.filter((t) => t.status === "done").length;
-              const isExpanded = expandedPhases.has(phaseIdx);
+        {/* Views */}
+        {viewMode === "fases" && (
+          <PhasesView
+            phases={localPhases}
+            tasks={planTasks}
+            taskFilter={taskFilter}
+            planId={id}
+            userId={userId}
+            onToggle={toggleTask}
+            onUpdate={updateTask}
+            onDelete={deleteTask}
+            onPushCalendar={pushToCalendar}
+            pushingId={pushingId}
+            onUpdatePhase={updatePhase}
+            onAddPhase={addPhase}
+            onDeletePhase={deletePhase}
+            onAddSubPhase={addSubPhase}
+            onUpdateSubPhase={updateSubPhase}
+            onDeleteSubPhase={deleteSubPhase}
+            onTaskCreated={() => refetchTasks()}
+          />
+        )}
 
-              return (
-                <div key={phaseIdx} className="rounded-xl border border-border/40 overflow-hidden">
-                  <button
-                    onClick={() => setExpandedPhases((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(phaseIdx)) next.delete(phaseIdx);
-                      else next.add(phaseIdx);
-                      return next;
-                    })}
-                    className="w-full flex items-center gap-3 px-4 py-3 bg-muted/20 hover:bg-muted/40 transition-colors text-left"
-                  >
-                    <ChevronRight className={cn(
-                      "w-3.5 h-3.5 text-muted-foreground/60 transition-transform flex-shrink-0",
-                      isExpanded && "rotate-90"
-                    )} />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium">
-                        Fase {phaseIdx + 1}: {phase.title}
-                      </span>
-                      {phase.durationWeeks && (
-                        <span className="ml-2 text-xs text-muted-foreground/60">
-                          {phase.durationWeeks} sem.
-                        </span>
-                      )}
-                    </div>
-                    {phaseTasks.length > 0 && (
-                      <span className="text-xs text-muted-foreground flex-shrink-0">
-                        {phaseDone}/{phaseTasks.length}
-                      </span>
-                    )}
-                  </button>
+        {viewMode === "semanas" && (
+          <WeeklyMapView
+            tasks={planTasks}
+            taskFilter={taskFilter}
+            onToggle={toggleTask}
+            onUpdate={updateTask}
+            onDelete={deleteTask}
+            onPushCalendar={pushToCalendar}
+            pushingId={pushingId}
+          />
+        )}
 
-                  {isExpanded && (
-                    <div className="px-2 py-1 space-y-0.5">
-                      <AnimatePresence>
-                        {phaseTasks.map((task) => (
-                          <TaskRow
-                            key={task.id}
-                            task={task}
-                            onToggle={toggleTask}
-                            onUpdate={updateTask}
-                            onDelete={deleteTask}
-                            onPushCalendar={pushToCalendar}
-                            pushingId={pushingId}
-                          />
-                        ))}
-                      </AnimatePresence>
-                      {phaseTasks.length === 0 && (
-                        <p className="text-xs text-muted-foreground/40 text-center py-4 italic">
-                          Sin tareas en esta fase
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* Unassigned tasks */}
-            {(tasksByPhase.get("none") ?? []).length > 0 && (
-              <div className="space-y-0.5">
-                <p className="text-xs text-muted-foreground/50 px-2 mb-1">Sin fase asignada</p>
-                {(tasksByPhase.get("none") ?? [])
-                  .filter((t) => {
-                    if (taskFilter === "done") return t.status === "done";
-                    if (taskFilter === "todo") return t.status !== "done";
-                    return true;
-                  })
-                  .map((task) => (
-                    <TaskRow
-                      key={task.id}
-                      task={task}
-                      onToggle={toggleTask}
-                      onUpdate={updateTask}
-                      onDelete={deleteTask}
-                      onPushCalendar={pushToCalendar}
-                      pushingId={pushingId}
-                    />
-                  ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          /* Flat view */
+        {viewMode === "lista" && (
           <>
             <div className="space-y-0.5">
               <AnimatePresence>
@@ -1100,15 +1588,14 @@ export default function PlanDetailPage() {
                 {taskFilter === "done" ? "Ninguna tarea completada aún" : "Sin tareas pendientes"}
               </p>
             )}
+            <div className="mt-2">
+              <NewTaskRow planId={id} userId={userId} onCreated={() => refetchTasks()} />
+            </div>
           </>
         )}
-
-        <div className="mt-2">
-          <NewTaskRow planId={id} userId={userId} onCreated={() => refetchTasks()} />
-        </div>
       </div>
 
-      {/* ── Delete ── */}
+      {/* Delete */}
       <div className="mt-12 pt-6 border-t border-border/20 flex justify-end">
         {!showDeleteConfirm ? (
           <button

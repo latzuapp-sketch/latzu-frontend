@@ -22,11 +22,20 @@ export interface StudySchedule {
   preferredTime?: string;
 }
 
+export interface StudySubPhase {
+  id: string;
+  title: string;
+  topics?: string[];
+}
+
 export interface StudyPhase {
+  id: string;
   title: string;
   description?: string;
   durationWeeks: number;
-  topics: string[];
+  topics?: string[];
+  color?: string;
+  subPhases?: StudySubPhase[];
 }
 
 export interface PlanningTask {
@@ -41,6 +50,7 @@ export interface PlanningTask {
   contentType?: TaskCategory;
   contentRef?: string;
   phaseIndex?: number;
+  subPhaseId?: string;
   planId?: string;
   lessonRef?: string;
   googleEventId?: string;
