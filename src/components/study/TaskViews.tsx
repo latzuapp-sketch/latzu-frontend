@@ -171,7 +171,11 @@ export function QuizView({ task, userId, buildContext }: ViewProps) {
       const raw = r?.reply ?? "";
       const parsed = parseQuiz(raw);
       if (parsed.length > 0) setQuestions(parsed); else setRawFallback(raw);
-    } catch { setRawFallback("Error al generar el quiz."); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[QuizView] generate failed:", err);
+      setRawFallback(`Error al generar el quiz.\n\n_${msg}_`);
+    }
     finally { setLoading(false); }
   }, [task, userId, buildContext, sendMsg]);
 
