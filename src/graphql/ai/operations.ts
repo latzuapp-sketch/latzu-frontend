@@ -566,3 +566,69 @@ export const QUICK_CAPTURE = gql`
     }
   }
 `;
+
+// ─── Study Agent ─────────────────────────────────────────────────────────────
+
+export const STUDY_AGENT_MESSAGE = gql`
+  mutation StudyAgentMessage($input: StudyAgentInput!) {
+    studyAgentMessage(input: $input) {
+      sessionId
+      reply
+      actions {
+        toolName
+        args
+        result
+        status
+      }
+    }
+  }
+`;
+
+export const RECORD_STUDY_OUTCOME = gql`
+  mutation RecordStudyOutcome($input: StudyOutcomeInput!) {
+    recordStudyOutcome(input: $input) {
+      outcomeId
+      recorded
+    }
+  }
+`;
+
+export const MARK_NOTIFICATIONS_READ = gql`
+  mutation MarkNotificationsRead {
+    markNotificationsRead {
+      success
+      message
+    }
+  }
+`;
+
+export const GET_STUDY_NOTIFICATIONS = gql`
+  query GetStudyNotifications($unreadOnly: Boolean, $limit: Int) {
+    studyNotifications(unreadOnly: $unreadOnly, limit: $limit) {
+      id
+      message
+      type
+      action
+      read
+      createdAt
+    }
+  }
+`;
+
+/**
+ * Fetch pre-generated task content (quiz questions, flashcard deck, lesson markdown).
+ * Returns null if content has not been generated yet for this task.
+ *
+ * Variables: { taskId: string }
+ */
+export const GET_TASK_CONTENT = gql`
+  query GetTaskContent($taskId: String!) {
+    taskContent(taskId: $taskId) {
+      taskId
+      contentType
+      content
+      basedOnOutcome
+      generatedAt
+    }
+  }
+`;

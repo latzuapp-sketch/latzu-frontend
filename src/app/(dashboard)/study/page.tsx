@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { FloatingChat } from "@/components/study/FloatingChat";
 import { TaskMainContent } from "@/components/study/TaskViews";
+import { StudyAgentChat } from "@/components/study/StudyAgentChat";
+import { StudyNotifications } from "@/components/study/StudyNotifications";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 // ── Content meta ──────────────────────────────────────────────────────────────
@@ -650,6 +652,7 @@ export default function StudySpacePage() {
   const { plans } = usePlans();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
   const [selectedTask, setSelectedTask] = useState<PlanningTask | null>(null);
+  const [showStudyAgent, setShowStudyAgent] = useState(false);
 
   const planMap = useMemo(() => Object.fromEntries(plans.map((p) => [p.id, p.title])), [plans]);
 
@@ -689,13 +692,25 @@ export default function StudySpacePage() {
   return (
     <div className="space-y-5 max-w-5xl">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-          <Zap className="w-6 h-6 text-amber-400" />Zona de Estudio
-        </h1>
-        <p className="text-muted-foreground mt-0.5 text-sm">
-          Estudia tus tareas con IA — flashcards, quizzes, mapas mentales y más.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
+            <Zap className="w-6 h-6 text-amber-400" />Zona de Estudio
+          </h1>
+          <p className="text-muted-foreground mt-0.5 text-sm">
+            Estudia tus tareas con IA — flashcards, quizzes, mapas mentales y más.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <StudyNotifications />
+          <button
+            onClick={() => setShowStudyAgent((v) => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+          >
+            <Brain className="w-3.5 h-3.5" />
+            Asesor IA
+          </button>
+        </div>
       </div>
 
       {/* Filter tabs */}
@@ -769,6 +784,13 @@ export default function StudySpacePage() {
           )}
         </div>
       )}
+
+      {/* Study Agent floating chat */}
+      <AnimatePresence>
+        {showStudyAgent && (
+          <StudyAgentChat onClose={() => setShowStudyAgent(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

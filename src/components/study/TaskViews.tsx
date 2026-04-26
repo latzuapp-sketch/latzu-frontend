@@ -2,11 +2,11 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMutation } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { aiClient } from "@/lib/apollo";
-import { SEND_MESSAGE } from "@/graphql/ai/operations";
+import { SEND_MESSAGE, RECORD_STUDY_OUTCOME, GET_TASK_CONTENT } from "@/graphql/ai/operations";
 import { MarkdownRenderer } from "@/components/lessons/MarkdownRenderer";
 import { FlashcardSession } from "@/components/study/FlashcardSession";
 import type { PlanningTask, TaskCategory } from "@/types/planning";
@@ -80,11 +80,17 @@ function parseQuiz(raw: string): QuizQuestion[] {
 
 export function ReadingView({ task, userId, buildContext }: ViewProps) {
   const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const sessionRef = useRef<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
   const [sendMsg] = useMutation(SEND_MESSAGE, { client: aiClient });
+
+  const { data: prebuilt, loading: prebuiltLoading } = useQuery(GET_TASK_CONTENT, {
+    client: aiClient,
+    variables: { taskId: task.id },
+    fetchPolicy: "network-only",
+  });
 
   const generate = useCallback(async () => {
     setLoading(true);
@@ -96,7 +102,7 @@ export function ReadingView({ task, userId, buildContext }: ViewProps) {
       : `${ctx}\n\nCrea un artículo de lectura completo y estructurado sobre "${task.title}". Incluye: contexto, ideas principales, análisis profundo, ejemplos concretos y conclusión. Usa markdown con secciones claras y bien desarrolladas.`;
     try {
       const { data } = await sendMsg({
-        variables: { input: { message: prompt, sessionId: sessionRef.current ?? undefined, useRag: true, userProfile: userId ? { userId } : undefined } },
+        variables: { input: { message: prompt, sessionId: sessionRef.current ?? undefined, useRag: true, contentGeneration: true, userProfile: userId ? { userId } : undefined } },
       });
       const r = data?.sendMessage;
       if (r?.sessionId) sessionRef.current = r.sessionId;
@@ -105,7 +111,17 @@ export function ReadingView({ task, userId, buildContext }: ViewProps) {
     finally { setLoading(false); }
   }, [task, userId, buildContext, sendMsg]);
 
-  useEffect(() => { generate(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (prebuiltLoading) return;
+    const stored = prebuilt?.taskContent;
+    if (stored && (stored.contentType === "lesson" || stored.contentType === "reading")) {
+      const text = typeof stored.content === "string"
+        ? stored.content
+        : (stored.content as { content?: string })?.content ?? "";
+      if (text) { setContent(text); setLoading(false); return; }
+    }
+    generate();
+  }, [prebuiltLoading, prebuilt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleScroll = () => {
     const el = containerRef.current;
@@ -156,6 +172,13 @@ export function QuizView({ task, userId, buildContext }: ViewProps) {
   const [done, setDone] = useState(false);
   const sessionRef = useRef<string | null>(null);
   const [sendMsg] = useMutation(SEND_MESSAGE, { client: aiClient });
+  const [recordOutcome] = useMutation(RECORD_STUDY_OUTCOME, { client: aiClient });
+
+  const { data: prebuilt, loading: prebuiltLoading } = useQuery(GET_TASK_CONTENT, {
+    client: aiClient,
+    variables: { taskId: task.id },
+    fetchPolicy: "network-only",
+  });
 
   const generate = useCallback(async () => {
     setLoading(true);
@@ -164,7 +187,7 @@ export function QuizView({ task, userId, buildContext }: ViewProps) {
     const prompt = `${ctx}\n\nCrea un quiz de 8 preguntas de opción múltiple sobre "${task.title}".\n\nFormato para cada pregunta:\n[N]. [Pregunta]\na) [opción]\nb) [opción]*\nc) [opción]\nd) [opción]\n\nMarca la respuesta correcta con *. Separa con línea en blanco entre preguntas.`;
     try {
       const { data } = await sendMsg({
-        variables: { input: { message: prompt, sessionId: sessionRef.current ?? undefined, useRag: true, userProfile: userId ? { userId } : undefined } },
+        variables: { input: { message: prompt, sessionId: sessionRef.current ?? undefined, useRag: true, contentGeneration: true, userProfile: userId ? { userId } : undefined } },
       });
       const r = data?.sendMessage;
       if (r?.sessionId) sessionRef.current = r.sessionId;
@@ -179,7 +202,19 @@ export function QuizView({ task, userId, buildContext }: ViewProps) {
     finally { setLoading(false); }
   }, [task, userId, buildContext, sendMsg]);
 
-  useEffect(() => { generate(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (prebuiltLoading) return;
+    const stored = prebuilt?.taskContent;
+    if (stored?.contentType === "quiz") {
+      const storedQs = (stored.content as { questions?: QuizQuestion[] })?.questions;
+      if (Array.isArray(storedQs) && storedQs.length > 0) {
+        setQuestions(storedQs);
+        setLoading(false);
+        return;
+      }
+    }
+    generate();
+  }, [prebuiltLoading, prebuilt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const score = questions.filter((q, i) => {
     const sel = selected[i];
@@ -317,7 +352,14 @@ export function QuizView({ task, userId, buildContext }: ViewProps) {
             {!checked ? (
               <Button size="sm" onClick={() => setChecked(true)} disabled={!selected[idx]} className="text-xs">Verificar</Button>
             ) : isLast ? (
-              <Button size="sm" onClick={() => setDone(true)} className="gap-2 text-xs bg-emerald-600 hover:bg-emerald-700">
+              <Button size="sm" onClick={() => {
+                setDone(true);
+                const correct = questions.filter((q, i) => {
+                  const sel = selected[i];
+                  return sel && q.options.find((o) => o.label === sel)?.isCorrect;
+                }).length;
+                recordOutcome({ variables: { input: { taskId: task.id, outcomeType: "quiz", scoreCorrect: correct, scoreTotal: questions.length } } }).catch(() => {});
+              }} className="gap-2 text-xs bg-emerald-600 hover:bg-emerald-700">
                 <Trophy className="w-3.5 h-3.5" />Ver resultado
               </Button>
             ) : (
@@ -336,9 +378,16 @@ export function QuizView({ task, userId, buildContext }: ViewProps) {
 
 export function FlashcardMainView({ task, userId, buildContext }: ViewProps) {
   const [cards, setCards] = useState<{ front: string; back: string }[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const sessionRef = useRef<string | null>(null);
   const [sendMsg] = useMutation(SEND_MESSAGE, { client: aiClient });
+  const [recordOutcome] = useMutation(RECORD_STUDY_OUTCOME, { client: aiClient });
+
+  const { data: prebuilt, loading: prebuiltLoading } = useQuery(GET_TASK_CONTENT, {
+    client: aiClient,
+    variables: { taskId: task.id },
+    fetchPolicy: "network-only",
+  });
 
   const generate = useCallback(async () => {
     setLoading(true);
@@ -347,7 +396,7 @@ export function FlashcardMainView({ task, userId, buildContext }: ViewProps) {
     const prompt = `${ctx}\n\nGenera 12 flashcards de estudio sobre "${task.title}".\n\nFormato exacto (una por bloque):\n\nFRENTE: [concepto o pregunta]\nREVERSO: [definición o respuesta]\n\nSepara con línea en blanco.`;
     try {
       const { data } = await sendMsg({
-        variables: { input: { message: prompt, sessionId: sessionRef.current ?? undefined, useRag: true, userProfile: userId ? { userId } : undefined } },
+        variables: { input: { message: prompt, sessionId: sessionRef.current ?? undefined, useRag: true, contentGeneration: true, userProfile: userId ? { userId } : undefined } },
       });
       const r = data?.sendMessage;
       if (r?.sessionId) sessionRef.current = r.sessionId;
@@ -356,7 +405,19 @@ export function FlashcardMainView({ task, userId, buildContext }: ViewProps) {
     finally { setLoading(false); }
   }, [task, userId, buildContext, sendMsg]);
 
-  useEffect(() => { generate(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (prebuiltLoading) return;
+    const stored = prebuilt?.taskContent;
+    if (stored?.contentType === "flashcard") {
+      const storedCards = (stored.content as { cards?: { front: string; back: string }[] })?.cards;
+      if (Array.isArray(storedCards) && storedCards.length > 0) {
+        setCards(storedCards);
+        setLoading(false);
+        return;
+      }
+    }
+    generate();
+  }, [prebuiltLoading, prebuilt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -381,7 +442,9 @@ export function FlashcardMainView({ task, userId, buildContext }: ViewProps) {
         </button>
       </div>
       <div className="flex-1 overflow-hidden">
-        <FlashcardSession cards={cards} onComplete={() => {}} onClose={() => {}} />
+        <FlashcardSession cards={cards} onComplete={() => {
+          recordOutcome({ variables: { input: { taskId: task.id, outcomeType: "flashcard", cardsReviewed: cards.length } } }).catch(() => {});
+        }} onClose={() => {}} />
       </div>
     </div>
   );
@@ -405,7 +468,7 @@ export function PracticeView({ task, userId, buildContext }: ViewProps) {
     const prompt = `${ctx}\n\nCrea un ejercicio práctico concreto sobre "${task.title}". Incluye: descripción clara del problema, lo que se espera como respuesta, y si aplica código de ejemplo o datos de entrada. Sé específico.`;
     try {
       const { data } = await sendMsg({
-        variables: { input: { message: prompt, sessionId: sessionRef.current ?? undefined, useRag: true, userProfile: userId ? { userId } : undefined } },
+        variables: { input: { message: prompt, sessionId: sessionRef.current ?? undefined, useRag: true, contentGeneration: true, userProfile: userId ? { userId } : undefined } },
       });
       const r = data?.sendMessage;
       if (r?.sessionId) sessionRef.current = r.sessionId;
@@ -423,7 +486,7 @@ export function PracticeView({ task, userId, buildContext }: ViewProps) {
         variables: {
           input: {
             message: `Ejercicio:\n${exercise}\n\nRespuesta del estudiante:\n${answer}\n\nRevisa la respuesta: indica qué está bien, qué mejorar y la solución correcta si hay errores. Sé constructivo.`,
-            sessionId: sessionRef.current ?? undefined, useRag: false, userProfile: userId ? { userId } : undefined,
+            sessionId: sessionRef.current ?? undefined, useRag: false, contentGeneration: true, userProfile: userId ? { userId } : undefined,
           },
         },
       });
