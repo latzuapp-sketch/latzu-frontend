@@ -69,14 +69,14 @@ import {
 // ─── Phase color palette ───────────────────────────────────────────────────────
 
 const PHASE_COLORS = [
-  { name: "indigo",  border: "border-l-indigo-500",  bg: "bg-indigo-500/10",  text: "text-indigo-400",  dot: "bg-indigo-400"  },
-  { name: "violet",  border: "border-l-violet-500",  bg: "bg-violet-500/10",  text: "text-violet-400",  dot: "bg-violet-400"  },
-  { name: "teal",    border: "border-l-teal-500",    bg: "bg-teal-500/10",    text: "text-teal-400",    dot: "bg-teal-400"    },
-  { name: "emerald", border: "border-l-emerald-500", bg: "bg-emerald-500/10", text: "text-emerald-400", dot: "bg-emerald-400" },
-  { name: "amber",   border: "border-l-amber-500",   bg: "bg-amber-500/10",   text: "text-amber-400",   dot: "bg-amber-400"   },
-  { name: "rose",    border: "border-l-rose-500",    bg: "bg-rose-500/10",    text: "text-rose-400",    dot: "bg-rose-400"    },
-  { name: "sky",     border: "border-l-sky-500",     bg: "bg-sky-500/10",     text: "text-sky-400",     dot: "bg-sky-400"     },
-  { name: "orange",  border: "border-l-orange-500",  bg: "bg-orange-500/10",  text: "text-orange-400",  dot: "bg-orange-400"  },
+  { name: "indigo",  border: "border-indigo-500/35",  bg: "bg-indigo-500/10",  headerBg: "bg-gradient-to-br from-indigo-500/20 to-indigo-500/5",  text: "text-indigo-400",  dot: "bg-indigo-500",  numBg: "bg-indigo-500/15 border-indigo-500/40",  chipBg: "bg-indigo-500/10 border-indigo-500/20 text-indigo-400"  },
+  { name: "violet",  border: "border-violet-500/35",  bg: "bg-violet-500/10",  headerBg: "bg-gradient-to-br from-violet-500/20 to-violet-500/5",  text: "text-violet-400",  dot: "bg-violet-500",  numBg: "bg-violet-500/15 border-violet-500/40",  chipBg: "bg-violet-500/10 border-violet-500/20 text-violet-400"  },
+  { name: "teal",    border: "border-teal-500/35",    bg: "bg-teal-500/10",    headerBg: "bg-gradient-to-br from-teal-500/20 to-teal-500/5",    text: "text-teal-400",    dot: "bg-teal-500",    numBg: "bg-teal-500/15 border-teal-500/40",    chipBg: "bg-teal-500/10 border-teal-500/20 text-teal-400"    },
+  { name: "emerald", border: "border-emerald-500/35", bg: "bg-emerald-500/10", headerBg: "bg-gradient-to-br from-emerald-500/20 to-emerald-500/5", text: "text-emerald-400", dot: "bg-emerald-500", numBg: "bg-emerald-500/15 border-emerald-500/40", chipBg: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" },
+  { name: "amber",   border: "border-amber-500/35",   bg: "bg-amber-500/10",   headerBg: "bg-gradient-to-br from-amber-500/20 to-amber-500/5",   text: "text-amber-400",   dot: "bg-amber-500",   numBg: "bg-amber-500/15 border-amber-500/40",   chipBg: "bg-amber-500/10 border-amber-500/20 text-amber-400"   },
+  { name: "rose",    border: "border-rose-500/35",    bg: "bg-rose-500/10",    headerBg: "bg-gradient-to-br from-rose-500/20 to-rose-500/5",    text: "text-rose-400",    dot: "bg-rose-500",    numBg: "bg-rose-500/15 border-rose-500/40",    chipBg: "bg-rose-500/10 border-rose-500/20 text-rose-400"    },
+  { name: "sky",     border: "border-sky-500/35",     bg: "bg-sky-500/10",     headerBg: "bg-gradient-to-br from-sky-500/20 to-sky-500/5",     text: "text-sky-400",     dot: "bg-sky-500",     numBg: "bg-sky-500/15 border-sky-500/40",     chipBg: "bg-sky-500/10 border-sky-500/20 text-sky-400"     },
+  { name: "orange",  border: "border-orange-500/35",  bg: "bg-orange-500/10",  headerBg: "bg-gradient-to-br from-orange-500/20 to-orange-500/5",  text: "text-orange-400",  dot: "bg-orange-500",  numBg: "bg-orange-500/15 border-orange-500/40",  chipBg: "bg-orange-500/10 border-orange-500/20 text-orange-400"  },
 ];
 
 function getPhaseColor(color?: string) {
@@ -641,23 +641,15 @@ function PhasesView({
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(
     () => new Set(phases.slice(0, 6).map((p) => p.id))
   );
-  const [expandedSubPhases, setExpandedSubPhases] = useState<Set<string>>(new Set());
+  const [expandedSubPhases, setExpandedSubPhases] = useState<Set<string>>(
+    () => new Set()
+  );
 
-  const togglePhase = (id: string) => {
-    setExpandedPhases((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
+  const togglePhase = (id: string) =>
+    setExpandedPhases((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
-  const toggleSubPhase = (id: string) => {
-    setExpandedSubPhases((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
+  const toggleSubPhase = (id: string) =>
+    setExpandedSubPhases((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
   const filterTasks = (ts: PlanningTask[]) => {
     if (taskFilter === "done") return ts.filter((t) => t.status === "done");
@@ -666,221 +658,272 @@ function PhasesView({
   };
 
   return (
-    <div className="space-y-3">
-      {phases.map((phase, phaseIdx) => {
-        const pc = getPhaseColor(phase.color);
-        const phaseTasks = tasks.filter((t) => t.phaseIndex === phaseIdx);
-        const phaseDone = phaseTasks.filter((t) => t.status === "done").length;
-        const isExpanded = expandedPhases.has(phase.id);
+    <div className="relative">
+      {/* Vertical timeline line */}
+      {phases.length > 1 && (
+        <div className="absolute left-[19px] top-10 bottom-20 w-px bg-gradient-to-b from-border/60 via-border/30 to-transparent pointer-events-none" />
+      )}
 
-        const subPhases = phase.subPhases ?? [];
-        const assignedSubPhaseIds = new Set(subPhases.map((sp) => sp.id));
-        const unassignedTasks = phaseTasks.filter((t) => !t.subPhaseId || !assignedSubPhaseIds.has(t.subPhaseId));
+      <div className="space-y-5">
+        {phases.map((phase, phaseIdx) => {
+          const pc = getPhaseColor(phase.color);
+          const phaseTasks = tasks.filter((t) => t.phaseIndex === phaseIdx);
+          const phaseDone = phaseTasks.filter((t) => t.status === "done").length;
+          const phaseProgress = phaseTasks.length === 0 ? 0 : Math.round((phaseDone / phaseTasks.length) * 100);
+          const isExpanded = expandedPhases.has(phase.id);
+          const subPhases = phase.subPhases ?? [];
+          const assignedSubPhaseIds = new Set(subPhases.map((sp) => sp.id));
+          const unassignedTasks = phaseTasks.filter((t) => !t.subPhaseId || !assignedSubPhaseIds.has(t.subPhaseId));
+          const isComplete = phaseTasks.length > 0 && phaseDone === phaseTasks.length;
 
-        return (
-          <div
-            key={phase.id}
-            className={cn("rounded-xl border border-border/40 overflow-hidden border-l-2", pc.border)}
-          >
-            {/* Phase header */}
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-muted/20 hover:bg-muted/30 transition-colors group/phase">
-              <button onClick={() => togglePhase(phase.id)} className="flex-shrink-0">
-                <ChevronRight className={cn(
-                  "w-3.5 h-3.5 text-muted-foreground/60 transition-transform",
-                  isExpanded && "rotate-90"
-                )} />
-              </button>
-
-              {/* Color picker */}
-              <div className="flex gap-1 opacity-0 group-hover/phase:opacity-100 transition-opacity flex-shrink-0">
-                {PHASE_COLORS.map((c) => (
-                  <button
-                    key={c.name}
-                    onClick={() => onUpdatePhase(phase.id, { color: c.name })}
-                    className={cn(
-                      "w-2.5 h-2.5 rounded-full transition-transform hover:scale-125",
-                      c.dot,
-                      phase.color === c.name && "ring-1 ring-white/60"
-                    )}
-                  />
-                ))}
+          return (
+            <motion.div
+              key={phase.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: phaseIdx * 0.06 }}
+              className="relative flex gap-4"
+            >
+              {/* Phase number node */}
+              <div className="flex-shrink-0 flex flex-col items-center gap-0 z-10">
+                <div className={cn(
+                  "w-10 h-10 rounded-2xl border-2 flex items-center justify-center font-bold text-sm flex-shrink-0 transition-all duration-300",
+                  pc.numBg, pc.text,
+                  isComplete && "opacity-60"
+                )}>
+                  {isComplete
+                    ? <CheckCircle2 className="w-5 h-5" />
+                    : <span className="font-mono">{String(phaseIdx + 1).padStart(2, "0")}</span>
+                  }
+                </div>
               </div>
 
-              {/* Title */}
-              <div className="flex-1 min-w-0" onClick={() => togglePhase(phase.id)}>
-                <InlineEdit
-                  value={phase.title}
-                  onSave={(v) => onUpdatePhase(phase.id, { title: v })}
-                  className={cn("text-sm font-medium", pc.text)}
-                  placeholder="Sin título"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {phase.durationWeeks > 0 && (
-                  <span className="text-[11px] text-muted-foreground/50">
-                    {phase.durationWeeks} sem.
-                  </span>
-                )}
-                <span className="text-[11px] text-muted-foreground/60">
-                  {phaseDone}/{phaseTasks.length}
-                </span>
-                <button
-                  onClick={() => onDeletePhase(phase.id)}
-                  className="opacity-0 group-hover/phase:opacity-100 transition-opacity text-muted-foreground/40 hover:text-destructive"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Phase body */}
-            {isExpanded && (
-              <div className="px-2 py-1.5 space-y-2">
-                {/* Sub-phases */}
-                {subPhases.map((subPhase) => {
-                  const spTasks = filterTasks(phaseTasks.filter((t) => t.subPhaseId === subPhase.id));
-                  const isSpExpanded = expandedSubPhases.has(subPhase.id);
-
-                  return (
-                    <div key={subPhase.id} className="rounded-lg border border-border/30 bg-muted/10">
-                      {/* Sub-phase header */}
-                      <div className="flex items-center gap-2 px-3 py-2 group/sp">
-                        <button onClick={() => toggleSubPhase(subPhase.id)} className="flex-shrink-0">
-                          <ChevronRight className={cn(
-                            "w-3 h-3 text-muted-foreground/50 transition-transform",
-                            isSpExpanded && "rotate-90"
-                          )} />
-                        </button>
-                        <div className="flex-1 min-w-0" onClick={() => toggleSubPhase(subPhase.id)}>
+              {/* Phase card */}
+              <div className={cn(
+                "flex-1 rounded-2xl border overflow-hidden transition-all duration-200",
+                pc.border,
+                isComplete ? "opacity-70" : "shadow-sm"
+              )}>
+                {/* Phase header */}
+                <div className={cn("px-4 pt-4 pb-3", pc.headerBg, "group/phase")}>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      {/* Title row */}
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <div onClick={(e) => e.stopPropagation()}>
                           <InlineEdit
-                            value={subPhase.title}
-                            onSave={(v) => onUpdateSubPhase(phase.id, subPhase.id, { title: v })}
-                            className="text-xs font-medium text-muted-foreground"
-                            placeholder="Sin título"
+                            value={phase.title}
+                            onSave={(v) => onUpdatePhase(phase.id, { title: v })}
+                            className={cn("font-bold text-base leading-tight", pc.text)}
+                            placeholder="Nombre de la fase"
                           />
                         </div>
-                        <span className="text-[11px] text-muted-foreground/40 flex-shrink-0">
-                          {spTasks.filter((t) => t.status === "done").length}/{spTasks.length}
-                        </span>
-                        <button
-                          onClick={() => onDeleteSubPhase(phase.id, subPhase.id)}
-                          className="opacity-0 group-hover/sp:opacity-100 transition-opacity text-muted-foreground/40 hover:text-destructive flex-shrink-0"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
+                        {phase.durationWeeks > 0 && (
+                          <span className="text-[11px] text-muted-foreground/60 bg-background/50 px-2 py-0.5 rounded-full border border-border/30 flex-shrink-0">
+                            {phase.durationWeeks} {phase.durationWeeks === 1 ? "semana" : "semanas"}
+                          </span>
+                        )}
                       </div>
 
-                      {/* Sub-phase tasks */}
-                      {isSpExpanded && (
-                        <div className="px-2 pb-1.5 space-y-0.5">
-                          <AnimatePresence>
-                            {spTasks.map((task) => (
-                              <TaskRow
-                                key={task.id}
-                                task={task}
-                                onToggle={onToggle}
-                                onUpdate={onUpdate}
-                                onDelete={onDelete}
-                                onPushCalendar={onPushCalendar}
-                                pushingId={pushingId}
-                              />
-                            ))}
-                          </AnimatePresence>
-                          <NewTaskRow
-                            planId={planId}
-                            userId={userId}
-                            defaultPhaseIndex={phaseIdx}
-                            defaultSubPhaseId={subPhase.id}
-                            onCreated={onTaskCreated}
-                          />
+                      {/* Progress */}
+                      {phaseTasks.length > 0 && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex-1 h-1.5 rounded-full bg-black/15 dark:bg-white/10 overflow-hidden">
+                            <motion.div
+                              className={cn("h-full rounded-full", pc.dot)}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${phaseProgress}%` }}
+                              transition={{ duration: 0.7, ease: "easeOut", delay: phaseIdx * 0.06 + 0.2 }}
+                            />
+                          </div>
+                          <span className={cn("text-[11px] font-semibold tabular-nums flex-shrink-0", pc.text)}>
+                            {phaseDone}/{phaseTasks.length}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Topics chips */}
+                      {phase.topics && phase.topics.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {phase.topics.map((topic, ti) => (
+                            <span
+                              key={ti}
+                              className={cn(
+                                "text-[11px] px-2 py-0.5 rounded-full border font-medium",
+                                pc.chipBg
+                              )}
+                            >
+                              {topic}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </div>
-                  );
-                })}
 
-                {/* Tasks not assigned to any sub-phase */}
-                {(subPhases.length === 0 || unassignedTasks.length > 0) && (
-                  <div className="space-y-0.5">
-                    {subPhases.length > 0 && unassignedTasks.length > 0 && (
-                      <p className="text-[11px] text-muted-foreground/40 px-2 pb-0.5">Sin sub-fase</p>
-                    )}
-                    <AnimatePresence>
-                      {filterTasks(unassignedTasks).map((task) => (
-                        <TaskRow
-                          key={task.id}
-                          task={task}
-                          onToggle={onToggle}
-                          onUpdate={onUpdate}
-                          onDelete={onDelete}
-                          onPushCalendar={onPushCalendar}
-                          pushingId={pushingId}
-                        />
-                      ))}
-                    </AnimatePresence>
-                    {subPhases.length === 0 && (
-                      <NewTaskRow
-                        planId={planId}
-                        userId={userId}
-                        defaultPhaseIndex={phaseIdx}
-                        onCreated={onTaskCreated}
-                      />
-                    )}
+                    {/* Right controls */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {/* Color picker */}
+                      <div className="flex gap-1 opacity-0 group-hover/phase:opacity-100 transition-opacity">
+                        {PHASE_COLORS.map((c) => (
+                          <button
+                            key={c.name}
+                            onClick={() => onUpdatePhase(phase.id, { color: c.name })}
+                            className={cn(
+                              "w-2.5 h-2.5 rounded-full transition-transform hover:scale-125 flex-shrink-0",
+                              c.dot,
+                              phase.color === c.name && "ring-1 ring-white/70 ring-offset-1 ring-offset-transparent"
+                            )}
+                          />
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => onDeletePhase(phase.id)}
+                        className="opacity-0 group-hover/phase:opacity-100 transition-opacity text-muted-foreground/40 hover:text-destructive p-1 rounded ml-1"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => togglePhase(phase.id)}
+                        className="text-muted-foreground/50 hover:text-muted-foreground transition-colors p-1 rounded ml-0.5"
+                      >
+                        <ChevronDown className={cn(
+                          "w-4 h-4 transition-transform duration-200",
+                          isExpanded && "rotate-180"
+                        )} />
+                      </button>
+                    </div>
                   </div>
-                )}
+                </div>
 
-                {/* Add sub-phase */}
-                <button
-                  onClick={() => {
-                    onAddSubPhase(phase.id);
-                    // auto-expand the new sub-phase
-                  }}
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors py-1 px-2 rounded hover:bg-muted/30 w-full"
-                >
-                  <Plus className="w-3 h-3" />
-                  Añadir sub-fase
-                </button>
+                {/* Phase body */}
+                <AnimatePresence initial={false}>
+                  {isExpanded && (
+                    <motion.div
+                      key="body"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-3 pt-2 pb-3 space-y-2 border-t border-border/20 bg-card/30">
+                        {/* Sub-phases */}
+                        {subPhases.map((subPhase) => {
+                          const spTasks = filterTasks(phaseTasks.filter((t) => t.subPhaseId === subPhase.id));
+                          const isSpExpanded = expandedSubPhases.has(subPhase.id);
+                          const spDone = spTasks.filter((t) => t.status === "done").length;
+
+                          return (
+                            <div key={subPhase.id} className="rounded-xl border border-border/25 bg-muted/10 overflow-hidden">
+                              <div
+                                className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-muted/20 transition-colors group/sp"
+                                onClick={() => toggleSubPhase(subPhase.id)}
+                              >
+                                <ChevronRight className={cn(
+                                  "w-3 h-3 text-muted-foreground/50 transition-transform flex-shrink-0",
+                                  isSpExpanded && "rotate-90"
+                                )} />
+                                <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                                  <InlineEdit
+                                    value={subPhase.title}
+                                    onSave={(v) => onUpdateSubPhase(phase.id, subPhase.id, { title: v })}
+                                    className="text-xs font-semibold text-foreground/70"
+                                    placeholder="Sub-fase"
+                                  />
+                                </div>
+                                <span className="text-[10px] text-muted-foreground/40 flex-shrink-0 tabular-nums">
+                                  {spDone}/{spTasks.length}
+                                </span>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); onDeleteSubPhase(phase.id, subPhase.id); }}
+                                  className="opacity-0 group-hover/sp:opacity-100 transition-opacity text-muted-foreground/30 hover:text-destructive flex-shrink-0"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+
+                              {isSpExpanded && (
+                                <div className="px-2 pb-2 space-y-0.5 border-t border-border/20 pt-1">
+                                  <AnimatePresence>
+                                    {spTasks.map((task) => (
+                                      <TaskRow key={task.id} task={task} onToggle={onToggle} onUpdate={onUpdate} onDelete={onDelete} onPushCalendar={onPushCalendar} pushingId={pushingId} />
+                                    ))}
+                                  </AnimatePresence>
+                                  <NewTaskRow planId={planId} userId={userId} defaultPhaseIndex={phaseIdx} defaultSubPhaseId={subPhase.id} onCreated={onTaskCreated} />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {/* Unassigned tasks */}
+                        {(subPhases.length === 0 || unassignedTasks.length > 0) && (
+                          <div className="space-y-0.5">
+                            {subPhases.length > 0 && unassignedTasks.length > 0 && (
+                              <p className="text-[10px] text-muted-foreground/40 px-1 pb-0.5 uppercase tracking-wide">Sin sub-fase</p>
+                            )}
+                            <AnimatePresence>
+                              {filterTasks(unassignedTasks).map((task) => (
+                                <TaskRow key={task.id} task={task} onToggle={onToggle} onUpdate={onUpdate} onDelete={onDelete} onPushCalendar={onPushCalendar} pushingId={pushingId} />
+                              ))}
+                            </AnimatePresence>
+                            {subPhases.length === 0 && (
+                              <NewTaskRow planId={planId} userId={userId} defaultPhaseIndex={phaseIdx} onCreated={onTaskCreated} />
+                            )}
+                          </div>
+                        )}
+
+                        {/* Add sub-phase */}
+                        <button
+                          onClick={() => onAddSubPhase(phase.id)}
+                          className="flex items-center gap-1.5 text-[11px] text-muted-foreground/40 hover:text-muted-foreground transition-colors py-1 px-2 rounded-lg hover:bg-muted/20 w-full"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Añadir sub-fase
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-            )}
-          </div>
-        );
-      })}
+            </motion.div>
+          );
+        })}
 
-      {/* Unphased tasks */}
-      {(() => {
-        const unphasedTasks = filterTasks(tasks.filter((t) => t.phaseIndex == null));
-        if (unphasedTasks.length === 0 && phases.length > 0) return null;
-        return (
-          <div className="space-y-0.5">
-            {phases.length > 0 && (
-              <p className="text-xs text-muted-foreground/40 px-1 mb-1">Sin fase asignada</p>
-            )}
-            <AnimatePresence>
-              {unphasedTasks.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  onToggle={onToggle}
-                  onUpdate={onUpdate}
-                  onDelete={onDelete}
-                  onPushCalendar={onPushCalendar}
-                  pushingId={pushingId}
-                />
-              ))}
-            </AnimatePresence>
-          </div>
-        );
-      })()}
+        {/* Unphased tasks */}
+        {(() => {
+          const unphasedTasks = filterTasks(tasks.filter((t) => t.phaseIndex == null));
+          if (unphasedTasks.length === 0 && phases.length > 0) return null;
+          return (
+            <div className={cn("space-y-0.5", phases.length > 0 && "pl-14")}>
+              {phases.length > 0 && (
+                <p className="text-xs text-muted-foreground/40 px-1 mb-1 uppercase tracking-wide">Sin fase</p>
+              )}
+              <AnimatePresence>
+                {unphasedTasks.map((task) => (
+                  <TaskRow key={task.id} task={task} onToggle={onToggle} onUpdate={onUpdate} onDelete={onDelete} onPushCalendar={onPushCalendar} pushingId={pushingId} />
+                ))}
+              </AnimatePresence>
+            </div>
+          );
+        })()}
 
-      {/* Add phase */}
-      <button
-        onClick={onAddPhase}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2 px-3 rounded-xl border border-dashed border-border/40 hover:border-border/70 w-full"
-      >
-        <Plus className="w-4 h-4" />
-        Añadir fase
-      </button>
+        {/* Add phase */}
+        <button
+          onClick={onAddPhase}
+          className={cn(
+            "w-full flex items-center justify-center gap-2 text-sm text-muted-foreground",
+            "hover:text-foreground transition-all duration-200 py-3.5 px-4 rounded-2xl",
+            "border-2 border-dashed border-border/40 hover:border-primary/40 hover:bg-primary/5",
+            phases.length > 0 && "ml-14 w-[calc(100%-3.5rem)]"
+          )}
+        >
+          <Plus className="w-4 h-4" />
+          Añadir fase
+        </button>
+      </div>
     </div>
   );
 }
