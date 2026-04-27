@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 import { useIsGuest } from "@/stores/userStore";
 import { cn } from "@/lib/utils";
 
@@ -36,9 +37,7 @@ function Navbar() {
       <nav className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-            <Brain className="w-4.5 h-4.5 text-primary-foreground" />
-          </div>
+          <Image src="/logo.png" alt="Latzu" width={32} height={32} className="w-8 h-8 object-contain" />
           <span className="text-xl font-heading font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Latzu
           </span>
@@ -892,9 +891,7 @@ export default function HomePage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             {/* Logo */}
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Brain className="w-4 h-4 text-primary-foreground" />
-              </div>
+              <Image src="/logo.png" alt="Latzu" width={28} height={28} className="w-7 h-7 object-contain" />
               <span className="font-heading font-bold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 Latzu
               </span>

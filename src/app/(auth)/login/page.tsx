@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Brain, Zap, Mail, Lock, Loader2 } from "lucide-react";
+import Image from "next/image";
 import { useUserStore } from "@/stores/userStore";
 
 function LoginContent() {
@@ -135,9 +136,7 @@ function LoginContent() {
           transition={{ delay: 0.2, type: "spring" }}
           className="inline-flex items-center gap-2 text-4xl font-heading font-bold"
         >
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-            <Brain className="w-7 h-7 text-primary-foreground" />
-          </div>
+          <Image src="/logo.png" alt="Latzu" width={48} height={48} className="w-12 h-12 object-contain" />
           <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Latzu
           </span>

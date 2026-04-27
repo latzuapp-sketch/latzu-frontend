@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -35,8 +36,8 @@ function SidebarLogo({ collapsed }: { collapsed: boolean }) {
   return (
     <div className="h-16 flex items-center px-4 border-b border-sidebar-border flex-shrink-0">
       <Link href="/" className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-          <Brain className="w-6 h-6 text-primary-foreground" />
+        <div className="w-10 h-10 flex-shrink-0">
+          <Image src="/logo.png" alt="Latzu" width={40} height={40} className="w-10 h-10 object-contain" />
         </div>
         <AnimatePresence>
           {!collapsed && (

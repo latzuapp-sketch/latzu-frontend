@@ -646,3 +646,15 @@ export const GET_TASK_CONTENT = gql`
     }
   }
 `;
+
+export const GENERATE_TASK_CONTENT = gql`
+  mutation GenerateTaskContent($taskId: String!, $forceRegenerate: Boolean) {
+    generateTaskContent(taskId: $taskId, forceRegenerate: $forceRegenerate) {
+      taskId
+      contentType
+      content
+      basedOnOutcome
+      generatedAt
+    }
+  }
+`;
