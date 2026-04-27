@@ -414,7 +414,9 @@ export function StudyAgentChat({ onClose }: StudyAgentChatProps) {
       transition={{ type: "spring", damping: 28, stiffness: 380 }}
       className={cn(
         "flex flex-col bg-card border border-border/50 shadow-2xl rounded-2xl overflow-hidden",
-        expanded ? "fixed inset-4 z-50" : "fixed bottom-4 right-4 z-50 w-[430px] h-[620px]"
+        expanded
+          ? "fixed inset-4 z-50"
+          : "fixed top-[4.5rem] right-4 z-50 w-[430px] h-[min(620px,calc(100vh-5.5rem))]"
       )}
     >
       {/* ── Header ── */}
