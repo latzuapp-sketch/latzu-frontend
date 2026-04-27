@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery } from "@apollo/client";
 import { cn } from "@/lib/utils";
@@ -42,6 +42,22 @@ interface CompletionInfo {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+function parseChapters(text: string): { id: string; title: string; content: string }[] {
+  if (!text.trim()) return [];
+  // Split before any ## or # heading that starts on a new line
+  const parts = text.split(/\n(?=#{1,2} )/);
+  if (parts.length <= 1) return [{ id: "full", title: "Contenido", content: text }];
+  return parts.map((part, i) => {
+    const trimmed = part.trim();
+    const lines = trimmed.split("\n");
+    const headingMatch = lines[0].match(/^#{1,2} (.+)/);
+    if (headingMatch) {
+      return { id: `ch-${i}`, title: headingMatch[1].trim(), content: lines.slice(1).join("\n").trim() };
+    }
+    return { id: `ch-${i}`, title: i === 0 ? "Introducción" : `Parte ${i + 1}`, content: trimmed };
+  }).filter((ch) => ch.content);
+}
 
 function parseFlashcards(text: string): { front: string; back: string }[] {
   const cards: { front: string; back: string }[] = [];
@@ -376,64 +392,181 @@ function useTaskContent(task: PlanningTask) {
   return { content, contentType, loading, regenerate };
 }
 
-// ── Reading / Lesson view ─────────────────────────────────────────────────────
+// ── Reading / Lesson view (chapter-based) ────────────────────────────────────
 
-export function ReadingView({ task, userId, buildContext }: ViewProps) {
+export function ReadingView({ task, userId }: ViewProps) {
   const { content, loading, regenerate } = useTaskContent(task);
   const [completion, setCompletion] = useState<CompletionInfo | null>(null);
-  const [progress, setProgress] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [sendMsg] = useMutation(SEND_MESSAGE, { client: aiClient });
+  const [chapterIdx, setChapterIdx] = useState(0);
+  const [tocOpen, setTocOpen] = useState(false);
   const [recordOutcome] = useMutation(RECORD_STUDY_OUTCOME, { client: aiClient });
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const text = (content as { content?: string })?.content ?? "";
+  const chapters = useMemo(() => parseChapters(text), [text]);
 
-  const handleScroll = () => {
-    const el = containerRef.current;
-    if (!el) return;
-    const pct = Math.min(100, Math.round(el.scrollTop / (el.scrollHeight - el.clientHeight) * 100));
-    setProgress(pct);
-    if (pct >= 90 && !completion) {
-      recordOutcome({ variables: { input: { taskId: task.id, outcomeType: "reading" } } }).catch(() => {});
-      setCompletion({ type: "reading", readProgress: pct, taskTitle: task.title });
-    }
-  };
+  // Reset chapter index when content changes (new task)
+  useEffect(() => { setChapterIdx(0); setTocOpen(false); }, [task.id]);
 
-  const handleSuggestion = useCallback(async (s: ReturnType<typeof buildSuggestions>["suggestions"][0]) => {
+  const chapter = chapters[chapterIdx] ?? null;
+  const isLast = chapterIdx === chapters.length - 1;
+  const isSingleChapter = chapters.length <= 1;
+  const progress = chapters.length > 1
+    ? Math.round((chapterIdx / (chapters.length - 1)) * 100)
+    : chapter ? 50 : 0;
+
+  const handleSuggestion = useCallback((s: ReturnType<typeof buildSuggestions>["suggestions"][0]) => {
     if (!s.prompt) { setCompletion(null); return; }
     setCompletion(null);
-    // Open suggestion content inline
     window.dispatchEvent(new CustomEvent("latzu:study-prompt", { detail: { prompt: s.prompt, userId } }));
   }, [userId]);
 
+  const goNext = useCallback(() => {
+    if (isLast) {
+      recordOutcome({ variables: { input: { taskId: task.id, outcomeType: "reading" } } }).catch(() => {});
+      setCompletion({ type: "reading", readProgress: 100, taskTitle: task.title });
+    } else {
+      setChapterIdx((v) => v + 1);
+      contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [isLast, task.id, task.title, recordOutcome]);
+
+  if (loading) return <LoadingState label="Preparando lección…" />;
+
   return (
     <div className="relative flex flex-col h-full">
+      {/* Progress bar */}
       <div className="h-1 bg-muted/30 shrink-0">
-        <motion.div className="h-full bg-primary" style={{ width: `${progress}%` }} transition={{ duration: 0.1 }} />
+        <motion.div
+          className="h-full bg-gradient-to-r from-primary to-accent"
+          style={{ width: `${progress}%` }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        />
       </div>
 
-      <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-6 py-8">
-          {loading ? (
-            <LoadingState label="Preparando contenido…" />
-          ) : (
-            <>
+      {/* Chapter navigation bar */}
+      {!isSingleChapter && (
+        <div className="shrink-0 border-b border-border/30 bg-muted/10">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-3">
+            {/* Chapter title */}
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="text-[10px] font-mono font-bold text-primary/80 shrink-0 bg-primary/10 px-1.5 py-0.5 rounded">
+                {chapterIdx + 1}/{chapters.length}
+              </span>
+              <span className="text-sm font-semibold truncate">{chapter?.title}</span>
+            </div>
+            {/* Controls */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => setTocOpen((v) => !v)}
+                className={cn(
+                  "flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg border transition-colors",
+                  tocOpen
+                    ? "bg-primary/10 border-primary/30 text-primary"
+                    : "border-border/40 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <BookOpen className="w-3 h-3" />
+                <span className="hidden sm:inline">Índice</span>
+              </button>
+              <button
+                onClick={regenerate}
+                className="p-1.5 rounded-lg border border-border/40 text-muted-foreground hover:text-foreground transition-colors"
+                title="Regenerar"
+              >
+                <RefreshCw className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+
+          {/* Table of contents dropdown */}
+          <AnimatePresence>
+            {tocOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden border-t border-border/20"
+              >
+                <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3 space-y-1">
+                  {chapters.map((ch, i) => (
+                    <button
+                      key={ch.id}
+                      onClick={() => { setChapterIdx(i); setTocOpen(false); contentRef.current?.scrollTo({ top: 0 }); }}
+                      className={cn(
+                        "w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors",
+                        i === chapterIdx
+                          ? "bg-primary/10 text-primary font-medium"
+                          : i < chapterIdx
+                          ? "text-foreground/60 hover:text-foreground hover:bg-muted/20"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/20"
+                      )}
+                    >
+                      <span className={cn(
+                        "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
+                        i < chapterIdx ? "bg-emerald-500/20 text-emerald-400" :
+                        i === chapterIdx ? "bg-primary/20 text-primary" :
+                        "bg-muted/40 text-muted-foreground/60"
+                      )}>
+                        {i < chapterIdx ? "✓" : i + 1}
+                      </span>
+                      <span className="truncate">{ch.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* Chapter content */}
+      <div ref={contentRef} className="flex-1 overflow-y-auto">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={chapter?.id ?? "loading"}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="max-w-2xl mx-auto px-4 sm:px-6 py-8"
+          >
+            {isSingleChapter && (
               <div className="flex justify-end mb-4">
                 <button onClick={regenerate} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <RefreshCw className="w-3 h-3" />Regenerar
                 </button>
               </div>
-              {text && <MarkdownRenderer>{text}</MarkdownRenderer>}
-              {!completion && progress >= 10 && (
-                <div className="mt-8 pt-6 border-t border-border/30 flex justify-center">
-                  <Button onClick={() => setCompletion({ type: "reading", readProgress: progress, taskTitle: task.title })} className="gap-2">
-                    <Trophy className="w-3.5 h-3.5" />Marcar como leído
-                  </Button>
-                </div>
+            )}
+
+            {chapter && <MarkdownRenderer>{chapter.content || chapter.title}</MarkdownRenderer>}
+
+            {/* Chapter navigation */}
+            <div className={cn("flex items-center mt-10 pt-6 border-t border-border/30", chapterIdx === 0 ? "justify-end" : "justify-between")}>
+              {chapterIdx > 0 && (
+                <Button
+                  variant="ghost" size="sm"
+                  onClick={() => { setChapterIdx((v) => v - 1); contentRef.current?.scrollTo({ top: 0, behavior: "smooth" }); }}
+                  className="gap-2 text-xs"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />Anterior
+                </Button>
               )}
-            </>
-          )}
-        </div>
+              <Button
+                size="sm"
+                onClick={goNext}
+                className={cn("gap-2 text-xs", isLast && "bg-emerald-600 hover:bg-emerald-700 text-white")}
+              >
+                {isLast ? (
+                  <><Trophy className="w-3.5 h-3.5" />Completar lección</>
+                ) : (
+                  <>Siguiente capítulo <ChevronRight className="w-3.5 h-3.5" /></>
+                )}
+              </Button>
+            </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       <AnimatePresence>

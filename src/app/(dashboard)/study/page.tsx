@@ -856,6 +856,7 @@ function TaskWorkspace({ task, planTitle, planContext, onBack, onStatusChange }:
               rightOpen ? "bg-primary/10 border-primary/30 text-primary" : "border-border/50 text-muted-foreground hover:text-foreground")}>
             <Brain className="w-3.5 h-3.5" />
           </button>
+          <FloatingChat task={task} userId={userId} buildContext={buildContext} />
           {task.status !== "done" ? (
             <Button size="sm" variant="outline" onClick={() => onStatusChange("done")} className="gap-1.5 h-7 text-xs ml-1">
               <CheckCircle2 className="w-3.5 h-3.5" />Hecha
@@ -1011,9 +1012,6 @@ function TaskWorkspace({ task, planTitle, planContext, onBack, onStatusChange }:
           )}
         </AnimatePresence>
       </div>
-
-      {/* Floating chat */}
-      <FloatingChat task={task} userId={userId} buildContext={buildContext} />
 
       <AnimatePresence>
         {showAddModal && <AddSourceModal onAdd={addSource} onClose={() => setShowAddModal(false)} />}
