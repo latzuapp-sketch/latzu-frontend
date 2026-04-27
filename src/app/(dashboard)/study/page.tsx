@@ -1,8 +1,9 @@
 "use client";
 
 import {
-  useState, useCallback, useRef, useEffect, useMemo,
+  useState, useCallback, useRef, useEffect, useMemo, Suspense,
 } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "@apollo/client";
 import { useSession } from "next-auth/react";
@@ -15,13 +16,14 @@ import { usePlans } from "@/hooks/usePlans";
 import { FlashcardSession } from "@/components/study/FlashcardSession";
 import { MindMap, type MindNode } from "@/components/study/MindMap";
 import { MarkdownRenderer } from "@/components/lessons/MarkdownRenderer";
-import type { PlanningTask, TaskCategory } from "@/types/planning";
+import type { PlanningTask, TaskCategory, StudyPhase, ActionPlan } from "@/types/planning";
 import {
   Zap, FileText, Plus, Trash2, X, Loader2, Send, Sparkles,
   BookOpen, Brain, CheckSquare, MessageSquare, RefreshCw,
   CheckCircle2, Globe, Upload, AlertCircle, ArrowLeft,
   CalendarDays, Clock, Library,
-  Circle, Bell, Code, Play, Map,
+  Circle, Bell, Code, Play, Map, ChevronRight, ChevronDown,
+  MapPin, Navigation,
 } from "lucide-react";
 import { FloatingChat } from "@/components/study/FloatingChat";
 import { TaskMainContent } from "@/components/study/TaskViews";
@@ -52,6 +54,38 @@ const FILTER_TABS: { id: FilterTab; label: string; icon: typeof BookOpen }[] = [
   { id: "practice",  label: "Práctica",   icon: Code },
   { id: "task",      label: "Tareas",     icon: Circle },
 ];
+
+// ── Plan context (passed when opening a task from roadmap) ───────────────────
+
+export interface PlanContext {
+  planId: string;
+  planTitle: string;
+  phaseName: string;
+  phaseIndex: number;
+  totalPhases: number;
+  taskPosition: number;        // 1-based within the phase
+  totalTasksInPhase: number;
+  prevTaskTitle?: string;
+  nextTaskTitle?: string;
+}
+
+// ── Phase color map (subset matching plan page) ───────────────────────────────
+
+const PHASE_ACCENT: Record<string, string> = {
+  indigo: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+  violet: "bg-violet-500/15 text-violet-400 border-violet-500/30",
+  teal:   "bg-teal-500/15   text-teal-400   border-teal-500/30",
+  emerald:"bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  amber:  "bg-amber-500/15  text-amber-400  border-amber-500/30",
+  rose:   "bg-rose-500/15   text-rose-400   border-rose-500/30",
+  sky:    "bg-sky-500/15    text-sky-400    border-sky-500/30",
+  orange: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+};
+const PHASE_DOT: Record<string, string> = {
+  indigo: "bg-indigo-500", violet: "bg-violet-500", teal: "bg-teal-500",
+  emerald: "bg-emerald-500", amber: "bg-amber-500", rose: "bg-rose-500",
+  sky: "bg-sky-500", orange: "bg-orange-500",
+};
 
 // ── Notebook source types ─────────────────────────────────────────────────────
 
@@ -324,14 +358,339 @@ function parseMindMap(text: string): MindNode | null {
   } catch { return null; }
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// ROADMAP VIEW
+// ══════════════════════════════════════════════════════════════════════════════
+
+function RoadmapView({
+  plans,
+  tasks,
+  onOpenTask,
+}: {
+  plans: ActionPlan[];
+  tasks: PlanningTask[];
+  onOpenTask: (task: PlanningTask, ctx: PlanContext) => void;
+}) {
+  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
+
+  const studyPlans = useMemo(
+    () => plans.filter((p) => p.type === "study" && p.status !== "completed"),
+    [plans]
+  );
+
+  const parsePhases = (plan: ActionPlan): StudyPhase[] => {
+    if (!plan.phases) return [];
+    try {
+      return JSON.parse(plan.phases) as StudyPhase[];
+    } catch { return []; }
+  };
+
+  // Auto-expand current phase on mount
+  useEffect(() => {
+    const init = new Set<string>();
+    for (const plan of studyPlans) {
+      const phases = parsePhases(plan);
+      const planTasks = tasks.filter((t) => t.planId === plan.id);
+      for (let i = 0; i < phases.length; i++) {
+        const pt = planTasks.filter((t) => t.phaseIndex === i);
+        const allDone = pt.length > 0 && pt.every((t) => t.status === "done");
+        if (!allDone) { init.add(`${plan.id}-${i}`); break; }
+      }
+    }
+    setExpandedPhases(init);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studyPlans.length, tasks.length]);
+
+  const togglePhase = (key: string) =>
+    setExpandedPhases((prev) => { const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s; });
+
+  if (studyPlans.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
+        <div className="w-16 h-16 rounded-2xl bg-muted/20 flex items-center justify-center">
+          <Map className="w-8 h-8 text-muted-foreground/30" />
+        </div>
+        <div>
+          <p className="font-semibold text-muted-foreground">Sin planes de estudio activos</p>
+          <p className="text-sm text-muted-foreground/60 mt-1">Crea un plan desde el asesor IA para ver tu ruta aquí</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {studyPlans.map((plan) => {
+        const phases = parsePhases(plan);
+        const planTasks = tasks.filter((t) => t.planId === plan.id);
+        const donePlanTasks = planTasks.filter((t) => t.status === "done").length;
+        const planProgress = planTasks.length === 0 ? 0 : Math.round((donePlanTasks / planTasks.length) * 100);
+
+        // Find overall current task
+        const currentTaskIdx = planTasks
+          .slice()
+          .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
+          .findIndex((t) => t.status !== "done");
+        const currentTask = planTasks[currentTaskIdx];
+
+        return (
+          <div key={plan.id} className="rounded-2xl border border-border/40 overflow-hidden">
+            {/* Plan header */}
+            <div className="px-5 py-4 bg-muted/10 border-b border-border/30">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <BookOpen className="w-4 h-4 text-primary flex-shrink-0" />
+                    <h3 className="font-bold text-base truncate">{plan.title}</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 rounded-full bg-muted/40 overflow-hidden max-w-48">
+                      <motion.div
+                        className="h-full rounded-full bg-primary"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${planProgress}%` }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {donePlanTasks}/{planTasks.length} tareas · {planProgress}%
+                    </span>
+                  </div>
+                </div>
+                {plan.dueDate && (
+                  <span className="text-xs text-muted-foreground/50 flex-shrink-0">
+                    <CalendarDays className="w-3 h-3 inline mr-1" />
+                    {new Date(plan.dueDate + "T00:00:00").toLocaleDateString("es-ES", { month: "short", day: "numeric" })}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Phases */}
+            <div className="divide-y divide-border/20">
+              {phases.length === 0 ? (
+                // No phases — show tasks flat
+                <div className="px-4 py-3 space-y-1">
+                  {planTasks.map((task) => (
+                    <RoadmapTaskRow
+                      key={task.id}
+                      task={task}
+                      isCurrent={task.id === currentTask?.id}
+                      context={{ planId: plan.id, planTitle: plan.title, phaseName: "", phaseIndex: 0, totalPhases: 1, taskPosition: 1, totalTasksInPhase: planTasks.length }}
+                      onOpen={onOpenTask}
+                    />
+                  ))}
+                </div>
+              ) : (
+                phases.map((phase, phaseIdx) => {
+                  const phaseKey = `${plan.id}-${phaseIdx}`;
+                  const isExpanded = expandedPhases.has(phaseKey);
+                  const phaseTasks = planTasks
+                    .filter((t) => t.phaseIndex === phaseIdx)
+                    .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""));
+                  const phaseDone = phaseTasks.filter((t) => t.status === "done").length;
+                  const phaseComplete = phaseTasks.length > 0 && phaseDone === phaseTasks.length;
+                  const isCurrent = phaseTasks.some((t) => t.id === currentTask?.id);
+                  const accent = PHASE_ACCENT[(phase as StudyPhase & { color?: string }).color ?? "indigo"] ?? PHASE_ACCENT.indigo;
+                  const dot = PHASE_DOT[(phase as StudyPhase & { color?: string }).color ?? "indigo"] ?? PHASE_DOT.indigo;
+
+                  return (
+                    <div key={phaseKey}>
+                      {/* Phase header */}
+                      <button
+                        onClick={() => togglePhase(phaseKey)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-5 py-3 text-left transition-colors",
+                          isCurrent ? "bg-primary/5 hover:bg-primary/8" : "hover:bg-muted/20"
+                        )}
+                      >
+                        {/* Phase number */}
+                        <span className={cn(
+                          "w-7 h-7 rounded-xl border flex items-center justify-center text-xs font-bold flex-shrink-0",
+                          phaseComplete ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400" : accent
+                        )}>
+                          {phaseComplete ? <CheckCircle2 className="w-3.5 h-3.5" /> : phaseIdx + 1}
+                        </span>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={cn("text-sm font-semibold", isCurrent && "text-primary")}>
+                              {phase.title}
+                            </span>
+                            {isCurrent && (
+                              <span className="text-[10px] font-semibold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full flex-shrink-0">
+                                Aquí ahora
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <div className="w-24 h-1 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden flex-shrink-0">
+                              <div
+                                className={cn("h-full rounded-full transition-all duration-500", dot)}
+                                style={{ width: `${phaseTasks.length === 0 ? 0 : Math.round((phaseDone / phaseTasks.length) * 100)}%` }}
+                              />
+                            </div>
+                            <span className="text-[11px] text-muted-foreground/50 tabular-nums">
+                              {phaseDone}/{phaseTasks.length}
+                            </span>
+                          </div>
+                        </div>
+
+                        <ChevronDown className={cn(
+                          "w-4 h-4 text-muted-foreground/40 flex-shrink-0 transition-transform duration-200",
+                          isExpanded && "rotate-180"
+                        )} />
+                      </button>
+
+                      {/* Phase tasks */}
+                      <AnimatePresence initial={false}>
+                        {isExpanded && (
+                          <motion.div
+                            key="phase-tasks"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-4 pb-3 pt-1 space-y-1 bg-muted/5 border-t border-border/15">
+                              {phaseTasks.map((task, taskIdx) => (
+                                <RoadmapTaskRow
+                                  key={task.id}
+                                  task={task}
+                                  isCurrent={task.id === currentTask?.id}
+                                  context={{
+                                    planId: plan.id,
+                                    planTitle: plan.title,
+                                    phaseName: phase.title,
+                                    phaseIndex: phaseIdx,
+                                    totalPhases: phases.length,
+                                    taskPosition: taskIdx + 1,
+                                    totalTasksInPhase: phaseTasks.length,
+                                    prevTaskTitle: phaseTasks[taskIdx - 1]?.title,
+                                    nextTaskTitle: phaseTasks[taskIdx + 1]?.title,
+                                  }}
+                                  onOpen={onOpenTask}
+                                />
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Roadmap task row ──────────────────────────────────────────────────────────
+
+function RoadmapTaskRow({
+  task,
+  isCurrent,
+  context,
+  onOpen,
+}: {
+  task: PlanningTask;
+  isCurrent: boolean;
+  context: PlanContext;
+  onOpen: (task: PlanningTask, ctx: PlanContext) => void;
+}) {
+  const effectiveType = (task.contentType ?? task.category) as TaskCategory;
+  const meta = CONTENT_META[effectiveType] ?? CONTENT_META.task;
+  const Icon = meta.icon;
+  const isDone = task.status === "done";
+  const isStudy = ["lesson", "reading", "quiz", "flashcard", "practice"].includes(effectiveType);
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      className={cn(
+        "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group",
+        isCurrent
+          ? "bg-primary/8 border border-primary/20"
+          : isDone
+            ? "opacity-50"
+            : "hover:bg-muted/30"
+      )}
+    >
+      {/* Status icon */}
+      <div className="flex-shrink-0">
+        {isDone
+          ? <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+          : isCurrent
+            ? <Navigation className="w-4 h-4 text-primary animate-pulse" />
+            : <Circle className="w-4 h-4 text-muted-foreground/30" />
+        }
+      </div>
+
+      {/* Type badge */}
+      <span className={cn(
+        "inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border flex-shrink-0",
+        meta.bg, meta.color
+      )}>
+        <Icon className="w-2.5 h-2.5" />
+        {meta.label}
+      </span>
+
+      {/* Title */}
+      <div className="flex-1 min-w-0">
+        <p className={cn(
+          "text-sm truncate",
+          isDone && "line-through text-muted-foreground/50",
+          isCurrent && "font-semibold text-foreground"
+        )}>
+          {task.title}
+        </p>
+        {isCurrent && context.prevTaskTitle && (
+          <p className="text-[10px] text-muted-foreground/50 mt-0.5 truncate">
+            Continúa desde: {context.prevTaskTitle}
+          </p>
+        )}
+        {task.dueDate && !isDone && (
+          <p className="text-[10px] text-muted-foreground/40 mt-0.5">
+            <CalendarDays className="w-2.5 h-2.5 inline mr-0.5" />
+            {new Date(task.dueDate + "T00:00:00").toLocaleDateString("es-ES", { month: "short", day: "numeric" })}
+          </p>
+        )}
+      </div>
+
+      {/* Study button */}
+      {isStudy && !isDone && (
+        <button
+          onClick={() => onOpen(task, context)}
+          className={cn(
+            "flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg transition-all flex-shrink-0",
+            isCurrent
+              ? "bg-primary text-primary-foreground hover:bg-primary/80"
+              : "bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary opacity-0 group-hover:opacity-100"
+          )}
+        >
+          <Play className="w-3 h-3" />
+          {isCurrent ? "Estudiar ahora" : "Estudiar"}
+        </button>
+      )}
+    </motion.div>
+  );
+}
+
 interface TaskWorkspaceProps {
   task: PlanningTask;
   planTitle?: string;
+  planContext?: PlanContext;
   onBack: () => void;
   onStatusChange: (s: PlanningTask["status"]) => void;
 }
 
-function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspaceProps) {
+function TaskWorkspace({ task, planTitle, planContext, onBack, onStatusChange }: TaskWorkspaceProps) {
   const { data: session } = useSession();
   const userId = (session?.user as { id?: string })?.id ?? null;
 
@@ -454,6 +813,26 @@ function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspac
 
   return (
     <div className="flex flex-col h-[calc(100dvh-6rem)] md:h-[calc(100dvh-7rem)]">
+      {/* Plan context breadcrumb */}
+      {planContext && (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60 mb-2 flex-wrap">
+          <MapPin className="w-3 h-3 text-primary/60 flex-shrink-0" />
+          <span className="text-primary/80 font-medium truncate max-w-[150px]">{planContext.planTitle}</span>
+          <ChevronRight className="w-3 h-3 flex-shrink-0" />
+          <span className="truncate max-w-[120px]">{planContext.phaseName}</span>
+          <ChevronRight className="w-3 h-3 flex-shrink-0" />
+          <span className="tabular-nums">Tarea {planContext.taskPosition}/{planContext.totalTasksInPhase}</span>
+          {planContext.prevTaskTitle && (
+            <>
+              <span className="text-muted-foreground/30 mx-1">·</span>
+              <span className="text-muted-foreground/40 truncate max-w-[160px]">
+                Continúa desde: {planContext.prevTaskTitle}
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-3 mb-3 md:mb-4 flex-shrink-0">
         <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -464,7 +843,7 @@ function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspac
             <Icon className={cn("w-4 h-4", meta.color)} />
           </span>
           <h1 className="font-bold text-base truncate">{task.title}</h1>
-          {planTitle && <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">· {planTitle}</span>}
+          {planTitle && !planContext && <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">· {planTitle}</span>}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <button title="Fuentes" onClick={() => setLeftOpen((v) => !v)}
@@ -647,17 +1026,41 @@ function TaskWorkspace({ task, planTitle, onBack, onStatusChange }: TaskWorkspac
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════════════════
 
-export default function StudySpacePage() {
+function StudySpaceInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { tasks, loading, setStatus } = useTasks();
   const { plans } = usePlans();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
+  const [viewMode, setViewMode] = useState<"tareas" | "roadmap">("tareas");
   const [selectedTask, setSelectedTask] = useState<PlanningTask | null>(null);
+  const [selectedContext, setSelectedContext] = useState<PlanContext | null>(null);
   const [showStudyAgent, setShowStudyAgent] = useState(false);
 
   const planMap = useMemo(() => Object.fromEntries(plans.map((p) => [p.id, p.title])), [plans]);
 
+  // Auto-select task from URL param ?taskId=
+  useEffect(() => {
+    const taskId = searchParams.get("taskId");
+    if (!taskId || tasks.length === 0) return;
+    const task = tasks.find((t) => t.id === taskId);
+    if (task) {
+      setSelectedTask(task);
+      setSelectedContext(null);
+      // Clean URL without reload
+      const url = new URL(window.location.href);
+      url.searchParams.delete("taskId");
+      router.replace(url.pathname, { scroll: false });
+    }
+  }, [searchParams, tasks, router]);
+
+  const openTask = useCallback((task: PlanningTask, ctx?: PlanContext) => {
+    setSelectedTask(task);
+    setSelectedContext(ctx ?? null);
+  }, []);
+
   const filtered = useMemo(() => {
-    const base = tasks.filter((t) => t.status !== "done" || t.status === "done");
+    const base = tasks;
     if (activeFilter === "all") return base;
     return base.filter((t) => (t.contentType ?? t.category) === activeFilter);
   }, [tasks, activeFilter]);
@@ -682,8 +1085,9 @@ export default function StudySpacePage() {
         <TaskWorkspace
           task={selectedTask}
           planTitle={selectedTask.planId ? planMap[selectedTask.planId] : undefined}
-          onBack={() => setSelectedTask(null)}
-          onStatusChange={(s) => { setStatus(selectedTask.id, s); if (s === "done") setSelectedTask(null); }}
+          planContext={selectedContext ?? undefined}
+          onBack={() => { setSelectedTask(null); setSelectedContext(null); }}
+          onStatusChange={(s) => { setStatus(selectedTask.id, s); if (s === "done") { setSelectedTask(null); setSelectedContext(null); } }}
         />
       </motion.div>
     );
@@ -713,9 +1117,36 @@ export default function StudySpacePage() {
         </div>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {FILTER_TABS.map((tab) => {
+      {/* View mode + filter tabs */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {/* View mode switcher */}
+        <div className="flex rounded-xl border border-border/50 overflow-hidden flex-shrink-0">
+          <button
+            onClick={() => setViewMode("tareas")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors",
+              viewMode === "tareas"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+            )}
+          >
+            <Zap className="w-3.5 h-3.5" />Tareas
+          </button>
+          <button
+            onClick={() => setViewMode("roadmap")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-border/50",
+              viewMode === "roadmap"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+            )}
+          >
+            <Map className="w-3.5 h-3.5" />Roadmap
+          </button>
+        </div>
+
+        {/* Content-type filters (only in tareas view) */}
+        {viewMode === "tareas" && FILTER_TABS.map((tab) => {
           const count = tabCounts[tab.id] ?? 0;
           const TabIcon = tab.icon;
           if (tab.id !== "all" && count === 0 && tasks.length > 0) return null;
@@ -737,52 +1168,59 @@ export default function StudySpacePage() {
         })}
       </div>
 
+      {/* Roadmap view */}
+      {viewMode === "roadmap" && (
+        <RoadmapView plans={plans} tasks={tasks} onOpenTask={openTask} />
+      )}
+
       {/* Task grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-40 rounded-2xl bg-muted/20 animate-pulse" />)}
-        </div>
-      ) : tasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center mb-4">
-            <Zap className="w-8 h-8 text-muted-foreground/40" />
+      {viewMode === "tareas" && (
+        loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-40 rounded-2xl bg-muted/20 animate-pulse" />)}
           </div>
-          <p className="font-medium text-muted-foreground">No tienes tareas de estudio aún</p>
-          <p className="text-sm text-muted-foreground/60 mt-1">Crea un plan de estudio desde el chat para empezar</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {pending.length > 0 && (
-            <div>
-              <h2 className="text-sm font-semibold text-muted-foreground mb-3">Pendientes · {pending.length}</h2>
-              <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <AnimatePresence>
-                  {pending.map((task) => (
-                    <TaskListCard key={task.id} task={task}
-                      planTitle={task.planId ? planMap[task.planId] : undefined}
-                      onStudy={() => setSelectedTask(task)}
-                      onMarkDone={() => setStatus(task.id, "done")} />
-                  ))}
-                </AnimatePresence>
-              </motion.div>
+        ) : tasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center mb-4">
+              <Zap className="w-8 h-8 text-muted-foreground/40" />
             </div>
-          )}
-          {done.length > 0 && (
-            <div>
-              <h2 className="text-sm font-semibold text-muted-foreground mb-3">Completadas · {done.length}</h2>
-              <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <AnimatePresence>
-                  {done.map((task) => (
-                    <TaskListCard key={task.id} task={task}
-                      planTitle={task.planId ? planMap[task.planId] : undefined}
-                      onStudy={() => setSelectedTask(task)}
-                      onMarkDone={() => setStatus(task.id, "todo")} />
-                  ))}
-                </AnimatePresence>
-              </motion.div>
-            </div>
-          )}
-        </div>
+            <p className="font-medium text-muted-foreground">No tienes tareas de estudio aún</p>
+            <p className="text-sm text-muted-foreground/60 mt-1">Crea un plan de estudio desde el chat para empezar</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {pending.length > 0 && (
+              <div>
+                <h2 className="text-sm font-semibold text-muted-foreground mb-3">Pendientes · {pending.length}</h2>
+                <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <AnimatePresence>
+                    {pending.map((task) => (
+                      <TaskListCard key={task.id} task={task}
+                        planTitle={task.planId ? planMap[task.planId] : undefined}
+                        onStudy={() => openTask(task)}
+                        onMarkDone={() => setStatus(task.id, "done")} />
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+              </div>
+            )}
+            {done.length > 0 && (
+              <div>
+                <h2 className="text-sm font-semibold text-muted-foreground mb-3">Completadas · {done.length}</h2>
+                <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <AnimatePresence>
+                    {done.map((task) => (
+                      <TaskListCard key={task.id} task={task}
+                        planTitle={task.planId ? planMap[task.planId] : undefined}
+                        onStudy={() => openTask(task)}
+                        onMarkDone={() => setStatus(task.id, "todo")} />
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+              </div>
+            )}
+          </div>
+        )
       )}
 
       {/* Study Agent floating chat */}
@@ -792,5 +1230,13 @@ export default function StudySpacePage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function StudySpacePage() {
+  return (
+    <Suspense>
+      <StudySpaceInner />
+    </Suspense>
   );
 }

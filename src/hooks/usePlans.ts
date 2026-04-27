@@ -41,6 +41,8 @@ function entityToPlan(entity: {
     userId: String(p.userId ?? ""),
     createdAt: entity.createdAt ?? new Date().toISOString(),
     aiGenerated: Boolean(p.aiGenerated ?? false),
+    schedule: p.schedule ? String(p.schedule) : undefined,
+    phases: p.phases ? String(p.phases) : undefined,
   };
 }
 

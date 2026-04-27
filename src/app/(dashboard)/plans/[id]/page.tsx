@@ -371,10 +371,14 @@ interface TaskRowProps {
   pushingId: string | null;
 }
 
+const STUDY_TYPES = new Set(["lesson", "reading", "quiz", "flashcard", "practice"]);
+
 function TaskRow({ task, onToggle, onUpdate, onDelete, onPushCalendar, pushingId }: TaskRowProps) {
+  const router = useRouter();
   const [hovered, setHovered] = useState(false);
   const [editingDate, setEditingDate] = useState(false);
   const done = task.status === "done";
+  const isStudyTask = STUDY_TYPES.has(task.contentType ?? task.category);
 
   return (
     <motion.div
@@ -488,6 +492,21 @@ function TaskRow({ task, onToggle, onUpdate, onDelete, onPushCalendar, pushingId
               ? <Loader2 className="w-3 h-3 animate-spin" />
               : <Calendar className="w-3 h-3" />
             }
+          </button>
+        )}
+
+        {isStudyTask && !done && (
+          <button
+            onClick={() => router.push(`/study?taskId=${task.id}`)}
+            className={cn(
+              "flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md transition-all",
+              "bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20",
+              !hovered && "opacity-0"
+            )}
+            title="Abrir en Zona de Estudio"
+          >
+            <Play className="w-2.5 h-2.5" />
+            Estudiar
           </button>
         )}
 
