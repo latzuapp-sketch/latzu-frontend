@@ -584,6 +584,20 @@ export const STUDY_AGENT_MESSAGE = gql`
   }
 `;
 
+export const STUDY_AGENT_STREAM = gql`
+  subscription StudyAgentStream($input: StudyAgentInput!) {
+    studyAgentStream(input: $input) {
+      eventType
+      toolName
+      args
+      result
+      status
+      reply
+      sessionId
+    }
+  }
+`;
+
 export const RECORD_STUDY_OUTCOME = gql`
   mutation RecordStudyOutcome($input: StudyOutcomeInput!) {
     recordStudyOutcome(input: $input) {
