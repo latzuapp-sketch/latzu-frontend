@@ -638,15 +638,28 @@ function PhasesView({
   onAddSubPhase, onUpdateSubPhase, onDeleteSubPhase,
   onTaskCreated,
 }: PhasesViewProps) {
-  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(
-    () => new Set(phases.slice(0, 6).map((p) => p.id))
-  );
-  const [expandedSubPhases, setExpandedSubPhases] = useState<Set<string>>(
-    () => new Set()
-  );
+  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
+  const [phaseUserToggled, setPhaseUserToggled] = useState(false);
+  const [expandedSubPhases, setExpandedSubPhases] = useState<Set<string>>(new Set());
 
-  const togglePhase = (id: string) =>
+  // Auto-expand: phases up to and including the current active phase.
+  // Once the user manually toggles a phase, stop auto-computing.
+  useEffect(() => {
+    if (phaseUserToggled || phases.length === 0) return;
+    // Find current phase index: first phase that is NOT fully complete
+    let currentIdx = phases.length - 1;
+    for (let i = 0; i < phases.length; i++) {
+      const pt = tasks.filter((t) => t.phaseIndex === i);
+      const allDone = pt.length > 0 && pt.every((t) => t.status === "done");
+      if (!allDone) { currentIdx = i; break; }
+    }
+    setExpandedPhases(new Set(phases.slice(0, currentIdx + 1).map((p) => p.id)));
+  }, [tasks, phases, phaseUserToggled]);
+
+  const togglePhase = (id: string) => {
+    setPhaseUserToggled(true);
     setExpandedPhases((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  };
 
   const toggleSubPhase = (id: string) =>
     setExpandedSubPhases((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
@@ -947,6 +960,9 @@ function WeeklyMapView({
   onPushCalendar: (task: PlanningTask) => Promise<void>;
   pushingId: string | null;
 }) {
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const currentWeekKey = useMemo(() => getISOWeekKey(today), [today]);
+
   const filtered = useMemo(() => {
     if (taskFilter === "done") return tasks.filter((t) => t.status === "done");
     if (taskFilter === "todo") return tasks.filter((t) => t.status !== "done");
@@ -956,23 +972,30 @@ function WeeklyMapView({
   const { weeks, unscheduled } = useMemo(() => {
     const weekMap = new Map<string, PlanningTask[]>();
     const unscheduled: PlanningTask[] = [];
-
     for (const task of filtered) {
-      if (!task.dueDate) {
-        unscheduled.push(task);
-        continue;
-      }
+      if (!task.dueDate) { unscheduled.push(task); continue; }
       const key = getISOWeekKey(task.dueDate);
       if (!weekMap.has(key)) weekMap.set(key, []);
       weekMap.get(key)!.push(task);
     }
-
     const sortedKeys = Array.from(weekMap.keys()).sort();
     return { weeks: sortedKeys.map((k) => ({ key: k, tasks: weekMap.get(k)! })), unscheduled };
   }, [filtered]);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const currentWeekKey = getISOWeekKey(today);
+  // Auto-expand: current + past weeks open, future weeks closed.
+  // Once user manually toggles, stop auto-computing.
+  const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
+  const [weekUserToggled, setWeekUserToggled] = useState(false);
+
+  useEffect(() => {
+    if (weekUserToggled) return;
+    setExpandedWeeks(new Set(weeks.filter(({ key }) => key <= currentWeekKey).map(({ key }) => key)));
+  }, [weeks, currentWeekKey, weekUserToggled]);
+
+  const toggleWeek = (key: string) => {
+    setWeekUserToggled(true);
+    setExpandedWeeks((prev) => { const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s; });
+  };
 
   if (weeks.length === 0 && unscheduled.length === 0) {
     return (
@@ -983,75 +1006,144 @@ function WeeklyMapView({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {weeks.map(({ key, tasks: weekTasks }) => {
         const isCurrent = key === currentWeekKey;
+        const isPast = key < currentWeekKey;
+        const isFuture = key > currentWeekKey;
+        const isExpanded = expandedWeeks.has(key);
         const [, weekNum] = key.split("-W");
         const range = getWeekRange(key);
+        const done = weekTasks.filter((t) => t.status === "done").length;
 
         return (
-          <div key={key} className={cn(
-            "rounded-xl border overflow-hidden",
-            isCurrent ? "border-primary/30 bg-primary/5" : "border-border/40"
-          )}>
-            <div className={cn(
-              "px-4 py-2.5 flex items-center justify-between",
-              isCurrent ? "bg-primary/10" : "bg-muted/20"
-            )}>
-              <div className="flex items-center gap-2">
-                <span className={cn(
-                  "text-xs font-semibold px-2 py-0.5 rounded-full",
-                  isCurrent ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"
-                )}>
-                  Sem. {weekNum}
-                </span>
-                <span className="text-xs text-muted-foreground">{range}</span>
-                {isCurrent && (
-                  <span className="text-[10px] text-primary font-medium">Esta semana</span>
+          <motion.div
+            key={key}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={cn(
+              "rounded-2xl border overflow-hidden transition-all",
+              isCurrent && "border-primary/40 shadow-sm",
+              isPast && "border-border/30",
+              isFuture && "border-border/20 opacity-60"
+            )}
+          >
+            {/* Week header — always visible, click to toggle */}
+            <button
+              onClick={() => toggleWeek(key)}
+              className={cn(
+                "w-full px-4 py-3 flex items-center gap-3 text-left transition-colors",
+                isCurrent ? "bg-primary/8 hover:bg-primary/12" : "bg-muted/15 hover:bg-muted/25"
+              )}
+            >
+              {/* Week badge */}
+              <span className={cn(
+                "text-xs font-bold px-2.5 py-1 rounded-xl flex-shrink-0",
+                isCurrent
+                  ? "bg-primary text-primary-foreground"
+                  : isPast
+                    ? "bg-muted/60 text-muted-foreground"
+                    : "bg-muted/30 text-muted-foreground/50"
+              )}>
+                Sem. {weekNum}
+              </span>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={cn(
+                    "text-sm font-medium",
+                    isCurrent ? "text-foreground" : isPast ? "text-foreground/70" : "text-muted-foreground/50"
+                  )}>
+                    {range}
+                  </span>
+                  {isCurrent && (
+                    <span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
+                      Esta semana
+                    </span>
+                  )}
+                  {isPast && done === weekTasks.length && weekTasks.length > 0 && (
+                    <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                      <CheckCircle2 className="w-2.5 h-2.5" /> Completada
+                    </span>
+                  )}
+                  {isFuture && (
+                    <span className="text-[10px] text-muted-foreground/40 bg-muted/20 px-1.5 py-0.5 rounded-full">
+                      Próxima
+                    </span>
+                  )}
+                </div>
+
+                {/* Mini progress bar */}
+                {weekTasks.length > 0 && (
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <div className="flex-1 h-1 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+                      <motion.div
+                        className={cn(
+                          "h-full rounded-full",
+                          isCurrent ? "bg-primary" : isPast ? "bg-emerald-500" : "bg-muted-foreground/30"
+                        )}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.round((done / weekTasks.length) * 100)}%` }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground/50 tabular-nums flex-shrink-0">
+                      {done}/{weekTasks.length}
+                    </span>
+                  </div>
                 )}
               </div>
-              <span className="text-xs text-muted-foreground/60">
-                {weekTasks.filter((t) => t.status === "done").length}/{weekTasks.length}
-              </span>
-            </div>
-            <div className="px-2 py-1 space-y-0.5">
-              <AnimatePresence>
-                {weekTasks
-                  .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
-                  .map((task) => (
-                    <TaskRow
-                      key={task.id}
-                      task={task}
-                      onToggle={onToggle}
-                      onUpdate={onUpdate}
-                      onDelete={onDelete}
-                      onPushCalendar={onPushCalendar}
-                      pushingId={pushingId}
-                    />
-                  ))}
-              </AnimatePresence>
-            </div>
-          </div>
+
+              <ChevronDown className={cn(
+                "w-4 h-4 text-muted-foreground/40 flex-shrink-0 transition-transform duration-200",
+                isExpanded && "rotate-180"
+              )} />
+            </button>
+
+            {/* Week tasks — collapsible */}
+            <AnimatePresence initial={false}>
+              {isExpanded && (
+                <motion.div
+                  key="week-body"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-2 py-1.5 space-y-0.5 border-t border-border/20">
+                    <AnimatePresence>
+                      {weekTasks
+                        .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
+                        .map((task) => (
+                          <TaskRow
+                            key={task.id}
+                            task={task}
+                            onToggle={onToggle}
+                            onUpdate={onUpdate}
+                            onDelete={onDelete}
+                            onPushCalendar={onPushCalendar}
+                            pushingId={pushingId}
+                          />
+                        ))}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
         );
       })}
 
       {unscheduled.length > 0 && (
-        <div className="rounded-xl border border-border/40 border-dashed">
-          <div className="px-4 py-2 bg-muted/10 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground/60 font-medium">Sin fecha programada</span>
-            <span className="text-xs text-muted-foreground/40">{unscheduled.length}</span>
+        <div className="rounded-2xl border border-border/30 border-dashed">
+          <div className="px-4 py-2.5 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground/50 font-medium">Sin fecha programada</span>
+            <span className="text-xs text-muted-foreground/40 tabular-nums">{unscheduled.length}</span>
           </div>
-          <div className="px-2 py-1 space-y-0.5">
+          <div className="px-2 pb-1.5 space-y-0.5 border-t border-border/20">
             {unscheduled.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                onToggle={onToggle}
-                onUpdate={onUpdate}
-                onDelete={onDelete}
-                onPushCalendar={onPushCalendar}
-                pushingId={pushingId}
-              />
+              <TaskRow key={task.id} task={task} onToggle={onToggle} onUpdate={onUpdate} onDelete={onDelete} onPushCalendar={onPushCalendar} pushingId={pushingId} />
             ))}
           </div>
         </div>
