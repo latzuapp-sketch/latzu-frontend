@@ -114,6 +114,7 @@ export function usePlans() {
                 dueDate: input.dueDate ?? null,
                 userId,
                 aiGenerated: input.generateWithAI ?? false,
+                phases: input.phases ? JSON.stringify(input.phases) : null,
               },
             },
           },

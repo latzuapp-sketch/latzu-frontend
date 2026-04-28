@@ -106,4 +106,5 @@ export interface CreatePlanInput {
   type: PlanType;
   dueDate?: string | null;
   generateWithAI?: boolean;
+  phases?: StudyPhase[];
 }

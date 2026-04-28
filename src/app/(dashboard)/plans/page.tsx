@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useCallback, useDeferredValue } from "react";
-import { useSession } from "next-auth/react";
 import { useMutation } from "@apollo/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -166,7 +165,6 @@ function StatsStrip({ plans }: { plans: ActionPlan[] }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PlansPage() {
-  const { data: session } = useSession();
   const router = useRouter();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -236,18 +234,20 @@ export default function PlansPage() {
     if (input.generateWithAI) {
       setGeneratingAI(true);
       try {
+        const phasesContext = input.phases && input.phases.length > 0
+          ? `\nFases del plan:\n${input.phases.map((p, i) => `${i + 1}. ${p.title}${p.topics?.length ? `: ${p.topics.join(", ")}` : ""}`).join("\n")}`
+          : "";
         const prompt =
-          `Crea un plan ${input.type === "study" ? "de estudio" : "de acción"} con tareas concretas:\n\n` +
-          `Plan: ${input.title}\nMeta: ${input.goal}\n` +
-          `\nUsa create_multiple_tasks para crear entre 4 y 8 tareas. ` +
-          `Incluye plan_id="${plan.id}". No respondas con texto.`;
-        await sendMessage({ variables: { input: { message: prompt, useRag: false,
-          userProfile: session?.user ? { userId: (session.user as { id?: string }).id ?? "", name: session.user.name ?? "" } : undefined } } });
+          `Crea tareas concretas para este plan ${input.type === "study" ? "de estudio" : "de acción"}:\n\n` +
+          `Título: ${input.title}\nMeta: ${input.goal}${phasesContext}\n\n` +
+          `Usa create_multiple_tasks para crear entre 5 y 10 tareas ordenadas y priorizadas. ` +
+          `Incluye plan_id="${plan.id}" en cada tarea. Asigna phaseIndex según la fase (0 = primera fase). No respondas con texto.`;
+        await sendMessage({ variables: { input: { message: prompt, useRag: false } } });
       } catch { /* silent */ } finally { setGeneratingAI(false); }
     }
     router.push(`/plans/${plan.id}`);
     return plan;
-  }, [createPlan, sendMessage, session, router]);
+  }, [createPlan, sendMessage, router]);
 
   const STATUS_PILLS: { id: PlanStatus | "all"; label: string }[] = [
     { id: "all",       label: "Todos" },
