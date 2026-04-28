@@ -234,8 +234,8 @@ export default function PlansPage() {
     if (input.generateWithAI) {
       setGeneratingAI(true);
       try {
-        const hasPhasees = input.phases && input.phases.length > 0;
-        const phasesBlock = hasPhasees
+        const hasPhases = input.phases && input.phases.length > 0;
+        const phasesBlock = hasPhases
           ? `\n\nFASES DEL PLAN (obligatorio respetar estos índices):\n` +
             input.phases!.map((p, i) =>
               `  phaseIndex ${i} → "${p.title}"` +
@@ -243,7 +243,7 @@ export default function PlansPage() {
               (p.topics?.length ? `\n    Temas: ${p.topics.join(", ")}` : "")
             ).join("\n")
           : "";
-        const phaseRule = hasPhasees
+        const phaseRule = hasPhases
           ? `REGLA CRÍTICA: TODAS las tareas deben tener phaseIndex entre 0 y ${input.phases!.length - 1}. ` +
             `Distribuye las tareas proporcionalmente entre las ${input.phases!.length} fases. ` +
             `Nunca dejes phaseIndex vacío o nulo. `
@@ -253,7 +253,7 @@ export default function PlansPage() {
           `Título: ${input.title}\nMeta: ${input.goal}${phasesBlock}\n\n` +
           `${phaseRule}` +
           `Usa create_multiple_tasks con plan_id="${plan.id}". ` +
-          `Crea entre ${hasPhasees ? input.phases!.length * 2 : 5} y ${hasPhasees ? input.phases!.length * 4 : 10} tareas. ` +
+          `Crea entre ${hasPhases ? input.phases!.length * 2 : 5} y ${hasPhases ? input.phases!.length * 4 : 10} tareas. ` +
           `No respondas con texto, solo llama a la herramienta.`;
         await sendMessage({ variables: { input: { message: prompt, useRag: false } } });
       } catch { /* silent */ } finally { setGeneratingAI(false); }
