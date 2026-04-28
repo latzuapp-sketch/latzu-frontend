@@ -24,6 +24,7 @@ import {
   ArrowUpDown, TrendingUp, Clock, Maximize2,
 } from "lucide-react";
 import { CreatePlanModal } from "@/components/planning/CreatePlanModal";
+import { AdaptivePlanModal } from "@/components/learning/AdaptivePlanModal";
 
 // ─── Meta ─────────────────────────────────────────────────────────────────────
 
@@ -167,7 +168,8 @@ function StatsStrip({ plans }: { plans: ActionPlan[] }) {
 export default function PlansPage() {
   const router = useRouter();
 
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateModal, setShowCreateModal]     = useState(false);
+  const [showAdaptiveModal, setShowAdaptiveModal] = useState(false);
   const [rawSearch, setRawSearch]             = useState("");
   const [statusFilter, setStatusFilter]       = useState<PlanStatus | "all">("all");
   const [typeFilter, setTypeFilter]           = useState<PlanType | "all">("all");
@@ -286,9 +288,20 @@ export default function PlansPage() {
               {loading ? "Cargando…" : `${plans.length} plan${plans.length !== 1 ? "es" : ""}`}
             </p>
           </div>
-          <Button size="sm" onClick={() => setShowCreateModal(true)} className="gap-1.5">
-            <Plus className="w-4 h-4" /> Nuevo plan
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowAdaptiveModal(true)}
+              className="gap-1.5 border-violet-500/40 text-violet-400 hover:bg-violet-500/10 hover:text-violet-300 hover:border-violet-500/60"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Plan adaptativo
+            </Button>
+            <Button size="sm" onClick={() => setShowCreateModal(true)} className="gap-1.5">
+              <Plus className="w-4 h-4" /> Nuevo plan
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -417,6 +430,9 @@ export default function PlansPage() {
       <AnimatePresence>
         {showCreateModal && (
           <CreatePlanModal onClose={() => setShowCreateModal(false)} onCreate={handleCreate} />
+        )}
+        {showAdaptiveModal && (
+          <AdaptivePlanModal onClose={() => setShowAdaptiveModal(false)} />
         )}
       </AnimatePresence>
 
