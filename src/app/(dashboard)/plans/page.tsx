@@ -21,9 +21,10 @@ import type { ActionPlan, CreatePlanInput, PlanStatus, PlanType } from "@/types/
 import {
   Plus, ClipboardList, Target, BookOpen, Zap,
   CheckCircle2, PauseCircle, PlayCircle, X, Loader2, Sparkles,
-  CalendarDays, Search, SlidersHorizontal, ChevronDown, Circle,
+  CalendarDays, Search, ChevronDown, Circle,
   ArrowUpDown, TrendingUp, Clock, Maximize2,
 } from "lucide-react";
+import { CreatePlanModal } from "@/components/planning/CreatePlanModal";
 
 // ─── Meta ─────────────────────────────────────────────────────────────────────
 
@@ -159,122 +160,6 @@ function StatsStrip({ plans }: { plans: ActionPlan[] }) {
         </div>
       ))}
     </div>
-  );
-}
-
-// ─── Create plan modal ────────────────────────────────────────────────────────
-
-function CreatePlanModal({ onClose, onCreate }: {
-  onClose: () => void;
-  onCreate: (input: CreatePlanInput) => Promise<ActionPlan | null>;
-}) {
-  const [title,       setTitle]       = useState("");
-  const [goal,        setGoal]        = useState("");
-  const [type,        setType]        = useState<PlanType>("action");
-  const [dueDate,     setDueDate]     = useState("");
-  const [withAI,      setWithAI]      = useState(false);
-  const [loading,     setLoading]     = useState(false);
-
-  const canSubmit = title.trim().length > 0 && goal.trim().length > 0;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canSubmit) return;
-    setLoading(true);
-    await onCreate({ title: title.trim(), goal: goal.trim(), type, dueDate: dueDate || null, generateWithAI: withAI });
-    setLoading(false);
-    onClose();
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <motion.div
-        initial={{ scale: 0.95, y: 8 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
-        className="bg-card border border-border/60 rounded-2xl shadow-2xl w-full max-w-md"
-      >
-        <div className="flex items-center justify-between p-5 border-b border-border/50">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-primary" />
-            <h2 className="font-heading font-bold text-base">Nuevo plan</h2>
-          </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* Type */}
-          <div className="flex gap-2">
-            {(["action", "study"] as PlanType[]).map((t) => {
-              const { label, Icon } = TYPE_META[t];
-              return (
-                <button key={t} type="button" onClick={() => setType(t)}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border text-sm font-medium transition-all",
-                    type === t ? "border-primary bg-primary/10 text-primary" : "border-border/50 text-muted-foreground hover:border-border"
-                  )}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Título *</label>
-            <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)}
-              placeholder={type === "study" ? "Plan de estudio de Python" : "Lanzar producto v2"}
-              className="w-full bg-muted/30 border border-border/50 rounded-lg px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Meta principal *</label>
-            <textarea rows={2} value={goal} onChange={(e) => setGoal(e.target.value)}
-              placeholder="¿Qué quieres lograr con este plan?"
-              className="w-full bg-muted/30 border border-border/50 rounded-lg px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors resize-none"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Fecha límite <span className="text-muted-foreground/50">(opcional)</span></label>
-            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
-              className="w-full bg-muted/30 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors"
-            />
-          </div>
-
-          {/* AI toggle */}
-          <button type="button" onClick={() => setWithAI(v => !v)}
-            className={cn(
-              "w-full flex items-center gap-2.5 p-3 rounded-xl border transition-all text-sm",
-              withAI ? "border-violet-500/40 bg-violet-500/10 text-violet-300" : "border-border/40 text-muted-foreground hover:border-border"
-            )}
-          >
-            <Sparkles className={cn("w-4 h-4 shrink-0", withAI ? "text-violet-400" : "text-muted-foreground/60")} />
-            <div className="flex-1 text-left">
-              <p className={cn("font-medium text-xs", withAI && "text-violet-300")}>Generar tareas con IA</p>
-              <p className="text-[10px] text-muted-foreground/70 mt-0.5">La IA creará automáticamente las tareas para este plan</p>
-            </div>
-            <div className="w-8 rounded-full transition-colors relative bg-muted" style={{ height: "18px", width: "32px", background: withAI ? "rgb(139 92 246)" : undefined }}>
-              <div className={cn("absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform shadow-sm", withAI ? "translate-x-3.5" : "translate-x-0.5")} />
-            </div>
-          </button>
-
-          <div className="flex gap-2 pt-1">
-            <Button type="button" variant="ghost" size="sm" onClick={onClose} className="flex-1">Cancelar</Button>
-            <Button type="submit" size="sm" disabled={!canSubmit || loading} className="flex-1 gap-1.5">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : withAI ? <Sparkles className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-              {withAI ? "Crear y generar" : "Crear plan"}
-            </Button>
-          </div>
-        </form>
-      </motion.div>
-    </motion.div>
   );
 }
 

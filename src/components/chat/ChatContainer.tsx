@@ -12,12 +12,13 @@ import { getTemplate } from "@/config/templates";
 import {
   Send, Square, Sparkles, Plus, ChevronDown,
   PanelLeftClose, PanelLeftOpen, Trash2, MessageSquare,
-  Loader2, Paperclip, Link2, X, FileText,
+  Loader2, Paperclip, Link2, X, FileText, ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatSession } from "@/graphql/types";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import Link from "next/link";
 
 interface ChatContainerProps {
   sessionId?: string;
@@ -365,7 +366,7 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
                 {template.welcomeMessage}
               </p>
               <div className="flex flex-col sm:flex-row flex-wrap gap-2 justify-center w-full max-w-sm">
-                {["¿Qué puedo aprender hoy?", "Crea un plan de estudio para Python", "Organiza mis tareas de esta semana"].map(
+                {["¿Qué puedo aprender hoy?", "Organiza mis tareas de esta semana"].map(
                   (prompt) => (
                     <button
                       key={prompt}
@@ -376,6 +377,13 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
                     </button>
                   )
                 )}
+                <Link
+                  href="/plans"
+                  className="inline-flex items-center justify-center gap-1.5 text-xs px-3 py-2.5 sm:py-1.5 rounded-xl sm:rounded-full border border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 transition-colors text-primary font-medium"
+                >
+                  <ClipboardList className="w-3.5 h-3.5" />
+                  Crear nuevo plan
+                </Link>
               </div>
             </motion.div>
           )}

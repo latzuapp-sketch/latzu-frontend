@@ -2,6 +2,7 @@
 
 import { memo } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
   CheckSquare,
   ListChecks,
@@ -13,6 +14,7 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AgentAction } from "@/graphql/types";
@@ -102,11 +104,17 @@ function getIcon(toolName: string) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 function AgentActionCardComponent({ action, isPending = false }: AgentActionCardProps) {
+  const router = useRouter();
   const label = isPending
     ? getPendingLabel(action.toolName, (action.args ?? {}) as Record<string, unknown>)
     : getLabel(action);
   const Icon = getIcon(action.toolName);
   const isError = !isPending && action.status === "error";
+
+  const args = (action.args ?? {}) as Record<string, unknown>;
+  const planId = !isPending && !isError
+    ? (args.plan_id as string | undefined) ?? (action.result as Record<string, unknown>)?.plan_id as string | undefined
+    : undefined;
 
   return (
     <motion.div
@@ -138,6 +146,17 @@ function AgentActionCardComponent({ action, isPending = false }: AgentActionCard
 
         {/* Label */}
         <span className="flex-1 min-w-0 truncate font-medium">{label}</span>
+
+        {/* "Ver plan" button — only when tasks were created for a specific plan */}
+        {planId && (
+          <button
+            onClick={() => router.push(`/plans/${planId}`)}
+            className="flex-shrink-0 flex items-center gap-1 text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors px-1.5 py-0.5 rounded-md hover:bg-primary/10"
+          >
+            Ver plan
+            <ExternalLink className="w-2.5 h-2.5" />
+          </button>
+        )}
 
         {/* Status */}
         <div className="flex-shrink-0">
