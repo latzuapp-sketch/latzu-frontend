@@ -12,6 +12,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUserStore, useSidebarCollapsed, useIsGuest } from "@/stores/userStore";
 import { getTemplate } from "@/config/templates";
+import { useLanguage, LangToggle } from "@/lib/i18n";
 import {
   Brain,
   ChevronLeft,
@@ -68,6 +69,10 @@ function SidebarNav({
   const pathname = usePathname();
   const profileType = useUserStore((state) => state.profileType);
   const template = getTemplate(profileType || undefined);
+  const { t } = useLanguage();
+
+  const navLabel = (id: string, fallback: string) =>
+    (t.sidebar.nav as Record<string, string>)[id] ?? fallback;
 
   return (
     <ScrollArea className="flex-1 py-4">
@@ -75,6 +80,7 @@ function SidebarNav({
         {template.sidebarItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
+          const label = navLabel(item.id, item.label);
 
           const linkContent = (
             <Link
@@ -97,7 +103,7 @@ function SidebarNav({
                     exit={{ opacity: 0 }}
                     className="text-sm font-medium"
                   >
-                    {item.label}
+                    {label}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -114,7 +120,7 @@ function SidebarNav({
               <Tooltip key={item.id}>
                 <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
                 <TooltipContent side="right" className="font-medium">
-                  {item.label}
+                  {label}
                 </TooltipContent>
               </Tooltip>
             );
@@ -143,6 +149,7 @@ function SidebarFooter({
   const disableGuestMode = useUserStore((state) => state.disableGuestMode);
   const toggleSidebar = useUserStore((state) => state.toggleSidebar);
   const { theme, setTheme } = useTheme();
+  const { t } = useLanguage();
 
   const handleSignOut = () => {
     if (isGuest) {
@@ -153,8 +160,26 @@ function SidebarFooter({
     }
   };
 
+  const themeLabel = theme === "dark" ? t.sidebar.lightMode : t.sidebar.darkMode;
+
   return (
     <div className="p-3 border-t border-sidebar-border space-y-1 flex-shrink-0">
+      {/* Language toggle */}
+      {collapsed ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex justify-center py-1">
+              <LangToggle />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="right">{t.langToggle === "ES" ? "Switch to Spanish" : "Cambiar a inglés"}</TooltipContent>
+        </Tooltip>
+      ) : (
+        <div className="px-1 py-1 flex items-center gap-3">
+          <LangToggle className="w-full justify-start" />
+        </div>
+      )}
+
       {/* Theme */}
       {collapsed ? (
         <Tooltip>
@@ -168,9 +193,7 @@ function SidebarFooter({
               {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">
-            {theme === "dark" ? "Modo claro" : "Modo oscuro"}
-          </TooltipContent>
+          <TooltipContent side="right">{themeLabel}</TooltipContent>
         </Tooltip>
       ) : (
         <Button
@@ -180,7 +203,7 @@ function SidebarFooter({
           className="w-full justify-start gap-3"
         >
           {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          <span>{theme === "dark" ? "Modo claro" : "Modo oscuro"}</span>
+          <span>{themeLabel}</span>
         </Button>
       )}
 
@@ -194,13 +217,13 @@ function SidebarFooter({
               </Link>
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">Configuración</TooltipContent>
+          <TooltipContent side="right">{t.sidebar.settings}</TooltipContent>
         </Tooltip>
       ) : (
         <Button variant="ghost" size="sm" asChild className="w-full justify-start gap-3">
           <Link href="/settings" onClick={onItemClick}>
             <Settings className="w-5 h-5" />
-            <span>Configuración</span>
+            <span>{t.sidebar.settings}</span>
           </Link>
         </Button>
       )}
@@ -219,7 +242,7 @@ function SidebarFooter({
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">
-            {isGuest ? "Salir del modo prueba" : "Cerrar sesión"}
+            {isGuest ? t.sidebar.exitGuest : t.sidebar.logout}
           </TooltipContent>
         </Tooltip>
       ) : (
@@ -230,7 +253,7 @@ function SidebarFooter({
           className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
         >
           <LogOut className="w-5 h-5" />
-          <span>{isGuest ? "Salir" : "Cerrar sesión"}</span>
+          <span>{isGuest ? t.sidebar.exitGuest : t.sidebar.logout}</span>
         </Button>
       )}
 

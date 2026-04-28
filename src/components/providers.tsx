@@ -6,6 +6,7 @@ import { ApolloProvider } from "@apollo/client";
 import { useState, type ReactNode } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { client } from "@/lib/apollo";
+import { LanguageProvider } from "@/lib/i18n";
 
 interface ProvidersProps {
   children: ReactNode;
@@ -34,7 +35,9 @@ export function Providers({ children }: ProvidersProps) {
             enableSystem
             disableTransitionOnChange={false}
           >
-            {children}
+            <LanguageProvider>
+              {children}
+            </LanguageProvider>
           </ThemeProvider>
         </QueryClientProvider>
       </ApolloProvider>
