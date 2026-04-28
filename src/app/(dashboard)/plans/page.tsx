@@ -234,14 +234,27 @@ export default function PlansPage() {
     if (input.generateWithAI) {
       setGeneratingAI(true);
       try {
-        const phasesContext = input.phases && input.phases.length > 0
-          ? `\nFases del plan:\n${input.phases.map((p, i) => `${i + 1}. ${p.title}${p.topics?.length ? `: ${p.topics.join(", ")}` : ""}`).join("\n")}`
+        const hasPhasees = input.phases && input.phases.length > 0;
+        const phasesBlock = hasPhasees
+          ? `\n\nFASES DEL PLAN (obligatorio respetar estos índices):\n` +
+            input.phases!.map((p, i) =>
+              `  phaseIndex ${i} → "${p.title}"` +
+              (p.durationWeeks ? ` (${p.durationWeeks} sem)` : "") +
+              (p.topics?.length ? `\n    Temas: ${p.topics.join(", ")}` : "")
+            ).join("\n")
+          : "";
+        const phaseRule = hasPhasees
+          ? `REGLA CRÍTICA: TODAS las tareas deben tener phaseIndex entre 0 y ${input.phases!.length - 1}. ` +
+            `Distribuye las tareas proporcionalmente entre las ${input.phases!.length} fases. ` +
+            `Nunca dejes phaseIndex vacío o nulo. `
           : "";
         const prompt =
-          `Crea tareas concretas para este plan ${input.type === "study" ? "de estudio" : "de acción"}:\n\n` +
-          `Título: ${input.title}\nMeta: ${input.goal}${phasesContext}\n\n` +
-          `Usa create_multiple_tasks para crear entre 5 y 10 tareas ordenadas y priorizadas. ` +
-          `Incluye plan_id="${plan.id}" en cada tarea. Asigna phaseIndex según la fase (0 = primera fase). No respondas con texto.`;
+          `Crea tareas concretas para este plan ${input.type === "study" ? "de estudio" : "de acción"}:\n` +
+          `Título: ${input.title}\nMeta: ${input.goal}${phasesBlock}\n\n` +
+          `${phaseRule}` +
+          `Usa create_multiple_tasks con plan_id="${plan.id}". ` +
+          `Crea entre ${hasPhasees ? input.phases!.length * 2 : 5} y ${hasPhasees ? input.phases!.length * 4 : 10} tareas. ` +
+          `No respondas con texto, solo llama a la herramienta.`;
         await sendMessage({ variables: { input: { message: prompt, useRag: false } } });
       } catch { /* silent */ } finally { setGeneratingAI(false); }
     }
