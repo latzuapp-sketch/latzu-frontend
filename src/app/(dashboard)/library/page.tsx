@@ -1,117 +1,241 @@
 "use client";
 
 import { useState, useCallback, useDeferredValue } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { NodeCard } from "@/components/biblioteca/NodeCard";
 import { NodeDetail } from "@/components/biblioteca/NodeDetail";
-import { getNodeTypeConfig, TYPE_CONFIG } from "@/components/biblioteca/NodeTypeConfig";
+import { BookCard } from "@/components/biblioteca/BookCard";
+import { BookDetail } from "@/components/biblioteca/BookDetail";
+import { FileCard } from "@/components/biblioteca/FileCard";
+import { FileDetail } from "@/components/biblioteca/FileDetail";
+import { FileUploadZone } from "@/components/biblioteca/FileUploadZone";
+import { getNodeTypeConfig } from "@/components/biblioteca/NodeTypeConfig";
 import { useKnowledgeNodes, useKnowledgeStats } from "@/hooks/useLibrary";
+import { useLibraryFiles } from "@/hooks/useLibraryFiles";
+import { CURATED_BOOKS, BOOK_CATEGORY_CONFIG } from "@/data/curated-books";
+import type { LibraryBook } from "@/types/library";
 import { cn } from "@/lib/utils";
 import {
   Search,
-  Library,
+  BookOpen,
   Network,
-  LayoutGrid,
   Layers,
   Loader2,
   X,
-  Filter,
   SlidersHorizontal,
+  Upload,
+  FileText,
 } from "lucide-react";
 
-// ─── Source formatting ────────────────────────────────────────────────────────
+// ─── Tab type ────────────────────────────────────────────────────────────────
+
+type LibTab = "lecturas" | "archivos" | "grafo";
+
+const TABS: Array<{ id: LibTab; label: string; Icon: React.ComponentType<{ className?: string }> }> = [
+  { id: "lecturas",  label: "Lecturas",   Icon: BookOpen  },
+  { id: "archivos",  label: "Mis Archivos", Icon: FileText },
+  { id: "grafo",     label: "Grafo",      Icon: Network   },
+];
+
+// ─── Readings tab ─────────────────────────────────────────────────────────────
+
+function ReadingsTab() {
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [selectedBook, setSelectedBook] = useState<LibraryBook | null>(null);
+
+  const filtered = CURATED_BOOKS.filter((b) => {
+    const matchCat = !activeCategory || b.category === activeCategory;
+    const q = search.toLowerCase();
+    const matchQ = !q ||
+      b.title.toLowerCase().includes(q) ||
+      b.author.toLowerCase().includes(q) ||
+      b.tags.some((t) => t.toLowerCase().includes(q));
+    return matchCat && matchQ;
+  });
+
+  const categories = Array.from(new Set(CURATED_BOOKS.map((b) => b.category)));
+
+  return (
+    <div className="flex h-full gap-0">
+      {/* Left: book grid */}
+      <div className={cn("flex flex-col min-w-0 transition-all duration-300", selectedBook ? "flex-[0_0_60%]" : "flex-1")}>
+        <div className="px-6 pt-5 pb-4 space-y-3 border-b border-border/50 shrink-0">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar libros…"
+              className="pl-9 h-9 text-sm"
+            />
+            {search && (
+              <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Category filter */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+            <button
+              onClick={() => setActiveCategory(null)}
+              className={cn(
+                "px-3 py-1 rounded-full text-xs font-medium border shrink-0 transition-all",
+                !activeCategory ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Todos
+            </button>
+            {categories.map((cat) => {
+              const cfg = BOOK_CATEGORY_CONFIG[cat];
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                  className={cn(
+                    "px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 transition-all",
+                    activeCategory === cat ? cn(cfg.bg, cfg.color, cfg.border) : "border-border text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {cfg.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="text-xs text-muted-foreground">{filtered.length} libro{filtered.length !== 1 ? "s" : ""}</p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <BookOpen className="w-8 h-8 text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground">Sin resultados</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {filtered.map((book, i) => (
+                <BookCard
+                  key={book.id}
+                  book={book}
+                  index={i}
+                  isSelected={selectedBook?.id === book.id}
+                  onClick={() => setSelectedBook((prev) => prev?.id === book.id ? null : book)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right: book detail */}
+      <AnimatePresence>
+        {selectedBook && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.2 }}
+            className="flex-[0_0_40%] min-w-[320px] max-w-[520px] border-l border-border"
+          >
+            <BookDetail book={selectedBook} onClose={() => setSelectedBook(null)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Files tab ────────────────────────────────────────────────────────────────
+
+function FilesTab() {
+  const { files, uploading, uploadError, uploadFile, deleteFile } = useLibraryFiles();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedFile = files.find((f) => f.id === selectedId) ?? null;
+
+  const handleDelete = (id: string) => {
+    deleteFile(id);
+    if (selectedId === id) setSelectedId(null);
+  };
+
+  return (
+    <div className="flex h-full gap-0">
+      {/* Left */}
+      <div className={cn("flex flex-col min-w-0 transition-all duration-300", selectedFile ? "flex-[0_0_60%]" : "flex-1")}>
+        <div className="px-6 pt-5 pb-4 border-b border-border/50 shrink-0">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-sm font-semibold">Mis Archivos</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {files.length > 0 ? `${files.length} archivo${files.length !== 1 ? "s" : ""}` : "Sin archivos aún"}
+              </p>
+            </div>
+          </div>
+          <FileUploadZone onUpload={uploadFile} uploading={uploading} error={uploadError} />
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {files.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Upload className="w-8 h-8 text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground">Sube tu primer archivo</p>
+              <p className="text-xs text-muted-foreground/60 mt-1 max-w-xs">
+                PDF, TXT, Markdown o CSV. Los exploramos con IA para extraer ideas clave.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {files.map((file, i) => (
+                <FileCard
+                  key={file.id}
+                  file={file}
+                  index={i}
+                  isSelected={selectedId === file.id}
+                  onClick={() => setSelectedId((prev) => prev === file.id ? null : file.id)}
+                  onDelete={() => handleDelete(file.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right: file detail */}
+      <AnimatePresence>
+        {selectedFile && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.2 }}
+            className="flex-[0_0_40%] min-w-[320px] max-w-[520px] border-l border-border"
+          >
+            <FileDetail file={selectedFile} onClose={() => setSelectedId(null)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Graph tab (existing knowledge nodes) ─────────────────────────────────────
 
 function formatSourceRef(ref: string): string {
   if (ref.startsWith("youtube:")) return `▶ ${ref.slice(8)}`;
   return ref;
 }
 
-// ─── Empty state ──────────────────────────────────────────────────────────────
-
-function EmptyState({ hasFilters }: { hasFilters: boolean }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
-        {hasFilters ? (
-          <Filter className="w-7 h-7 text-muted-foreground/60" />
-        ) : (
-          <Library className="w-7 h-7 text-muted-foreground/60" />
-        )}
-      </div>
-      <p className="font-semibold text-sm mb-1">
-        {hasFilters ? "Sin resultados" : "Biblioteca vacía"}
-      </p>
-      <p className="text-xs text-muted-foreground max-w-xs">
-        {hasFilters
-          ? "Prueba ajustando los filtros o la búsqueda."
-          : "Extrae textos o procesa videos en la página de Conocimiento para poblar la biblioteca."}
-      </p>
-    </div>
-  );
-}
-
-// ─── Stats strip ──────────────────────────────────────────────────────────────
-
-function StatsStrip({ statsLoading }: { statsLoading: boolean }) {
-  const { stats } = useKnowledgeStats();
-
-  const items = [
-    {
-      icon: <Layers className="w-4 h-4 text-primary" />,
-      label: "Nodos",
-      value: stats?.totalNodes ?? 0,
-    },
-    {
-      icon: <Network className="w-4 h-4 text-indigo-400" />,
-      label: "Relaciones",
-      value: stats?.totalRelationships ?? 0,
-    },
-    {
-      icon: <LayoutGrid className="w-4 h-4 text-amber-400" />,
-      label: "Tipos",
-      value: stats?.nodeTypes.length ?? 0,
-    },
-  ];
-
-  return (
-    <div className="grid grid-cols-3 gap-3">
-      {items.map((item) => (
-        <Card key={item.label} className="glass">
-          <CardContent className="p-3 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-              {item.icon}
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground leading-none mb-0.5">
-                {item.label}
-              </p>
-              {statsLoading ? (
-                <div className="h-4 w-10 bg-muted/40 rounded animate-pulse mt-0.5" />
-              ) : (
-                <p className="text-sm font-bold tabular-nums">{item.value}</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-// ─── Main page ────────────────────────────────────────────────────────────────
-
-export default function LibraryPage() {
+function GraphTab() {
   const [rawSearch, setRawSearch] = useState("");
   const [activeType, setActiveType] = useState<string | null>(null);
   const [activeSource, setActiveSource] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showSourceFilter, setShowSourceFilter] = useState(false);
 
-  // Defer search so typing doesn't fire a query on every keystroke
   const search = useDeferredValue(rawSearch);
 
   const { nodes, total, loading } = useKnowledgeNodes({
@@ -122,8 +246,8 @@ export default function LibraryPage() {
   });
 
   const { stats, loading: statsLoading } = useKnowledgeStats();
-
   const hasFilters = !!rawSearch || !!activeType || !!activeSource;
+  const availableTypes = stats?.nodeTypes ?? [];
 
   const handleNodeClick = useCallback((id: string) => {
     setSelectedNodeId((prev) => (prev === id ? null : id));
@@ -133,107 +257,61 @@ export default function LibraryPage() {
     setSelectedNodeId(id);
   }, []);
 
-  const clearFilters = () => {
-    setRawSearch("");
-    setActiveType(null);
-    setActiveSource(null);
-  };
-
-  // Node type tabs — only show types that exist in the current result set
-  const availableTypes = stats?.nodeTypes ?? [];
-
   return (
-    <div className="flex h-[calc(100vh-4rem)] gap-0 -mx-6 -mb-6">
-      {/* ── Left panel ── */}
-      <div
-        className={cn(
-          "flex flex-col min-w-0 transition-all duration-300",
-          selectedNodeId ? "flex-[0_0_60%]" : "flex-1"
-        )}
-      >
-        {/* Header + search */}
-        <div className="px-6 pt-6 pb-4 space-y-4 border-b border-border/50">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-heading font-bold mb-0.5">Biblioteca</h1>
-              <p className="text-sm text-muted-foreground">
-                {loading
-                  ? "Cargando…"
-                  : `${total} nodo${total !== 1 ? "s" : ""} de conocimiento`}
-              </p>
-            </div>
+    <div className="flex h-full gap-0">
+      {/* Left */}
+      <div className={cn("flex flex-col min-w-0 transition-all duration-300", selectedNodeId ? "flex-[0_0_60%]" : "flex-1")}>
+        <div className="px-6 pt-5 pb-4 space-y-3 border-b border-border/50 shrink-0">
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: "Nodos", value: stats?.totalNodes ?? 0, loading: statsLoading },
+              { label: "Relaciones", value: stats?.totalRelationships ?? 0, loading: statsLoading },
+              { label: "Tipos", value: stats?.nodeTypes.length ?? 0, loading: statsLoading },
+            ].map(({ label, value, loading: l }) => (
+              <div key={label} className="rounded-lg border border-border/40 bg-card/40 px-3 py-2">
+                <p className="text-[10px] text-muted-foreground/60">{label}</p>
+                {l ? (
+                  <div className="h-4 w-8 bg-muted/40 rounded animate-pulse mt-1" />
+                ) : (
+                  <p className="text-sm font-bold tabular-nums">{value}</p>
+                )}
+              </div>
+            ))}
           </div>
 
-          {/* Stats */}
-          <StatsStrip statsLoading={statsLoading} />
-
-          {/* Search */}
+          {/* Search + source filter */}
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               <Input
                 value={rawSearch}
                 onChange={(e) => setRawSearch(e.target.value)}
-                placeholder="Buscar por nombre o contenido…"
+                placeholder="Buscar nodos…"
                 className="pl-9 h-9 text-sm"
               />
               {rawSearch && (
-                <button
-                  onClick={() => setRawSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
+                <button onClick={() => setRawSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
-
-            {/* Source filter toggle */}
             {stats && stats.sourceRefs.length > 0 && (
-              <Button
-                variant={activeSource ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowSourceFilter((v) => !v)}
-                className="gap-1.5 h-9 shrink-0"
-              >
+              <Button variant={activeSource ? "default" : "outline"} size="sm" onClick={() => setShowSourceFilter((v) => !v)} className="gap-1.5 h-9 shrink-0">
                 <SlidersHorizontal className="w-3.5 h-3.5" />
                 Fuente
               </Button>
             )}
           </div>
 
-          {/* Source refs dropdown */}
           <AnimatePresence>
             {showSourceFilter && stats && stats.sourceRefs.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="flex flex-wrap gap-1.5 overflow-hidden"
-              >
-                <button
-                  onClick={() => setActiveSource(null)}
-                  className={cn(
-                    "px-2.5 py-1 rounded-lg text-xs border transition-all",
-                    !activeSource
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border hover:border-border text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Todas las fuentes
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="flex flex-wrap gap-1.5 overflow-hidden">
+                <button onClick={() => setActiveSource(null)} className={cn("px-2.5 py-1 rounded-lg text-xs border transition-all", !activeSource ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground")}>
+                  Todas
                 </button>
                 {stats.sourceRefs.map((ref) => (
-                  <button
-                    key={ref}
-                    onClick={() =>
-                      setActiveSource(activeSource === ref ? null : ref)
-                    }
-                    className={cn(
-                      "px-2.5 py-1 rounded-lg text-xs border transition-all",
-                      activeSource === ref
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border text-muted-foreground hover:text-foreground hover:border-border"
-                    )}
-                  >
+                  <button key={ref} onClick={() => setActiveSource(activeSource === ref ? null : ref)} className={cn("px-2.5 py-1 rounded-lg text-xs border transition-all", activeSource === ref ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground")}>
                     {formatSourceRef(ref)}
                   </button>
                 ))}
@@ -241,80 +319,49 @@ export default function LibraryPage() {
             )}
           </AnimatePresence>
 
-          {/* Type filter tabs */}
+          {/* Type tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
-            <button
-              onClick={() => setActiveType(null)}
-              className={cn(
-                "px-3 py-1 rounded-full text-xs font-medium border shrink-0 transition-all",
-                !activeType
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border text-muted-foreground hover:text-foreground hover:border-border"
-              )}
-            >
-              Todos
-              {!activeType && (
-                <span className="ml-1.5 tabular-nums">{total}</span>
-              )}
+            <button onClick={() => setActiveType(null)} className={cn("px-3 py-1 rounded-full text-xs font-medium border shrink-0 transition-all", !activeType ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground")}>
+              Todos {!activeType && <span className="ml-1 tabular-nums">{total}</span>}
             </button>
-
             {availableTypes.map((type) => {
               const cfg = getNodeTypeConfig(type);
               const { Icon } = cfg;
               return (
-                <button
-                  key={type}
-                  onClick={() =>
-                    setActiveType(activeType === type ? null : type)
-                  }
-                  className={cn(
-                    "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 transition-all",
-                    activeType === type
-                      ? cn(cfg.bg, cfg.text, cfg.border)
-                      : "border-border text-muted-foreground hover:text-foreground hover:border-border"
-                  )}
-                >
+                <button key={type} onClick={() => setActiveType(activeType === type ? null : type)} className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 transition-all", activeType === type ? cn(cfg.bg, cfg.text, cfg.border) : "border-border text-muted-foreground hover:text-foreground")}>
                   <Icon className="w-3 h-3" />
                   {cfg.label}
                 </button>
               );
             })}
-
             {hasFilters && (
-              <button
-                onClick={clearFilters}
-                className="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-muted-foreground hover:text-destructive border border-border hover:border-destructive/50 transition-all shrink-0"
-              >
-                <X className="w-3 h-3" />
-                Limpiar
+              <button onClick={() => { setRawSearch(""); setActiveType(null); setActiveSource(null); }} className="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-muted-foreground hover:text-destructive border border-border hover:border-destructive/50 transition-all shrink-0">
+                <X className="w-3 h-3" /> Limpiar
               </button>
             )}
           </div>
         </div>
 
-        {/* Node grid */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading && nodes.length === 0 ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
           ) : nodes.length === 0 ? (
-            <EmptyState hasFilters={hasFilters} />
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Layers className="w-8 h-8 text-muted-foreground/30 mb-3" />
+              <p className="text-sm font-medium mb-1">{hasFilters ? "Sin resultados" : "Grafo vacío"}</p>
+              <p className="text-xs text-muted-foreground max-w-xs">
+                {hasFilters ? "Prueba ajustando los filtros." : "Extrae textos o procesa videos en IA Mentor para poblar el grafo."}
+              </p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {nodes.map((node, i) => (
-                <NodeCard
-                  key={node.id}
-                  node={node}
-                  index={i}
-                  isSelected={node.id === selectedNodeId}
-                  onClick={() => handleNodeClick(node.id)}
-                />
+                <NodeCard key={node.id} node={node} index={i} isSelected={node.id === selectedNodeId} onClick={() => handleNodeClick(node.id)} />
               ))}
             </div>
           )}
-
-          {/* Loading indicator for background refetch */}
           {loading && nodes.length > 0 && (
             <div className="flex justify-center pt-4">
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
@@ -323,18 +370,53 @@ export default function LibraryPage() {
         </div>
       </div>
 
-      {/* ── Right panel: Node detail ── */}
+      {/* Right: node detail */}
       <AnimatePresence>
         {selectedNodeId && (
           <div className="flex-[0_0_40%] min-w-[320px] max-w-[480px] border-l border-border">
-            <NodeDetail
-              nodeId={selectedNodeId}
-              onClose={() => setSelectedNodeId(null)}
-              onNavigate={handleNavigate}
-            />
+            <NodeDetail nodeId={selectedNodeId} onClose={() => setSelectedNodeId(null)} onNavigate={handleNavigate} />
           </div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
+export default function LibraryPage() {
+  const [activeTab, setActiveTab] = useState<LibTab>("lecturas");
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-4rem)] -mx-6 -mb-6">
+      {/* Header + tabs */}
+      <div className="px-6 pt-5 pb-0 border-b border-border/50 shrink-0">
+        <h1 className="text-xl font-heading font-bold mb-4">Biblioteca</h1>
+        <div className="flex items-center gap-0">
+          {TABS.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+                activeTab === id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tab content */}
+      <div className="flex-1 overflow-hidden">
+        {activeTab === "lecturas"  && <ReadingsTab />}
+        {activeTab === "archivos"  && <FilesTab />}
+        {activeTab === "grafo"     && <GraphTab />}
+      </div>
     </div>
   );
 }
