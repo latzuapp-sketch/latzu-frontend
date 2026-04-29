@@ -625,13 +625,13 @@ export function InteractiveLesson({ lessonId }: InteractiveLessonProps) {
     blockRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [currentBlockIndex]);
 
-  // TTS: narrate current block when enabled
+  // TTS: narrate when navigating blocks (only while enabled)
   useEffect(() => {
     if (!tts.isEnabled || !currentBlock) return;
     const text = extractBlockText(currentBlock);
     if (text) tts.speak(text);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentBlockIndex, tts.isEnabled]);
+  }, [currentBlockIndex]);
 
   // Auto-complete content/callout/image/divider/video blocks on navigation away
   const autoCompletePassiveBlock = useCallback(
@@ -849,7 +849,14 @@ export function InteractiveLesson({ lessonId }: InteractiveLessonProps) {
                   <span>{lesson.estimatedMinutes} min</span>
                 </div>
                 <button
-                  onClick={tts.toggle}
+                  onClick={() => {
+                    if (tts.isEnabled) {
+                      tts.disable();
+                    } else {
+                      const t = currentBlock ? extractBlockText(currentBlock) : "";
+                      tts.enable(t);
+                    }
+                  }}
                   title={tts.isEnabled ? "Desactivar narración" : "Narrar lección con IA"}
                   className={cn(
                     "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-all",
@@ -867,7 +874,7 @@ export function InteractiveLesson({ lessonId }: InteractiveLessonProps) {
                   ) : (
                     <VolumeX className="w-3.5 h-3.5" />
                   )}
-                  <span>{tts.isEnabled ? "Narrando" : "Escuchar"}</span>
+                  <span>{tts.isLoading ? "Cargando…" : tts.isEnabled ? "Narrando" : "Escuchar"}</span>
                 </button>
               </div>
               {progress && progress.score > 0 && (

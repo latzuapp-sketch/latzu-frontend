@@ -408,15 +408,27 @@ export function ReadingView({ task, userId }: ViewProps) {
   const text = (content as { content?: string })?.content ?? "";
   const chapters = useMemo(() => parseChapters(text), [text]);
 
-  // Reset chapter index when content changes (new task)
-  useEffect(() => { setChapterIdx(0); setTocOpen(false); tts.stop(); }, [task.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const chapterText = useCallback(
+    (idx: number) => {
+      const ch = chapters[idx];
+      return ch ? `${ch.title}. ${ch.content}` : "";
+    },
+    [chapters]
+  );
 
-  // Narrate chapter when TTS is enabled and chapter changes
+  // Stop TTS when switching to a different task
   useEffect(() => {
-    if (!tts.isEnabled || !chapters[chapterIdx]) return;
-    tts.speak(chapters[chapterIdx].title + ". " + chapters[chapterIdx].content);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chapterIdx, tts.isEnabled]);
+    setChapterIdx(0);
+    setTocOpen(false);
+    tts.disable();
+  }, [task.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-narrate when chapter changes (only while enabled)
+  useEffect(() => {
+    if (!tts.isEnabled) return;
+    const t = chapterText(chapterIdx);
+    if (t) tts.speak(t);
+  }, [chapterIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const chapter = chapters[chapterIdx] ?? null;
   const isLast = chapterIdx === chapters.length - 1;
@@ -468,7 +480,7 @@ export function ReadingView({ task, userId }: ViewProps) {
             {/* Controls */}
             <div className="flex items-center gap-1.5 shrink-0">
               <button
-                onClick={tts.toggle}
+                onClick={() => tts.isEnabled ? tts.disable() : tts.enable(chapterText(chapterIdx))}
                 title={tts.isEnabled ? "Detener narración" : "Escuchar con IA"}
                 className={cn(
                   "flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg border transition-colors",
@@ -486,8 +498,13 @@ export function ReadingView({ task, userId }: ViewProps) {
                 ) : (
                   <VolumeX className="w-3 h-3" />
                 )}
-                <span className="hidden sm:inline">{tts.isEnabled ? "Narrando" : "Escuchar"}</span>
+                <span className="hidden sm:inline">
+                  {tts.isLoading ? "Cargando…" : tts.isEnabled ? "Narrando" : "Escuchar"}
+                </span>
               </button>
+              {tts.error && (
+                <span className="text-[10px] text-red-400 hidden sm:inline">{tts.error}</span>
+              )}
               <button
                 onClick={() => setTocOpen((v) => !v)}
                 className={cn(
@@ -565,26 +582,31 @@ export function ReadingView({ task, userId }: ViewProps) {
           >
             {isSingleChapter && (
               <div className="flex items-center justify-between mb-4">
-                <button
-                  onClick={tts.toggle}
-                  className={cn(
-                    "flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-colors",
-                    tts.isEnabled
-                      ? "bg-primary/10 border-primary/30 text-primary"
-                      : "border-border/40 text-muted-foreground hover:text-foreground"
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => tts.isEnabled ? tts.disable() : tts.enable(chapterText(chapterIdx))}
+                    className={cn(
+                      "flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-colors",
+                      tts.isEnabled
+                        ? "bg-primary/10 border-primary/30 text-primary"
+                        : "border-border/40 text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {tts.isLoading ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : tts.isPlaying ? (
+                      <Volume2 className="w-3 h-3 animate-pulse" />
+                    ) : tts.isEnabled ? (
+                      <Volume2 className="w-3 h-3" />
+                    ) : (
+                      <VolumeX className="w-3 h-3" />
+                    )}
+                    {tts.isLoading ? "Cargando…" : tts.isEnabled ? "Narrando" : "Escuchar"}
+                  </button>
+                  {tts.error && (
+                    <span className="text-[10px] text-red-400">{tts.error}</span>
                   )}
-                >
-                  {tts.isLoading ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : tts.isPlaying ? (
-                    <Volume2 className="w-3 h-3 animate-pulse" />
-                  ) : tts.isEnabled ? (
-                    <Volume2 className="w-3 h-3" />
-                  ) : (
-                    <VolumeX className="w-3 h-3" />
-                  )}
-                  {tts.isEnabled ? "Narrando" : "Escuchar"}
-                </button>
+                </div>
                 <button onClick={regenerate} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <RefreshCw className="w-3 h-3" />Regenerar
                 </button>
