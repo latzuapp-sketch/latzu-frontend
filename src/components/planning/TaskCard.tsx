@@ -54,6 +54,14 @@ const priorityConfig = {
   low: { label: "Baja", classes: "text-sky-400 border-sky-500/30 bg-sky-500/10" },
 };
 
+const abcdeConfig = {
+  A: { classes: "bg-red-500 text-white font-bold", title: "Debe hacerse — consecuencias graves si no" },
+  B: { classes: "bg-orange-400 text-white font-bold", title: "Debería hacerse — consecuencias leves" },
+  C: { classes: "bg-amber-300 text-black font-bold", title: "Agradable de hacer — sin consecuencias" },
+  D: { classes: "bg-muted text-muted-foreground font-medium", title: "Delegar" },
+  E: { classes: "bg-muted/50 text-muted-foreground/60 font-medium line-through", title: "Eliminar" },
+};
+
 const categoryIcons: Record<TaskCategory, typeof ArrowUpCircle> = {
   task:      ArrowUpCircle,
   lesson:    BookOpen,
@@ -103,6 +111,7 @@ export function TaskCard({
 
   const status = statusConfig[task.status];
   const priority = priorityConfig[task.priority];
+  const abcde = task.abcdePriority ? abcdeConfig[task.abcdePriority] : null;
   const CatIcon = categoryIcons[task.category] ?? ArrowUpCircle;
   const StatusIcon = status.icon;
 
@@ -160,15 +169,28 @@ export function TaskCard({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p
-            className={cn(
-              "font-medium leading-snug",
-              compact ? "text-xs" : "text-sm",
-              task.status === "done" && "line-through text-muted-foreground"
+          <div className="flex items-start gap-2">
+            {abcde && (
+              <span
+                className={cn(
+                  "shrink-0 mt-0.5 w-5 h-5 rounded text-[10px] flex items-center justify-center",
+                  abcde.classes
+                )}
+                title={abcde.title}
+              >
+                {task.abcdePriority}
+              </span>
             )}
-          >
-            {task.title}
-          </p>
+            <p
+              className={cn(
+                "font-medium leading-snug",
+                compact ? "text-xs" : "text-sm",
+                task.status === "done" && "line-through text-muted-foreground"
+              )}
+            >
+              {task.title}
+            </p>
+          </div>
 
           {!compact && task.description && (
             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">

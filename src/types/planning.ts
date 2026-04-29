@@ -2,6 +2,9 @@
 
 export type TaskStatus = "todo" | "in_progress" | "done";
 export type TaskPriority = "low" | "medium" | "high";
+export type ABCDEPriority = "A" | "B" | "C" | "D" | "E";
+export type LifeArea = "career" | "health" | "relationships" | "growth";
+
 export type TaskCategory =
   | "task"
   | "lesson"
@@ -44,6 +47,8 @@ export interface PlanningTask {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
+  abcdePriority?: ABCDEPriority;
+  lifeArea?: LifeArea;
   dueDate: string | null;
   dueTime: string | null;
   category: TaskCategory;
@@ -89,6 +94,8 @@ export interface CreateTaskInput {
   description?: string;
   status?: TaskStatus;
   priority?: TaskPriority;
+  abcdePriority?: ABCDEPriority;
+  lifeArea?: LifeArea;
   dueDate?: string | null;
   dueTime?: string | null;
   category?: TaskCategory;

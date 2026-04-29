@@ -27,6 +27,8 @@ import type {
   CalendarEvent,
   CreateTaskInput,
   TaskStatus,
+  ABCDEPriority,
+  TaskPriority,
 } from "@/types/planning";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -47,6 +49,8 @@ function entityToTask(entity: {
     description: String(p.description ?? ""),
     status: (p.status as PlanningTask["status"]) ?? "todo",
     priority: (p.priority as PlanningTask["priority"]) ?? "medium",
+    abcdePriority: p.abcdePriority ? (p.abcdePriority as ABCDEPriority) : undefined,
+    lifeArea: p.lifeArea ? (p.lifeArea as PlanningTask["lifeArea"]) : undefined,
     dueDate: p.dueDate ? String(p.dueDate) : null,
     dueTime: p.dueTime ? String(p.dueTime) : null,
     category: (p.category as PlanningTask["category"]) ?? "task",
@@ -280,6 +284,13 @@ export function useTasks(calendar?: CalendarActions) {
     async (input: CreateTaskInput): Promise<PlanningTask | null> => {
       if (!userId) return null;
       try {
+        const abcdeToPriority: Record<ABCDEPriority, TaskPriority> = {
+          A: "high", B: "high", C: "medium", D: "low", E: "low",
+        };
+        const derivedPriority = input.abcdePriority
+          ? abcdeToPriority[input.abcdePriority]
+          : (input.priority ?? "medium");
+
         const { data: res } = await createEntityMutation({
           variables: {
             input: {
@@ -288,7 +299,9 @@ export function useTasks(calendar?: CalendarActions) {
                 title: input.title,
                 description: input.description ?? "",
                 status: input.status ?? "todo",
-                priority: input.priority ?? "medium",
+                priority: derivedPriority,
+                abcdePriority: input.abcdePriority ?? null,
+                lifeArea: input.lifeArea ?? null,
                 dueDate: input.dueDate ?? null,
                 dueTime: input.dueTime ?? null,
                 category: input.category ?? "task",

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import type { CreateTaskInput, TaskCategory, TaskPriority } from "@/types/planning";
+import type { CreateTaskInput, TaskCategory, TaskPriority, ABCDEPriority, LifeArea } from "@/types/planning";
 import { X, Plus, ArrowUpCircle, BookOpen, Bell } from "lucide-react";
 
 interface TaskFormProps {
@@ -27,12 +27,29 @@ const priorityOptions: { value: TaskPriority; label: string; color: string }[] =
   { value: "high", label: "Alta", color: "text-red-400 border-red-500/30 bg-red-500/10" },
 ];
 
+const abcdeOptions: { value: ABCDEPriority; label: string; desc: string; color: string }[] = [
+  { value: "A", label: "A", desc: "Debe hacerse", color: "bg-red-500 text-white border-red-500" },
+  { value: "B", label: "B", desc: "Debería hacerse", color: "bg-orange-400 text-white border-orange-400" },
+  { value: "C", label: "C", desc: "Agradable", color: "bg-amber-300 text-black border-amber-300" },
+  { value: "D", label: "D", desc: "Delegar", color: "bg-muted text-muted-foreground border-border" },
+  { value: "E", label: "E", desc: "Eliminar", color: "bg-muted/50 text-muted-foreground/60 border-border/50" },
+];
+
+const lifeAreaOptions: { value: LifeArea; label: string; emoji: string }[] = [
+  { value: "career", label: "Carrera", emoji: "💼" },
+  { value: "health", label: "Salud", emoji: "💪" },
+  { value: "relationships", label: "Relaciones", emoji: "🤝" },
+  { value: "growth", label: "Crecimiento", emoji: "🧠" },
+];
+
 export function TaskForm({ onSubmit, onClose, defaultDate }: TaskFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState(defaultDate ?? "");
   const [dueTime, setDueTime] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("medium");
+  const [abcdePriority, setAbcdePriority] = useState<ABCDEPriority | null>(null);
+  const [lifeArea, setLifeArea] = useState<LifeArea | null>(null);
   const [category, setCategory] = useState<TaskCategory>("task");
   const [submitting, setSubmitting] = useState(false);
   const [showExtra, setShowExtra] = useState(false);
@@ -47,6 +64,8 @@ export function TaskForm({ onSubmit, onClose, defaultDate }: TaskFormProps) {
       dueDate: dueDate || null,
       dueTime: dueTime || null,
       priority,
+      abcdePriority: abcdePriority ?? undefined,
+      lifeArea: lifeArea ?? undefined,
       category,
       status: "todo",
     });
@@ -94,21 +113,50 @@ export function TaskForm({ onSubmit, onClose, defaultDate }: TaskFormProps) {
           />
         </div>
 
-        {/* Priority */}
+        {/* ABCDE Priority */}
+        <div className="space-y-1">
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Prioridad ABCDE</p>
+          <div className="flex gap-1">
+            {abcdeOptions.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                title={opt.desc}
+                onClick={() => setAbcdePriority(abcdePriority === opt.value ? null : opt.value)}
+                className={cn(
+                  "flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                  abcdePriority === opt.value
+                    ? opt.color
+                    : "border-border/50 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {abcdePriority && (
+            <p className="text-[10px] text-muted-foreground">
+              {abcdeOptions.find(o => o.value === abcdePriority)?.desc}
+            </p>
+          )}
+        </div>
+
+        {/* Life Area */}
         <div className="flex gap-1.5">
-          {priorityOptions.map((p) => (
+          {lifeAreaOptions.map((opt) => (
             <button
-              key={p.value}
+              key={opt.value}
               type="button"
-              onClick={() => setPriority(p.value)}
+              onClick={() => setLifeArea(lifeArea === opt.value ? null : opt.value)}
               className={cn(
-                "flex-1 py-1 rounded-lg text-xs font-medium border transition-all",
-                priority === p.value
-                  ? p.color
+                "flex-1 py-1 rounded-lg text-[10px] border flex flex-col items-center gap-0.5 transition-all",
+                lifeArea === opt.value
+                  ? "border-primary/50 bg-primary/10 text-primary"
                   : "border-border/50 text-muted-foreground hover:text-foreground"
               )}
             >
-              {p.label}
+              <span>{opt.emoji}</span>
+              <span>{opt.label}</span>
             </button>
           ))}
         </div>

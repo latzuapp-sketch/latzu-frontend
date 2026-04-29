@@ -42,9 +42,17 @@ export interface UserProgress {
   conceptsInProgress: string[];
 }
 
+export interface LifeAreaGoals {
+  career?: string;
+  health?: string;
+  relationships?: string;
+  growth?: string;
+}
+
 export interface OnboardingData {
   profileType: ProfileType;
   goals: string[];
+  lifeAreaGoals?: LifeAreaGoals;
   experience: 'beginner' | 'intermediate' | 'advanced';
   interests: string[];
   learningStyle?: LearningStyle;

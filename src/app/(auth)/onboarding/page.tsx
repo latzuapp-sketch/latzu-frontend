@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useUserStore } from "@/stores/userStore";
-import type { ProfileType, OnboardingData, LearningStyle } from "@/types/user";
+import type { ProfileType, OnboardingData, LearningStyle, LifeAreaGoals } from "@/types/user";
 import {
   GraduationCap,
   Lightbulb,
@@ -149,24 +149,18 @@ const CAREERS = [
   "Otra",
 ];
 
-const GOAL_EXAMPLES: Record<ProfileType, string[]> = {
-  estudiante: [
-    "Aprobar todas mis materias este semestre",
-    "Mejorar mis habilidades en programación",
-    "Preparar y defender mi tesis de grado",
-    "Conseguir una beca o intercambio",
-    "Aprender inglés a nivel profesional",
-    "Hacer mis primeras prácticas empresariales",
-  ],
-  aprendiz: [
-    "Aprender programación desde cero",
-    "Dominar el inglés conversacional",
-    "Estudiar para una certificación profesional",
-    "Explorar diseño gráfico y UX",
-    "Entender economía y finanzas personales",
-    "Preparar un examen de admisión",
-  ],
-};
+const LIFE_AREAS: Array<{
+  key: keyof LifeAreaGoals;
+  label: string;
+  emoji: string;
+  placeholder: string;
+  description: string;
+}> = [
+  { key: "career",        label: "Carrera / Finanzas",  emoji: "💼", placeholder: "Ej. Conseguir un ascenso, duplicar mis ingresos…",       description: "Tu crecimiento profesional y económico" },
+  { key: "health",        label: "Salud",                emoji: "💪", placeholder: "Ej. Hacer ejercicio 3 veces por semana, dormir 8h…",     description: "Tu energía física y mental" },
+  { key: "relationships", label: "Relaciones",           emoji: "🤝", placeholder: "Ej. Dedicar más tiempo a mi familia, ampliar mi red…",   description: "Tu familia, amigos y red profesional" },
+  { key: "growth",        label: "Crecimiento personal", emoji: "🧠", placeholder: "Ej. Leer 1 libro al mes, aprender un idioma nuevo…",     description: "Tu aprendizaje y desarrollo interior" },
+];
 
 // ─── Shared select styles ─────────────────────────────────────────────────────
 
@@ -184,7 +178,7 @@ function getStepLabel(step: number, profileType?: ProfileType): string {
     2: profileType === "estudiante" ? "Universidad" : "Contexto",
     3: "Experiencia",
     4: "Intereses",
-    5: "Metas",
+    5: "Tu vida",
   };
   return labels[step] ?? String(step);
 }
@@ -217,12 +211,6 @@ export default function OnboardingPage() {
         : [...((prev[key] as string[]) || []), item],
     }));
 
-  const addGoal = (goal: string) => {
-    if (goal.trim() && !data.goals?.includes(goal.trim())) {
-      set("goals", [...(data.goals ?? []), goal.trim()]);
-    }
-  };
-
   const canProceed = (): boolean => {
     switch (step) {
       case 1: return !!data.profileType;
@@ -236,11 +224,16 @@ export default function OnboardingPage() {
   const handleSubmit = async () => {
     if (!data.profileType) return;
     setIsSubmitting(true);
+
+    // Derive goals from life area goals so the rest of the system can use them
+    const lifeGoals = Object.values(data.lifeAreaGoals ?? {}).filter(Boolean) as string[];
+    const mergedGoals = [...new Set([...(data.goals ?? []), ...lifeGoals])];
+
     try {
       await fetch("/api/user/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, goals: mergedGoals }),
       });
     } catch {/* continue even on error */}
 
@@ -606,90 +599,42 @@ export default function OnboardingPage() {
           </motion.div>
         )}
 
-        {/* ── Step 5: Goals ── */}
+        {/* ── Step 5: Life Areas ── */}
         {step === 5 && (
           <motion.div key="s5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <Card className="glass">
               <CardHeader className="text-center">
-                <CardTitle className="text-2xl">¿Qué quieres lograr?</CardTitle>
+                <CardTitle className="text-2xl">Las 4 áreas de tu vida</CardTitle>
                 <CardDescription>
-                  La IA creará tu espacio de aprendizaje a partir de estas metas
+                  Define una meta en cada área. Tu IA mentor organizará todo en torno a ellas.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-5">
-                {/* Input */}
-                <Input
-                  placeholder="Escribe una meta y presiona Enter…"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      addGoal((e.target as HTMLInputElement).value);
-                      (e.target as HTMLInputElement).value = "";
-                    }
-                  }}
-                />
-
-                {/* Added goals */}
-                {(data.goals?.length ?? 0) > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {data.goals?.map((goal, i) => (
-                      <Badge key={i} variant="secondary" className="px-3 py-1.5 text-sm">
-                        {goal}
-                        <button
-                          onClick={() => set("goals", data.goals!.filter((_, j) => j !== i))}
-                          className="ml-2 hover:text-destructive"
-                        >
-                          ×
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                {/* Goal examples */}
-                {data.profileType && (
-                  <div className="space-y-2.5">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Ejemplos — haz clic para agregar
-                    </p>
-                    <div className="flex flex-col gap-2">
-                      {GOAL_EXAMPLES[data.profileType].map((example) => {
-                        const isAdded = data.goals?.includes(example);
-                        return (
-                          <motion.button
-                            key={example}
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.99 }}
-                            onClick={() => {
-                              if (!isAdded) addGoal(example);
-                              else set("goals", data.goals!.filter((g) => g !== example));
-                            }}
-                            className={`w-full text-left px-3.5 py-2.5 rounded-lg border text-sm transition-all flex items-center gap-2.5 ${
-                              isAdded
-                                ? "border-primary bg-primary/10 text-primary"
-                                : "border-border hover:border-primary/50 hover:bg-secondary/50 text-muted-foreground"
-                            }`}
-                          >
-                            <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
-                              isAdded ? "border-primary bg-primary" : "border-muted-foreground/40"
-                            }`}>
-                              {isAdded
-                                ? <Check className="w-3 h-3 text-primary-foreground" />
-                                : <Plus className="w-3 h-3 text-muted-foreground/60" />
-                              }
-                            </div>
-                            {example}
-                          </motion.button>
-                        );
-                      })}
+              <CardContent className="space-y-4">
+                {LIFE_AREAS.map((area) => (
+                  <div key={area.key} className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{area.emoji}</span>
+                      <div>
+                        <p className="text-sm font-semibold">{area.label}</p>
+                        <p className="text-xs text-muted-foreground">{area.description}</p>
+                      </div>
                     </div>
+                    <Input
+                      placeholder={area.placeholder}
+                      value={(data.lifeAreaGoals as LifeAreaGoals | undefined)?.[area.key] ?? ""}
+                      onChange={(e) =>
+                        set("lifeAreaGoals", {
+                          ...(data.lifeAreaGoals ?? {}),
+                          [area.key]: e.target.value,
+                        } as LifeAreaGoals)
+                      }
+                      className="text-sm"
+                    />
                   </div>
-                )}
-
-                {(data.goals?.length ?? 0) === 0 && (
-                  <p className="text-xs text-muted-foreground text-center">
-                    Puedes añadir metas ahora o hacerlo después. La IA también puede sugerirte algunas.
-                  </p>
-                )}
+                ))}
+                <p className="text-xs text-muted-foreground text-center pt-2">
+                  Puedes dejar áreas en blanco y completarlas después con tu mentor IA.
+                </p>
               </CardContent>
             </Card>
           </motion.div>
