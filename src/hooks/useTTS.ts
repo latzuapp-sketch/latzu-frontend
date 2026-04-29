@@ -2,20 +2,18 @@
 
 import { useState, useRef, useCallback } from "react";
 import { getSession } from "next-auth/react";
-import { API_BASE_URL } from "@/lib/apollo";
-
-// In dev, use the local backend if NEXT_PUBLIC_API_URL is set; otherwise use production
-const TTS_BASE = process.env.NEXT_PUBLIC_API_URL || API_BASE_URL;
 import type { LessonBlock } from "@/types/lesson";
+
+const TTS_URL = "https://latzu-api-610441107033.us-central1.run.app/tts";
 
 export function extractBlockText(block: LessonBlock): string {
   switch (block.type) {
-    case "content":   return stripMd(block.markdown);
-    case "callout":   return `${block.title ? block.title + ". " : ""}${block.body}`;
-    case "quiz":      return `Pregunta: ${block.question}. ${block.options.map((o, i) => `Opción ${i + 1}: ${o}`).join(". ")}.`;
-    case "exercise":  return `Ejercicio: ${block.prompt}`;
-    case "reflection":return `Reflexión: ${block.prompt}`;
-    default:          return "";
+    case "content":    return stripMd(block.markdown);
+    case "callout":    return `${block.title ? block.title + ". " : ""}${block.body}`;
+    case "quiz":       return `Pregunta: ${block.question}. ${block.options.map((o, i) => `Opción ${i + 1}: ${o}`).join(". ")}.`;
+    case "exercise":   return `Ejercicio: ${block.prompt}`;
+    case "reflection": return `Reflexión: ${block.prompt}`;
+    default:           return "";
   }
 }
 
@@ -38,10 +36,10 @@ export function useTTS() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]         = useState<string | null>(null);
 
-  const audioRef  = useRef<HTMLAudioElement | null>(null);
-  const abortRef  = useRef<AbortController | null>(null);
+  const audioRef   = useRef<HTMLAudioElement | null>(null);
+  const abortRef   = useRef<AbortController | null>(null);
   const blobUrlRef = useRef<string | null>(null);
 
   const stop = useCallback(() => {
@@ -73,7 +71,7 @@ export function useTTS() {
       const session = await getSession();
       const token = (session as { backendToken?: string } | null)?.backendToken;
 
-      const res = await fetch(`${TTS_BASE}/tts`, {
+      const res = await fetch(TTS_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -84,19 +82,21 @@ export function useTTS() {
       });
 
       if (!res.ok) {
-        const msg = res.status === 401 ? "Sin autenticación" : `Error ${res.status}`;
-        throw new Error(msg);
+        throw new Error(res.status === 401 ? "Sin autenticación" : `Error ${res.status}`);
       }
 
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const url  = URL.createObjectURL(blob);
       blobUrlRef.current = url;
 
       const audio = new Audio(url);
       audioRef.current = audio;
       audio.onended = () => {
         setIsPlaying(false);
-        if (blobUrlRef.current) { URL.revokeObjectURL(blobUrlRef.current); blobUrlRef.current = null; }
+        if (blobUrlRef.current) {
+          URL.revokeObjectURL(blobUrlRef.current);
+          blobUrlRef.current = null;
+        }
       };
       audio.onerror = () => setIsPlaying(false);
 
@@ -105,14 +105,12 @@ export function useTTS() {
       await audio.play();
     } catch (err) {
       if ((err as Error).name === "AbortError") { setIsLoading(false); return; }
-      const msg = err instanceof Error ? err.message : "Error de audio";
-      setError(msg);
+      setError(err instanceof Error ? err.message : "Error de audio");
       setIsLoading(false);
       setIsPlaying(false);
     }
   }, [stop]);
 
-  // Enable TTS and immediately speak text
   const enable = useCallback((text: string) => {
     setIsEnabled(true);
     setError(null);
