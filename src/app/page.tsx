@@ -3,11 +3,11 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import {
-  Brain, Sparkles, ArrowRight, BookOpen, MessageSquare, Zap,
+  Brain, Sparkles, ArrowRight, MessageSquare, Zap,
   Network, CalendarDays, BarChart3, Check, ChevronDown, Shield,
-  GraduationCap, Target, Star, Infinity, Users, Rocket, PlayCircle,
+  GraduationCap, Target, Star, Rocket, PlayCircle, Menu, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -40,58 +40,116 @@ const STAT_COLORS = [
   "oklch(0.72 0.20 145)",
 ];
 
-// ─── Scroll-aware navbar ──────────────────────────────────────────────────────
+// ─── Scroll-aware floating navbar ─────────────────────────────────────────────
 
 function Navbar() {
   const { t } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 24);
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
+  const navLinks = [
+    { href: "#features", label: t.nav.features },
+    { href: "#how", label: t.nav.howItWorks },
+    { href: "#pricing", label: t.nav.pricing },
+    { href: "#faq", label: t.nav.faq },
+  ];
+
   return (
-    <header
-      className={cn(
-        "fixed top-0 inset-x-0 z-50 transition-all duration-300",
-        scrolled
-          ? "bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-sm"
-          : "bg-transparent"
-      )}
-    >
-      <nav className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <Image src="/logo.png" alt="Latzu" width={32} height={32} className="w-8 h-8 object-contain" />
-          <span className="text-xl font-heading font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Latzu
-          </span>
-        </Link>
+    <div className="fixed top-4 left-4 right-4 z-50">
+      <header
+        className={cn(
+          "transition-all duration-500 rounded-2xl",
+          scrolled
+            ? "bg-background/85 backdrop-blur-xl border border-border/60 shadow-lg shadow-black/10"
+            : "bg-transparent"
+        )}
+      >
+        <nav className="px-4 h-14 flex items-center justify-between gap-4">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5 shrink-0">
+            <Image src="/logo.png" alt="Latzu" width={32} height={32} className="w-8 h-8 object-contain" />
+            <span className="text-xl font-heading font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Latzu
+            </span>
+          </Link>
 
-        {/* Nav links */}
-        <div className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
-          <a href="#features" className="hover:text-foreground transition-colors">{t.nav.features}</a>
-          <a href="#how" className="hover:text-foreground transition-colors">{t.nav.howItWorks}</a>
-          <a href="#pricing" className="hover:text-foreground transition-colors">{t.nav.pricing}</a>
-          <a href="#faq" className="hover:text-foreground transition-colors">{t.nav.faq}</a>
-        </div>
+          {/* Nav links — desktop */}
+          <div className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
+            {navLinks.map((link) => (
+              <a key={link.href} href={link.href} className="hover:text-foreground transition-colors duration-200">
+                {link.label}
+              </a>
+            ))}
+          </div>
 
-        {/* CTA + lang toggle */}
-        <div className="flex items-center gap-2 shrink-0">
-          <LangToggle />
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/login">{t.nav.login}</Link>
-          </Button>
-          <Button size="sm" className="gap-1.5" asChild>
-            <Link href="/login">
-              <Sparkles className="w-3.5 h-3.5" />
-              {t.nav.tryFree}
-            </Link>
-          </Button>
-        </div>
-      </nav>
-    </header>
+          {/* CTA + lang toggle + mobile toggle */}
+          <div className="flex items-center gap-2 shrink-0">
+            <LangToggle />
+            <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
+              <Link href="/login">{t.nav.login}</Link>
+            </Button>
+            <Button size="sm" className="gap-1.5 hidden md:inline-flex" asChild>
+              <Link href="/login">
+                <Sparkles className="w-3.5 h-3.5" />
+                {t.nav.tryFree}
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileOpen((v) => !v)}
+              aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
+            >
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+          </div>
+        </nav>
+      </header>
+
+      {/* Mobile dropdown */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="absolute top-full left-0 right-0 mt-2 rounded-2xl border border-border/50 shadow-2xl overflow-hidden bg-background/95 backdrop-blur-xl"
+          >
+            <nav className="flex flex-col p-3 gap-1">
+              {navLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="px-4 py-3 rounded-xl text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                >
+                  {link.label}
+                </a>
+              ))}
+              <div className="mt-2 pt-3 border-t border-border/40 flex flex-col gap-2 px-1">
+                <Button variant="outline" size="sm" asChild className="w-full">
+                  <Link href="/login" onClick={() => setMobileOpen(false)}>{t.nav.login}</Link>
+                </Button>
+                <Button size="sm" className="gap-1.5 w-full" asChild>
+                  <Link href="/login" onClick={() => setMobileOpen(false)}>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {t.nav.tryFree}
+                  </Link>
+                </Button>
+              </div>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -157,13 +215,13 @@ interface PricingTier {
   features: readonly string[];
 }
 
-function PricingCard({ tier }: { tier: PricingTier }) {
+function PricingCard({ tier, delay = 0 }: { tier: PricingTier; delay?: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.5, delay }}
       className={cn(
         "relative rounded-2xl p-6 flex flex-col gap-5 border",
         tier.featured
@@ -218,10 +276,14 @@ function PricingCard({ tier }: { tier: PricingTier }) {
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
+  const toggle = () => setOpen((v) => !v);
   return (
     <div
-      className="border border-border/40 rounded-xl overflow-hidden cursor-pointer"
-      onClick={() => setOpen((v) => !v)}
+      role="button"
+      tabIndex={0}
+      className="border border-border/40 rounded-xl overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+      onClick={toggle}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggle()}
     >
       <div className="flex items-center justify-between gap-3 px-5 py-4">
         <p className="font-medium text-sm">{q}</p>
@@ -290,6 +352,7 @@ export default function HomePage() {
   const stats = t.stats.map((s, i) => ({ ...s, color: STAT_COLORS[i] }));
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="min-h-screen bg-gradient-latzu overflow-x-hidden">
       <Navbar />
 
@@ -396,7 +459,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 40, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className="rounded-2xl p-4 shadow-2xl"
+            className="rounded-2xl overflow-hidden shadow-2xl"
             style={{
               background: "oklch(0.13 0.025 265 / 0.85)",
               backdropFilter: "blur(24px)",
@@ -404,47 +467,63 @@ export default function HomePage() {
               boxShadow: "0 25px 80px oklch(0.52 0.27 280 / 0.25), 0 0 0 1px oklch(0.72 0.29 280 / 0.15)",
             }}
           >
-            {/* Fake chat UI */}
-            <div className="flex items-center gap-2 mb-4 border-b border-border/30 pb-3">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:"linear-gradient(135deg, var(--primary), var(--accent))"}}>
-                <Brain className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-xs font-semibold">AI Tutor — Latzu</span>
-              <div className="ml-auto flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            {/* App chrome: tab bar */}
+            <div className="flex items-center border-b border-border/30 px-4 pt-3 text-xs">
+              {["Chat", "Knowledge", "Study"].map((tab, ti) => (
+                <div
+                  key={tab}
+                  className={cn(
+                    "px-3 py-2 font-medium border-b-2 -mb-px transition-colors",
+                    ti === 0 ? "border-primary text-foreground" : "border-transparent text-muted-foreground/50"
+                  )}
+                >
+                  {tab}
+                </div>
+              ))}
+              <div className="ml-auto flex items-center gap-1.5 pb-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-[10px] text-emerald-400 font-medium">{t.hero.onlineStatus}</span>
               </div>
             </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex gap-2.5">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{background:"linear-gradient(135deg, oklch(0.72 0.29 280 / 0.25), oklch(0.78 0.27 340 / 0.15))"}}>
-                  <Brain className="w-3.5 h-3.5 text-primary" />
+            {/* Chat content */}
+            <div className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{background:"linear-gradient(135deg, var(--primary), var(--accent))"}}>
+                  <Brain className="w-4 h-4 text-white" />
                 </div>
-                <div className="bg-muted/30 rounded-xl rounded-tl-none px-3.5 py-2.5 max-w-sm border border-border/20">
-                  <p className="text-xs leading-relaxed text-foreground/80">
-                    {t.hero.chatMessage1}
-                  </p>
-                </div>
+                <span className="text-xs font-semibold">AI Tutor — Latzu</span>
               </div>
-              <div className="flex gap-2.5 justify-end">
-                <div className="rounded-xl rounded-tr-none px-3.5 py-2.5 max-w-sm" style={{background:"oklch(0.72 0.29 280 / 0.18)", border:"1px solid oklch(0.72 0.29 280 / 0.30)"}}>
-                  <p className="text-xs leading-relaxed">
-                    {t.hero.chatUserMessage}
-                  </p>
+              <div className="space-y-3 text-sm">
+                <div className="flex gap-2.5">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{background:"linear-gradient(135deg, oklch(0.72 0.29 280 / 0.25), oklch(0.78 0.27 340 / 0.15))"}}>
+                    <Brain className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <div className="bg-muted/30 rounded-xl rounded-tl-none px-3.5 py-2.5 max-w-sm border border-border/20">
+                    <p className="text-xs leading-relaxed text-foreground/80">
+                      {t.hero.chatMessage1}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-2.5">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{background:"linear-gradient(135deg, oklch(0.72 0.29 280 / 0.25), oklch(0.78 0.27 340 / 0.15))"}}>
-                  <Brain className="w-3.5 h-3.5 text-primary" />
+                <div className="flex gap-2.5 justify-end">
+                  <div className="rounded-xl rounded-tr-none px-3.5 py-2.5 max-w-sm" style={{background:"oklch(0.72 0.29 280 / 0.18)", border:"1px solid oklch(0.72 0.29 280 / 0.30)"}}>
+                    <p className="text-xs leading-relaxed">
+                      {t.hero.chatUserMessage}
+                    </p>
+                  </div>
                 </div>
-                <div className="bg-muted/30 rounded-xl rounded-tl-none px-3.5 py-2.5 max-w-sm border border-border/20">
-                  <p className="text-xs leading-relaxed text-foreground/80">
-                    {t.hero.chatMessage2}
-                  </p>
-                  <div className="mt-1.5 flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{animationDelay:"0ms"}}/>
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce" style={{animationDelay:"150ms"}}/>
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{animationDelay:"300ms"}}/>
+                <div className="flex gap-2.5">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{background:"linear-gradient(135deg, oklch(0.72 0.29 280 / 0.25), oklch(0.78 0.27 340 / 0.15))"}}>
+                    <Brain className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <div className="bg-muted/30 rounded-xl rounded-tl-none px-3.5 py-2.5 max-w-sm border border-border/20">
+                    <p className="text-xs leading-relaxed text-foreground/80">
+                      {t.hero.chatMessage2}
+                    </p>
+                    <div className="mt-1.5 flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{animationDelay:"0ms"}}/>
+                      <div className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce" style={{animationDelay:"150ms"}}/>
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{animationDelay:"300ms"}}/>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -505,7 +584,7 @@ export default function HomePage() {
             {features.map((f, i) => (
               <FadeIn key={f.title} delay={i * 0.07}>
                 <div
-                  className="group rounded-2xl p-6 h-full transition-all duration-300 hover:scale-[1.02]"
+                  className="group rounded-2xl p-6 h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
                   style={{
                     background: "oklch(0.13 0.025 265 / 0.6)",
                     backdropFilter: "blur(12px)",
@@ -571,15 +650,7 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-start">
             {pricingTiers.map((tier, i) => (
-              <motion.div
-                key={tier.name}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-              >
-                <PricingCard tier={tier} />
-              </motion.div>
+              <PricingCard key={tier.name} tier={tier} delay={i * 0.1} />
             ))}
           </div>
 
@@ -739,5 +810,6 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+    </MotionConfig>
   );
 }

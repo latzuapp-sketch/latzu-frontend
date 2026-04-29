@@ -311,3 +311,22 @@
   background-size: 300% 300%;
   animation: gradient-shift 5s ease infinite;
 }
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-blob,
+  .animate-float,
+  .animate-pulse-glow,
+  .animate-shimmer,
+  .animate-gradient,
+  .animate-spin-slow {
+    animation: none !important;
+    transition: none !important;
+  }
+  .animate-bounce {
+    animation: none !important;
+  }
+  .animate-pulse {
+    animation: none !important;
+  }
+}
