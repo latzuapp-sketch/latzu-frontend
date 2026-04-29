@@ -17,7 +17,9 @@ import {
   Loader2, Sparkles, RefreshCw, ChevronLeft, ChevronRight,
   Trophy, RotateCcw, Lightbulb, FileCode, StickyNote, Bot,
   Brain, ArrowRight, MessageSquare, BookOpen, Zap, Star,
+  Volume2, VolumeX,
 } from "lucide-react";
+import { useTTS } from "@/hooks/useTTS";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -401,12 +403,20 @@ export function ReadingView({ task, userId }: ViewProps) {
   const [tocOpen, setTocOpen] = useState(false);
   const [recordOutcome] = useMutation(RECORD_STUDY_OUTCOME, { client: aiClient });
   const contentRef = useRef<HTMLDivElement>(null);
+  const tts = useTTS();
 
   const text = (content as { content?: string })?.content ?? "";
   const chapters = useMemo(() => parseChapters(text), [text]);
 
   // Reset chapter index when content changes (new task)
-  useEffect(() => { setChapterIdx(0); setTocOpen(false); }, [task.id]);
+  useEffect(() => { setChapterIdx(0); setTocOpen(false); tts.stop(); }, [task.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Narrate chapter when TTS is enabled and chapter changes
+  useEffect(() => {
+    if (!tts.isEnabled || !chapters[chapterIdx]) return;
+    tts.speak(chapters[chapterIdx].title + ". " + chapters[chapterIdx].content);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chapterIdx, tts.isEnabled]);
 
   const chapter = chapters[chapterIdx] ?? null;
   const isLast = chapterIdx === chapters.length - 1;
@@ -457,6 +467,27 @@ export function ReadingView({ task, userId }: ViewProps) {
             </div>
             {/* Controls */}
             <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={tts.toggle}
+                title={tts.isEnabled ? "Detener narración" : "Escuchar con IA"}
+                className={cn(
+                  "flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg border transition-colors",
+                  tts.isEnabled
+                    ? "bg-primary/10 border-primary/30 text-primary"
+                    : "border-border/40 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tts.isLoading ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : tts.isPlaying ? (
+                  <Volume2 className="w-3 h-3 animate-pulse" />
+                ) : tts.isEnabled ? (
+                  <Volume2 className="w-3 h-3" />
+                ) : (
+                  <VolumeX className="w-3 h-3" />
+                )}
+                <span className="hidden sm:inline">{tts.isEnabled ? "Narrando" : "Escuchar"}</span>
+              </button>
               <button
                 onClick={() => setTocOpen((v) => !v)}
                 className={cn(
@@ -533,7 +564,27 @@ export function ReadingView({ task, userId }: ViewProps) {
             className="max-w-2xl mx-auto px-4 sm:px-6 py-8"
           >
             {isSingleChapter && (
-              <div className="flex justify-end mb-4">
+              <div className="flex items-center justify-between mb-4">
+                <button
+                  onClick={tts.toggle}
+                  className={cn(
+                    "flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-colors",
+                    tts.isEnabled
+                      ? "bg-primary/10 border-primary/30 text-primary"
+                      : "border-border/40 text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {tts.isLoading ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : tts.isPlaying ? (
+                    <Volume2 className="w-3 h-3 animate-pulse" />
+                  ) : tts.isEnabled ? (
+                    <Volume2 className="w-3 h-3" />
+                  ) : (
+                    <VolumeX className="w-3 h-3" />
+                  )}
+                  {tts.isEnabled ? "Narrando" : "Escuchar"}
+                </button>
                 <button onClick={regenerate} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <RefreshCw className="w-3 h-3" />Regenerar
                 </button>
