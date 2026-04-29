@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 
-const AI_URL = process.env.AI_SERVICE_URL ?? "http://localhost:8001";
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export async function POST(request: Request) {
   try {
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "El texto no puede estar vacío" }, { status: 400 });
     }
 
-    const response = await fetch(`${AI_URL}/learning/onboarding`, {
+    const response = await fetch(`${BACKEND_URL}/api/learning/onboarding`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error("AI service /learning/onboarding error:", error);
+      console.error("Backend /api/learning/onboarding error:", error);
       return NextResponse.json(
         { error: "Error al crear el plan adaptativo" },
         { status: response.status }
