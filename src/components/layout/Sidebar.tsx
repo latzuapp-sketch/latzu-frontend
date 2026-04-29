@@ -14,7 +14,6 @@ import { useUserStore, useSidebarCollapsed, useIsGuest } from "@/stores/userStor
 import { getTemplate } from "@/config/templates";
 import { useLanguage, LangToggle } from "@/lib/i18n";
 import {
-  Brain,
   ChevronLeft,
   ChevronRight,
   Settings,
@@ -154,9 +153,9 @@ function SidebarFooter({
   const handleSignOut = () => {
     if (isGuest) {
       disableGuestMode();
-      router.push("/login");
+      router.push("/");
     } else {
-      signOut({ callbackUrl: "/login" });
+      signOut({ callbackUrl: "/" });
     }
   };
 

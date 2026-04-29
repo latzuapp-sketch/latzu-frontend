@@ -41,9 +41,9 @@ export function Header({ title, onMenuClick }: HeaderProps) {
   const handleSignOut = async () => {
     if (isGuest) {
       disableGuestMode();
-      router.push("/login");
+      router.push("/");
     } else {
-      await signOut({ callbackUrl: "/login" });
+      await signOut({ callbackUrl: "/" });
     }
   };
 

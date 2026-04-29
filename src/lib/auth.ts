@@ -336,7 +336,8 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       if (url.startsWith(baseUrl)) {
         const path = url.replace(baseUrl, '');
-        if (path && path !== '/') return url;
+        if (!path || path === '/') return baseUrl;
+        return url;
       }
       return `${baseUrl}/dashboard`;
     },
