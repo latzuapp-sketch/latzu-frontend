@@ -13,8 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { getSession } from "next-auth/react";
-import { API_BASE_URL } from "@/lib/apollo";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -352,14 +350,9 @@ export function AdaptivePlanModal({ onClose, onCreated }: Props) {
     setError(null);
     try {
       const text = buildPromptText();
-      const session = await getSession();
-      const token = session?.backendToken;
-      const res = await fetch(`${API_BASE_URL}/api/learning/onboarding`, {
+      const res = await fetch("/api/learning/onboarding", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
       const data = await res.json();
