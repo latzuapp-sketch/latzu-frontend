@@ -246,9 +246,9 @@ export default function PlansPage() {
             ).join("\n")
           : "";
         const phaseRule = hasPhases
-          ? `REGLA CRÍTICA: TODAS las tareas deben tener phaseIndex entre 0 y ${input.phases!.length - 1}. ` +
+          ? `REGLA CRÍTICA: TODAS las tareas deben tener phase_index entre 0 y ${input.phases!.length - 1}. ` +
             `Distribuye las tareas proporcionalmente entre las ${input.phases!.length} fases. ` +
-            `Nunca dejes phaseIndex vacío o nulo. `
+            `Nunca dejes phase_index vacío o nulo. `
           : "";
         const prompt =
           `Crea tareas concretas para este plan ${input.type === "study" ? "de estudio" : "de acción"}:\n` +
