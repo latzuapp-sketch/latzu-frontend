@@ -11,6 +11,7 @@ import { ProgressTracker } from "./ProgressTracker";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { ChatContainer } from "@/components/chat/ChatContainer";
 import { useLessons } from "@/hooks/useLessons";
+import { useTTS, extractBlockText } from "@/hooks/useTTS";
 import { cn } from "@/lib/utils";
 import type {
   LessonBlock,
@@ -46,6 +47,9 @@ import {
   Copy,
   Check,
   ArrowLeft,
+  Volume2,
+  VolumeX,
+  Loader2,
 } from "lucide-react";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -614,11 +618,20 @@ export function InteractiveLesson({ lessonId }: InteractiveLessonProps) {
   const [showAIChat, setShowAIChat] = useState(false);
 
   const blockRef = useRef<HTMLDivElement>(null);
+  const tts = useTTS();
 
   // Auto-scroll to block area on navigation
   useEffect(() => {
     blockRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [currentBlockIndex]);
+
+  // TTS: narrate current block when enabled
+  useEffect(() => {
+    if (!tts.isEnabled || !currentBlock) return;
+    const text = extractBlockText(currentBlock);
+    if (text) tts.speak(text);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentBlockIndex, tts.isEnabled]);
 
   // Auto-complete content/callout/image/divider/video blocks on navigation away
   const autoCompletePassiveBlock = useCallback(
@@ -830,9 +843,32 @@ export function InteractiveLesson({ lessonId }: InteractiveLessonProps) {
               </p>
             </div>
             <div className="flex flex-col items-end gap-2 text-sm text-muted-foreground shrink-0">
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" />
-                <span>{lesson.estimatedMinutes} min</span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{lesson.estimatedMinutes} min</span>
+                </div>
+                <button
+                  onClick={tts.toggle}
+                  title={tts.isEnabled ? "Desactivar narración" : "Narrar lección con IA"}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-all",
+                    tts.isEnabled
+                      ? "border-primary/50 bg-primary/10 text-primary"
+                      : "border-border/50 bg-secondary hover:border-primary/30 hover:text-primary"
+                  )}
+                >
+                  {tts.isLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : tts.isPlaying ? (
+                    <Volume2 className="w-3.5 h-3.5 animate-pulse" />
+                  ) : tts.isEnabled ? (
+                    <Volume2 className="w-3.5 h-3.5" />
+                  ) : (
+                    <VolumeX className="w-3.5 h-3.5" />
+                  )}
+                  <span>{tts.isEnabled ? "Narrando" : "Escuchar"}</span>
+                </button>
               </div>
               {progress && progress.score > 0 && (
                 <div className="flex items-center gap-1.5 text-primary">
