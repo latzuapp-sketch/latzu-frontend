@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { getSession } from "next-auth/react";
+import { API_BASE_URL } from "@/lib/apollo";
 import type { LibraryFile } from "@/types/library";
 
 const STORAGE_KEY = "latzu_library_files";
@@ -35,11 +37,15 @@ export function useLibraryFiles() {
     setUploadError(null);
 
     try {
+      const session = await getSession();
+      const token = (session as { backendToken?: string } | null)?.backendToken;
+
       const form = new FormData();
       form.append("file", file);
 
-      const res = await fetch("/api/study/extract-file", {
+      const res = await fetch(`${API_BASE_URL}/api/files/extract`, {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: form,
       });
 

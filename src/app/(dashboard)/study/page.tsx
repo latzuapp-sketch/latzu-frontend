@@ -9,7 +9,7 @@ import { useMutation } from "@apollo/client";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { aiClient } from "@/lib/apollo";
+import { aiClient, API_BASE_URL } from "@/lib/apollo";
 import { SEND_MESSAGE, EXTRACT_TEXT, SCRAPE_URL } from "@/graphql/ai/operations";
 import { useTasks } from "@/hooks/usePlanning";
 import { usePlans } from "@/hooks/usePlans";
@@ -787,7 +787,12 @@ function TaskWorkspace({ task, planTitle, planContext, onBack, onStatusChange }:
         delete fileQueueRef.current[id];
         const form = new FormData();
         form.append("file", fileObj);
-        const resp = await fetch("/api/study/extract-file", { method: "POST", body: form });
+        const token = (session as unknown as { backendToken?: string } | null)?.backendToken;
+        const resp = await fetch(`${API_BASE_URL}/api/files/extract`, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: form,
+        });
         const json = await resp.json();
         if (!resp.ok || json.error) { markError(json.error); return; }
         const { data } = await extractText({ variables: { input: { text: json.text, sourceRef: id, visibility: "private" } } });

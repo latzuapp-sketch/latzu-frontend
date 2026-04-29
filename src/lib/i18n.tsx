@@ -55,7 +55,7 @@ const translations = {
         {
           title: "Adaptive AI Tutor",
           description:
-            "Your personal learning assistant that remembers your context, adapts its teaching style, and is available 24/7 to answer your questions.",
+            "Your personal learning assistant that adapts its teaching style, remembers your context, and is available 24/7. Listen to any lesson with real-time voice narration powered by Gemini 2.5 Flash TTS.",
         },
         {
           title: "Knowledge Library",
@@ -65,22 +65,22 @@ const translations = {
         {
           title: "Smart Planning",
           description:
-            "Create study plans and tasks with AI. Sync with Google Calendar and receive personalized reminders.",
+            "Create study plans and tasks with AI — or let the agent create them directly from the chat. Sync with Google Calendar and receive personalized reminders.",
         },
         {
-          title: "Persistent Memory",
+          title: "Adaptive Learning Engine",
           description:
-            "Latzu learns from you every session: your strengths, weaknesses, goals, and preferences. Context is never lost.",
+            "Powered by BKT (Bayesian Knowledge Tracing) and Ebbinghaus spaced repetition. Latzu tracks your knowledge score per concept and adjusts the learning path to maximize long-term retention.",
         },
         {
           title: "Learning Analytics",
           description:
-            "Visualize your progress with detailed metrics: study streak, mastered concepts, time invested, and more.",
+            "Visualize your progress with detailed metrics: study streak, mastered concepts, knowledge score per topic, time invested, and more.",
         },
         {
-          title: "Integrated Automation",
+          title: "Studio IA",
           description:
-            "AI agent that creates tasks, manages your knowledge, and executes complex workflows directly from the chat.",
+            "Generate flashcards, quizzes, and mind maps from your study materials in seconds. The AI agent also creates tasks and manages workflows directly from the chat.",
         },
       ],
     },
@@ -366,7 +366,7 @@ const translations = {
         {
           title: "Tutor IA Adaptativo",
           description:
-            "Tu asistente personal de aprendizaje que recuerda tu contexto, adapta su estilo pedagógico y está disponible 24/7 para responder tus dudas.",
+            "Tu asistente personal que adapta su estilo pedagógico, recuerda tu contexto y está disponible 24/7. Escucha cualquier lección con narración de voz en tiempo real impulsada por Gemini 2.5 Flash TTS.",
         },
         {
           title: "Biblioteca de Conocimiento",
@@ -376,22 +376,22 @@ const translations = {
         {
           title: "Planificación Inteligente",
           description:
-            "Crea planes de estudio y tareas con IA. Sincroniza con Google Calendar y recibe recordatorios personalizados.",
+            "Crea planes de estudio y tareas con IA — o deja que el agente las cree directamente desde el chat. Sincroniza con Google Calendar y recibe recordatorios personalizados.",
         },
         {
-          title: "Memoria Persistente",
+          title: "Motor de Aprendizaje Adaptativo",
           description:
-            "Latzu aprende de ti con cada sesión: tus fortalezas, debilidades, objetivos y preferencias. El contexto nunca se pierde.",
+            "Impulsado por BKT (Bayesian Knowledge Tracing) y repetición espaciada de Ebbinghaus. Latzu mide tu puntuación de conocimiento por concepto y ajusta el camino de aprendizaje para maximizar la retención a largo plazo.",
         },
         {
           title: "Analytics de Aprendizaje",
           description:
-            "Visualiza tu progreso con métricas detalladas: racha de estudio, conceptos dominados, tiempo invertido y más.",
+            "Visualiza tu progreso con métricas detalladas: racha de estudio, conceptos dominados, puntuación de conocimiento por tema, tiempo invertido y más.",
         },
         {
-          title: "Automatización Integrada",
+          title: "Studio IA",
           description:
-            "Agente IA que crea tareas, gestiona tu conocimiento y ejecuta flujos de trabajo complejos directamente desde el chat.",
+            "Genera flashcards, quizzes y mapas mentales desde tus materiales de estudio en segundos. El agente IA también crea tareas y gestiona flujos de trabajo directamente desde el chat.",
         },
       ],
     },
