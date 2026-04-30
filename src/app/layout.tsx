@@ -40,6 +40,10 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Latzu Team" }],
   creator: "Latzu",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
   openGraph: {
     images: [{ url: "/logo.png" }],
   },
