@@ -39,6 +39,12 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Latzu Team" }],
   creator: "Latzu",
+  openGraph: {
+    images: [{ url: "/logo.png" }],
+  },
+  twitter: {
+    images: ["/logo.png"],
+  },
 };
 
 export const viewport: Viewport = {
