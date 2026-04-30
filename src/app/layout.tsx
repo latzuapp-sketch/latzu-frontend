@@ -23,6 +23,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXTAUTH_URL ?? "https://latzu.co"),
   title: {
     default: "Latzu - Inteligencia Adaptativa",
     template: "%s | Latzu",
