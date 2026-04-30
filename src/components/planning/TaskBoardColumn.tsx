@@ -3,9 +3,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { TaskBoardCard } from "@/components/planning/TaskBoardCard";
-import { TaskForm } from "@/components/planning/TaskForm";
+import { TaskBoardComposer } from "@/components/planning/TaskBoardComposer";
 import { cn } from "@/lib/utils";
-import type { BoardList, CreateTaskInput, PlanningTask, TaskStatus } from "@/types/planning";
+import type { BoardList, CreateTaskInput, PlanningTask } from "@/types/planning";
 import { Plus, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -89,17 +89,10 @@ export function TaskBoardColumn({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
             >
-              <TaskForm
-                defaultStatus={list.mapsToTaskStatus as TaskStatus}
-                defaultSource="manual"
+              <TaskBoardComposer
+                list={list}
                 onSubmit={async (input) => {
-                  await onCreateTask({
-                    ...input,
-                    projectId: list.projectId,
-                    boardId: list.boardId,
-                    listId: list.id,
-                    status: list.mapsToTaskStatus,
-                  });
+                  await onCreateTask(input);
                   setAdding(false);
                 }}
                 onClose={() => setAdding(false)}
