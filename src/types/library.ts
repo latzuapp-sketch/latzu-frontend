@@ -6,6 +6,16 @@ export type BookCategory =
   | "negocios"
   | "liderazgo";
 
+export interface BookChapter {
+  title: string;
+  content: string; // markdown
+}
+
+export interface BookExercise {
+  prompt: string;
+  type: "reflection" | "action";
+}
+
 export interface LibraryBook {
   id: string;
   title: string;
@@ -14,7 +24,12 @@ export interface LibraryBook {
   category: BookCategory;
   coverGradient: string;
   summary: string;
+  overview: string; // 1-page executive summary (markdown)
   insights: string[];
+  chapters: BookChapter[];
+  analysis: string; // "So What" — cross-references, updates (markdown)
+  critiques: string[];
+  exercises: BookExercise[];
   pages: number;
   readMinutes: number;
   tags: string[];

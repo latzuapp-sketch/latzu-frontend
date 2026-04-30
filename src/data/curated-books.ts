@@ -1,5 +1,8 @@
 import type { LibraryBook } from "@/types/library";
 
+const NO_CHAPTERS: LibraryBook["chapters"] = [];
+const NO_EXERCISES: LibraryBook["exercises"] = [];
+
 export const CURATED_BOOKS: LibraryBook[] = [
   {
     id: "eat-that-frog",
@@ -58,6 +61,29 @@ LAS 21 TÉCNICAS DE TRACY:
 21. La autodisciplina es la clave del éxito
 
 CITAS CLAVE: "Cada minuto gastado en planear ahorra diez minutos en ejecución." "La habilidad de concentrarse en la tarea más importante, hacerla bien y terminarla completamente es la clave del éxito."`,
+    overview: `## Trágate Ese Sapo — Resumen Ejecutivo
+
+Brian Tracy parte de una simple verdad: la procrastinación es el enemigo número uno del éxito. Su solución es igualmente directa — identifica tu tarea más importante del día (tu «sapo») y ejecútala **primero**, antes de emails, reuniones o cualquier otra cosa.
+
+### El método ABCDE
+Clasifica cada tarea antes de empezar:
+- **A** — Debo hacerlo (consecuencias graves si no)
+- **B** — Debería hacerlo (consecuencias menores)
+- **C** — Sería bueno (sin consecuencias reales)
+- **D** — Delegar
+- **E** — Eliminar
+
+**Regla de oro:** nunca hagas una tarea B cuando hay una A pendiente.
+
+### La regla 80/20 aplicada al tiempo
+El 20% de tus actividades produce el 80% de tus resultados. Planear el día anterior en papel —no en pantalla— incrementa la productividad hasta un 25%. La claridad elimina la vacilación.
+
+### El hábito, no la fuerza de voluntad
+Tracy no propone motivación — propone sistema. Una vez que entrenas el hábito de comenzar el día con el sapo, el resto del día fluye desde esa victoria temprana.`,
+    chapters: NO_CHAPTERS,
+    analysis: "",
+    critiques: [],
+    exercises: NO_EXERCISES,
   },
   {
     id: "atomic-habits",
@@ -106,6 +132,164 @@ El cambio real es un cambio de identidad. Cada hábito es un voto para convertir
 CICLO DEL HÁBITO: Señal → Anhelo → Respuesta → Recompensa
 
 CONCEPTOS CLAVE: Apilamiento de hábitos, diseño del entorno, la regla de Goldilocks (zona de máximo rendimiento entre aburrimiento y ansiedad), meseta del potencial latente.`,
+    overview: `## Hábitos Atómicos — Resumen Ejecutivo
+
+Los hábitos son el interés compuesto de la autosuperación. James Clear argumenta que **el 1% de mejora diaria produce un resultado 37 veces mejor al final del año**, mientras que el 1% de deterioro diario lleva casi a cero. El problema no es que queramos cambiar poco — es que intentamos cambiar lo equivocado.
+
+### El modelo de tres capas del cambio
+Clear propone que el cambio ocurre en tres niveles:
+1. **Resultados** — lo que obtienes (la capa más superficial)
+2. **Procesos** — lo que haces
+3. **Identidad** — quién crees ser (la capa más profunda y duradera)
+
+La mayoría intenta cambiar resultados directamente. El cambio duradero viene de cambiar la identidad primero: no «quiero leer más» sino **«soy un lector»**. Cada hábito que practicas es un voto para convertirte en ese tipo de persona.
+
+### Las 4 Leyes del Cambio de Comportamiento
+Para crear un hábito, hazlo **obvio → atractivo → fácil → satisfactorio**. Para romper un mal hábito, invierte cada ley: invisible, no atractivo, difícil, insatisfactorio.
+
+### La meseta del potencial latente
+El cambio parece no ocurrir durante semanas — luego el esfuerzo acumulado atraviesa la «línea de decepción» y los resultados se disparan. Persiste durante la meseta; los resultados siempre llegan si el sistema es correcto.`,
+    chapters: [
+      {
+        title: "El Poder Sorprendente de los Hábitos Atómicos",
+        content: `## El Poder Sorprendente de los Hábitos Atómicos
+
+El equipo de ciclismo de Gran Bretaña era mediocre durante décadas. En 2003, Dave Brailsford asumió como director con una estrategia: **mejora marginal del 1% en todo**. Ajuste del asiento, mantas de calefacción para los músculos, gel antibacteriano en los neumáticos, almohadas que viajan con el equipo. Cinco años después dominaron el Tour de France y los Juegos Olímpicos.
+
+**La matemática del 1%:** mejorar 1% cada día durante un año resulta en 37 veces mejor. Empeorar 1% cada día resulta en casi cero. Los hábitos son el interés compuesto del comportamiento.
+
+El problema más común: esperamos resultados lineales de hábitos que producen resultados exponenciales. Cuando el progreso parece inexistente, estamos en la *meseta del potencial latente* — el esfuerzo se está acumulando bajo la superficie, como el hielo que se funde. El rompimiento llega de golpe.
+
+**La diferencia entre metas y sistemas:** Los ganadores y los perdedores tienen las mismas metas. Las metas no diferencian a los que logran cosas de los que no. Lo que diferencia es el sistema. "No te elevas al nivel de tus metas; caes al nivel de tus sistemas."`,
+      },
+      {
+        title: "Cómo los Hábitos Moldean tu Identidad",
+        content: `## Cómo los Hábitos Moldean tu Identidad
+
+Hay tres capas del cambio de comportamiento. La mayoría empieza en la capa más externa: *¿qué quiero lograr?* (Resultados). Algunos van más profundo: *¿qué proceso seguiré?* (Procesos). Clear propone empezar desde adentro: *¿en quién quiero convertirme?* (Identidad).
+
+**El problema del cambio basado en resultados:** "Quiero leer 12 libros este año" es frágil — cuando la motivación baja, el comportamiento desaparece. "Soy un lector" es robusto — los lectores leen, porque eso es quiénes son.
+
+**Cada hábito es un voto:** No se cambia la identidad de golpe. Se cambia con evidencia acumulada. Cada vez que vas al gimnasio, votas por ser alguien que cuida su cuerpo. Cada vez que abres el libro, votas por ser un lector. La identidad emerge de la evidencia.
+
+El proceso en dos pasos: (1) decide qué tipo de persona quieres ser, (2) demuéstratelo con pequeñas victorias. La pregunta más útil no es "¿qué quiero lograr?" sino "¿qué tipo de persona logra eso, y qué haría hoy esa persona?"`,
+      },
+      {
+        title: "Cómo Construir Mejores Hábitos: El Ciclo de 4 Pasos",
+        content: `## Cómo Construir Mejores Hábitos: El Ciclo de 4 Pasos
+
+Todo hábito — bueno o malo — sigue el mismo proceso: **Señal → Anhelo → Respuesta → Recompensa**.
+
+- **Señal:** el disparador que indica al cerebro iniciar un comportamiento (lugar, hora, emoción, personas, acción previa)
+- **Anhelo:** la motivación detrás del hábito; no es el hábito mismo lo que se anhela sino el cambio de estado que produce
+- **Respuesta:** el hábito real (pensamiento o acción), siempre limitado por la habilidad o motivación disponibles
+- **Recompensa:** el beneficio que refuerza el ciclo; satisface el anhelo y enseña al cerebro qué recordar
+
+**Las 4 Leyes del Cambio de Comportamiento** son el marco práctico que emerge del ciclo:
+
+| Paso | Para crear un hábito | Para romperlo |
+|------|---------------------|---------------|
+| Señal | Hazlo obvio | Hazlo invisible |
+| Anhelo | Hazlo atractivo | Hazlo poco atractivo |
+| Respuesta | Hazlo fácil | Hazlo difícil |
+| Recompensa | Hazlo satisfactorio | Hazlo insatisfactorio |
+
+Este marco convierte la psicología del hábito en un sistema de diseño accionable.`,
+      },
+      {
+        title: "1ª Ley: Hazlo Obvio",
+        content: `## 1ª Ley: Hazlo Obvio
+
+Los hábitos son respuestas automáticas a señales. El cerebro no analiza conscientemente la mayoría de sus acciones — las ejecuta en piloto automático basado en las señales del entorno.
+
+**Implementación de intención:** la táctica más efectiva para empezar un nuevo hábito. Formato: "Haré [COMPORTAMIENTO] a las [HORA] en [LUGAR]." Las personas que planean *cuándo y dónde* tienen tasas de adherencia significativamente mayores.
+
+**Apilamiento de hábitos:** vincula el nuevo hábito a uno que ya existe. Formato: "Después de [HÁBITO ACTUAL], haré [NUEVO HÁBITO]." El café de la mañana se convierte en la señal para meditar. Lavarse los dientes, en la señal para el hilo dental.
+
+**Diseño del entorno:** el comportamiento es una función de la persona y el entorno. Rediseña el espacio para que las señales de buenos hábitos sean visibles y las de malos hábitos sean invisibles. El libro en la almohada. El teléfono en otro cuarto. Los snacks saludables a la vista.
+
+**Hazlo invisible para romperlo:** los malos hábitos son señales invisibilizadas. Borra las apps del teléfono. Pon la televisión en un closet. Deja el cigarrillo en el carro, no en el bolsillo. El autocontrol es una estrategia de corto plazo; el diseño del entorno es de largo plazo.`,
+      },
+      {
+        title: "2ª Ley: Hazlo Atractivo",
+        content: `## 2ª Ley: Hazlo Atractivo
+
+La dopamina se dispara en *anticipación* de la recompensa, no solo al recibirla. El cerebro libera dopamina cuando *espera* el placer — esto explica por qué el deseo puede ser más intenso que la satisfacción.
+
+**Agrupamiento de tentaciones (temptation bundling):** vincula una acción que *necesitas* hacer con una que *quieres* hacer. Solo puedes ver tu serie favorita mientras caminas en la caminadora. Solo puedes revisar redes sociales mientras haces los ejercicios de fisioterapia.
+
+**El rol del grupo social:** imitamos los hábitos de tres grupos: los cercanos, los muchos (la tribu) y los poderosos (los que admiramos). Únete a culturas donde el comportamiento deseado es la norma. Encuentra un ambiente donde tus hábitos meta sean el comportamiento estándar. "Nada sostiene la motivación mejor que pertenecer a una tribu."
+
+**Reencuadre motivacional:** Los hábitos son asociaciones. Puedes cambiar cómo los percibes. "Tengo que ir al gimnasio" → "Tengo la *oportunidad* de fortalecer mi cuerpo." "Tengo que cocinar" → "Puedo nutrir mi familia." El lenguaje moldea la motivación.`,
+      },
+      {
+        title: "3ª Ley: Hazlo Fácil",
+        content: `## 3ª Ley: Hazlo Fácil
+
+El principio del menor esfuerzo: cuando hay dos opciones similares, las personas naturalmente gravitan hacia la que requiere menos trabajo. Esto no es pereza — es eficiencia del cerebro. Diseña el entorno para que el camino de menor resistencia sea el correcto.
+
+**La cantidad de repeticiones supera al tiempo:** no importa cuánto tiempo llevas con un hábito — importa cuántas veces lo has ejecutado. El cerebro consolida conexiones neuronales con la práctica repetida. Actúa primero; perfecciona después.
+
+**La Regla de los 2 Minutos:** cuando empiezas un nuevo hábito, debe tomar menos de 2 minutos hacerlo. "Leer antes de dormir" → empezar con "leer una página." "Correr 5 km" → "ponerme los zapatos de correr." El punto no es que el hábito dure 2 minutos — es que empezar sea tan fácil que no haya excusa. *Un hábito debe establecerse antes de que pueda mejorarse.*
+
+**Dispositivos de compromiso:** decisiones tomadas en el presente que bloquean el comportamiento futuro. Pagar el gym por adelantado. Dejar el teléfono fuera del cuarto antes de dormir. Programar transferencias automáticas a ahorros. Reducir la fricción para el comportamiento deseado; aumentarla para el indeseado.`,
+      },
+      {
+        title: "4ª Ley: Hazlo Inmediatamente Satisfactorio",
+        content: `## 4ª Ley: Hazlo Inmediatamente Satisfactorio
+
+El cerebro prioriza las recompensas inmediatas sobre las futuras. El problema con la mayoría de buenos hábitos: sus beneficios son en el futuro (salud, riqueza, conocimiento) mientras sus costos son inmediatos (esfuerzo, incomodidad). Con los malos hábitos es al revés.
+
+**Refuerzo inmediato:** añade una pequeña recompensa inmediata al completar el hábito. Después de cada sesión de ejercicio, un baño caliente especial. Después de estudiar, 10 minutos de una serie. La recompensa no debe contrarrrestar el hábito (comer pizza después de correr), pero sí reforzarlo.
+
+**El seguimiento de hábitos:** marcar en un calendario o app cada día que completas el hábito es en sí mismo satisfactorio. Ver la cadena creciendo crea motivación. *Nunca rompas la cadena* — la racha se convierte en su propia recompensa.
+
+**"Nunca falles dos veces":** un día malo no es el problema — es la respuesta al día malo. Fallar una vez es un accidente; fallar dos veces es el inicio de un nuevo hábito negativo. Regresa al hábito al día siguiente, sin importar cuán pequeño sea el retorno. "El hábito de aparecer siempre supera al hábito de hacerlo perfectamente."`,
+      },
+      {
+        title: "La Trampa de los Buenos Hábitos y la Regla de Goldilocks",
+        content: `## La Trampa de los Buenos Hábitos y la Regla de Goldilocks
+
+Los hábitos tienen un lado oscuro: una vez que se automatizan, dejas de mejorar. El piloto automático es eficiente pero no genera crecimiento. La solución es combinar hábitos (ejecución automática) con práctica deliberada (atención activa en la mejora).
+
+**La Regla de Goldilocks:** los humanos experimentamos motivación máxima cuando trabajamos en tareas en el límite exacto de nuestras capacidades actuales. Ni demasiado fácil (aburrimiento) ni demasiado difícil (ansiedad). El punto óptimo está aproximadamente un 4% más allá del nivel actual.
+
+Los grandes atletas, músicos y ejecutores no solo practican más — practican *en el borde*, donde la tarea es suficientemente difícil para requerir atención total. Esta es la diferencia entre repetición automática y práctica deliberada.
+
+**Revisión y reflexión:** Clear recomienda revisiones anuales (¿qué funcionó?, ¿qué no?, ¿qué debería cambiar?) e informes de integridad semestrales (¿quién soy?, ¿cuáles son mis valores?, ¿cómo estoy viviendo en relación a ellos?). Sin reflexión, el éxito puede convertirse en trampa — la identidad que te llevó hasta aquí puede impedirte llegar más lejos.`,
+      },
+    ],
+    analysis: `## "So What" — Por Qué Importa Ahora
+
+**Clear vs. Duhigg:** El marco de las 4 Leyes de Clear es más accionable que el Loop del Hábito de Duhigg (*El Poder del Hábito*, 2012). Duhigg explica *por qué* existen los hábitos; Clear te dice *cómo* diseñarlos paso a paso. Son complementarios: Duhigg para el mecanismo neurológico, Clear para el sistema de construcción.
+
+**La dimensión de identidad que Fogg no tiene:** B.J. Fogg (*Tiny Habits*) se enfoca en el comportamiento mínimo y la celebración inmediata — tácticamente brillante, pero sin la palanca de identidad que explica la adherencia a largo plazo. Clear añade la pregunta "¿en quién me estoy convirtiendo?" que es lo que sostiene los hábitos bajo estrés.
+
+**Implicaciones para equipos y organizaciones:** Las 4 Leyes son diseño de sistemas, no solo consejo personal. Un equipo puede rediseñar sus procesos usando los mismos principios: ¿qué señales hacemos obvias en el entorno de trabajo? ¿qué fricciones reducimos en los flujos correctos? Las culturas organizacionales son hábitos colectivos.
+
+**Límite del libro:** Clear es fuerte en hábitos de comportamiento observable pero menos útil para hábitos cognitivos complejos (pensamiento estratégico, creatividad profunda). Para eso, *Trabajo Profundo* de Newport ofrece el complemento necesario — Clear te construye el hábito de sentarte a trabajar; Newport te dice qué hacer con ese tiempo.`,
+    critiques: [
+      "La evidencia científica es más delgada de lo que parece: muchos estudios citados son correlacionales o con muestras pequeñas. El «1% diario = 37x en un año» es matemáticamente correcto pero metafóricamente cuestionable aplicado a habilidades humanas, que no mejoran de forma exponencial indefinida.",
+      "La regla de los 2 minutos puede ser contraproducente para hábitos que requieren compromiso real. Normaliza el esfuerzo mínimo en dominios donde la adherencia ya no es el problema sino la profundidad de la práctica.",
+      "El libro subestima las circunstancias estructurales: hábitos como el ejercicio, la lectura y la nutrición dependen de condiciones económicas, de tiempo y de entorno que Clear trata como modificables por el individuo, cuando frecuentemente no lo son.",
+    ],
+    exercises: [
+      {
+        prompt:
+          "Escribe un hábito que quieras construir y reformúlalo como una declaración de identidad ('Soy alguien que…'). Luego lista 3 acciones concretas que esa persona haría hoy, por pequeñas que sean.",
+        type: "reflection",
+      },
+      {
+        prompt:
+          "Diseña un 'tablero de hábito': elige 1 hábito nuevo, define su señal específica (cuándo/dónde), hazlo ridículamente pequeño (máx. 2 minutos), y apílalo después de un hábito que ya tienes firmemente establecido.",
+        type: "action",
+      },
+      {
+        prompt:
+          "Identifica un mal hábito tuyo. Mapea su ciclo completo (señal → anhelo → respuesta → recompensa). Luego aplica las 4 leyes inversas: ¿cómo puedes hacer esa señal invisible, la rutina difícil y la recompensa insatisfactoria?",
+        type: "reflection",
+      },
+    ],
   },
   {
     id: "7-habits",
@@ -143,6 +327,32 @@ VICTORIA PÚBLICA (independencia → interdependencia):
 7. AFILAR LA SIERRA: Renovación en 4 dimensiones: física (ejercicio, nutrición), mental (leer, escribir, planear), social/emocional (relaciones), espiritual (valores, meditación).
 
 CONCEPTOS CLAVE: Proactividad, cuenta bancaria emocional, paradigmas, el espacio entre estímulo y respuesta, las cuatro necesidades humanas (vivir, amar, aprender, dejar un legado).`,
+    overview: `## Los 7 Hábitos — Resumen Ejecutivo
+
+Covey distingue entre la **ética del carácter** (valores internos, integridad, humildad) y la **ética de la personalidad** (técnicas, actitudes superficiales). Su argumento: la literatura de autoayuda del siglo XX se enfocó en la personalidad y produjo éxito frágil. Los principios atemporales del carácter producen efectividad duradera.
+
+### La progresión de los 7 Hábitos
+Los hábitos siguen una secuencia lógica de crecimiento:
+
+**Victoria Privada** (dependencia → independencia):
+1. **Sé proactivo** — responde desde valores, no desde impulsos
+2. **Empieza con el fin en mente** — define tu misión personal antes de actuar
+3. **Pon primero lo primero** — organiza por importancia, no por urgencia
+
+**Victoria Pública** (independencia → interdependencia):
+4. **Piensa en ganar-ganar** — busca acuerdos de beneficio mutuo
+5. **Busca primero comprender** — escucha empáticamente antes de hablar
+6. **Sinergiza** — las diferencias crean terceras alternativas superiores
+
+**Renovación:**
+7. **Afila la sierra** — renueva las cuatro dimensiones: física, mental, emocional, espiritual
+
+### El cuadrante II: el hábito más subestimado
+La mayoría vive en el cuadrante I (urgente e importante) o IV (urgente y no importante). El cuadrante II — importante pero **no** urgente — es donde vive la prevención, la planificación, las relaciones y el crecimiento personal. Invertir en él reduce el cuadrante I.`,
+    chapters: NO_CHAPTERS,
+    analysis: "",
+    critiques: [],
+    exercises: NO_EXERCISES,
   },
   {
     id: "mindset",
@@ -189,6 +399,143 @@ APLICACIONES:
 NEUROCIENCIA: El cerebro es plástico. Las neuronas forman nuevas conexiones con el aprendizaje y la práctica. No existe un "nivel fijo" de inteligencia.
 
 CAMBIAR LA MENTALIDAD: 1) Reconoce la voz de la mentalidad fija. 2) Date cuenta de que tienes elección. 3) Responde con la voz de crecimiento. 4) Actúa.`,
+    overview: `## Mindset — Resumen Ejecutivo
+
+Carol Dweck, psicóloga de Stanford, pasó décadas estudiando por qué algunas personas prosperan ante el desafío mientras otras se colapsan. Su hallazgo: la diferencia fundamental no es el talento sino la **mentalidad** — la historia que la persona se cuenta sobre si sus capacidades son fijas o maleables.
+
+### Los dos mindsets cara a cara
+
+| | Mentalidad Fija | Mentalidad de Crecimiento |
+|---|---|---|
+| Inteligencia | Innata e inmutable | Desarrollable con esfuerzo |
+| Desafíos | Los evita (amenazan el ego) | Los abraza (son oportunidades) |
+| Esfuerzo | Señal de poca habilidad | Camino al dominio |
+| Fracaso | Amenaza a la identidad | Información para aprender |
+| Crítica | La ignora o rechaza | Extrae lecciones de ella |
+
+### Cómo se forman los mindsets
+La forma en que se elogia tiene consecuencias masivas. Elogiar la **inteligencia** ("eres muy listo") → mentalidad fija: el niño evita retos para proteger esa identidad. Elogiar el **esfuerzo y la estrategia** ("te esforzaste / intentaste un enfoque diferente") → mentalidad de crecimiento.
+
+### El cambio es posible
+El mindset puede cambiarse conscientemente en cuatro pasos: (1) reconocer la voz de la mentalidad fija, (2) entender que tienes elección, (3) responder con la voz de crecimiento, (4) actuar sobre ese nuevo paradigma.`,
+    chapters: [
+      {
+        title: "Los Dos Mindsets",
+        content: `## Los Dos Mindsets
+
+El punto de partida de Dweck es simple: las personas difieren en su creencia fundamental sobre *de dónde viene el talento y la habilidad*.
+
+**Mentalidad fija:** las cualidades son talladas en piedra. Tienes una cierta cantidad de inteligencia, de personalidad, de carácter moral — y eso es todo. Cada situación se convierte en una prueba: ¿soy inteligente o estúpido? ¿tengo talento o no? Si fallas, la respuesta es "no eres suficiente" y eso amenaza toda tu identidad.
+
+**Mentalidad de crecimiento:** las cualidades básicas son cultivables mediante dedicación y trabajo. La inteligencia no es un dato fijo sino un punto de partida. Los grandes logros — en arte, ciencia, deportes, negocios — vienen de años de pasión, trabajo y entrenamiento, no de un talento innato.
+
+Dweck no dice que cualquiera puede ser Einstein con suficiente esfuerzo. Dice que el potencial humano es desconocido y que nadie puede predecir de antemano lo que alguien puede lograr con años de dedicación genuina.
+
+**La trampa de la mentalidad fija:** necesitas *demostrar* constantemente que eres capaz. Cada tarea, relación o proyecto se convierte en una oportunidad de probar tu valía — o de exponerte. Esto lleva a evitar todo desafío donde podrías fracasar.`,
+      },
+      {
+        title: "Dentro de los Mindsets: Retos, Esfuerzo y Fracasos",
+        content: `## Dentro de los Mindsets: Retos, Esfuerzo y Fracasos
+
+Los dos mindsets producen respuestas completamente distintas ante las mismas situaciones.
+
+**Ante un desafío:**
+- *Fija:* lo evita si hay riesgo de fracaso (fracasar probaría que no eres suficientemente bueno)
+- *Crecimiento:* lo busca activamente (es donde ocurre el aprendizaje)
+
+**Ante el esfuerzo:**
+- *Fija:* ver el esfuerzo como algo negativo — si necesitas esforzarte mucho, significa que no tienes talento innato
+- *Crecimiento:* el esfuerzo es el mecanismo del logro, no una señal de deficiencia
+
+**Ante el fracaso:**
+- *Fija:* el fracaso define quién eres. Las personas con mentalidad fija pueden entrar en depresión profunda por un mal examen, una crítica o una pérdida deportiva
+- *Crecimiento:* el fracaso es información. "No *soy* un fracaso — *tuve* un fracaso"
+
+**Ante la crítica:**
+- *Fija:* la ignora o racionaliza (ataca al crítico, busca a alguien que lo haya hecho peor)
+- *Crecimiento:* la busca activamente como fuente de datos
+
+Dweck muestra cómo atletas de élite como Michael Jordan, campeones olímpicos y genios como Darwin tenían en común una respuesta de crecimiento ante los obstáculos — no la ausencia de ellos.`,
+      },
+      {
+        title: "La Verdad sobre el Talento y los Elogios",
+        content: `## La Verdad sobre el Talento y los Elogios
+
+Uno de los hallazgos más contraintuitivos de Dweck: **elogiar a los niños por ser inteligentes les hace daño.**
+
+En su experimento clásico, dividió niños en dos grupos después de una prueba donde todos tuvieron buen desempeño. A un grupo le dijeron "eres muy inteligente." Al otro: "te esforzaste mucho." Luego les ofrecieron elegir entre un problema fácil y uno difícil.
+
+- Los elogiados por inteligencia: eligieron el fácil (no querían arriesgar su reputación)
+- Los elogiados por esfuerzo: eligieron el difícil (querían aprender)
+
+Cuando después todos enfrentaron problemas difíciles, los del primer grupo reportaron menos disfrute, peor desempeño y menor persistencia. Los del segundo grupo persistieron más y mejoraron.
+
+**Qué elogiar en cambio:** el proceso — el esfuerzo, las estrategias, el enfoque, la persistencia, la mejora. "Te esforzaste mucho en esto." "Probaste un enfoque diferente cuando el primero no funcionó." "Mira cuánto has mejorado."
+
+Esto aplica igualmente a adultos. Los managers que elogian el proceso crean equipos con mentalidad de crecimiento. Los que elogian el talento crean equipos que evitan el riesgo.`,
+      },
+      {
+        title: "Mindset en los Negocios y el Liderazgo",
+        content: `## Mindset en los Negocios y el Liderazgo
+
+Dweck estudió culturas corporativas y encontró patrones claros. Las empresas con liderazgo de mentalidad fija comparten características: el CEO necesita ser el más inteligente, los errores se ocultan, el talento se acapara en la cima y hay una cultura de culpabilización.
+
+**El CEO con mentalidad fija:** necesita probar constantemente que es el más inteligente. Rodea de aduladores, no de cuestionadores. Cuando las cosas salen mal, busca culpables externos. Ejemplo: Enron contrató solo a personas "brillantes" y creó una cultura donde admitir problemas era imposible.
+
+**El CEO con mentalidad de crecimiento:** ve su rol como desarrollar talento, no demostrar el propio. Contrata personas que los desafíen. Trata los errores como información. Ejemplo: Jack Welch en GE, Lou Gerstner en IBM — su primera tarea fue eliminar la cultura de arrogancia y crear una de aprendizaje.
+
+**Para managers:** la pregunta crítica es: ¿qué comportamientos son los que realmente recompensas? ¿El éxito sin riesgo, o el aprendizaje a través del error? Las culturas de crecimiento requieren psicológical safety — el equipo debe saber que puede hablar de problemas sin consecuencias.`,
+      },
+      {
+        title: "Cambiar tu Mindset: El Proceso",
+        content: `## Cambiar tu Mindset: El Proceso
+
+Nadie tiene puramente uno u otro mindset. Todos tenemos una mezcla, y el mindset puede variar por dominio — puedes tener mentalidad de crecimiento en tu profesión y fija en las relaciones, o viceversa.
+
+**El proceso de cambio en 4 pasos:**
+
+1. **Reconoce la voz de la mentalidad fija:** "No soy bueno en esto." "¿Y si fallo?" "Pareceré estúpido." Obsérvala sin juzgarla — es el cerebro protegiéndote de la manera equivocada.
+
+2. **Date cuenta de que tienes elección:** el pensamiento fijo es un hábito, no una verdad. Cuando aparece, no tienes que actuar desde él.
+
+3. **Responde con la voz de crecimiento:** "¿Qué puedo aprender de esto?" "¿Qué estrategia diferente podría probar?" "Todavía no lo domino — la palabra clave es *todavía*."
+
+4. **Actúa:** toma el desafío, busca la retroalimentación, persiste ante el obstáculo.
+
+**El poder del "todavía":** Dweck encontró que añadir "todavía" a las afirmaciones negativas transforma completamente el impacto. "No entiendo esto" → "No entiendo esto *todavía*." Es un pequeño cambio lingüístico con consecuencias grandes sobre la motivación y la persistencia.`,
+      },
+    ],
+    analysis: `## "So What" — Por Qué Importa Ahora
+
+**El impacto más subestimado es el organizacional:** Dweck dedica capítulos enteros a las empresas, pero el mundo corporativo los subestima. Los líderes con mentalidad fija — que necesitan demostrar que son los más inteligentes — crean culturas donde se ocultan los errores y se castiga el riesgo. Los líderes de crecimiento crean culturas donde el fracaso es información. Esta diferencia explica por qué algunas culturas innovan y otras se estancan mucho más que la estrategia o el presupuesto.
+
+**Conexión con Clear y Newport:** El concepto de Clear de «voto de identidad» es una aplicación práctica del mindset de crecimiento a los hábitos. El «Abraza el aburrimiento» de Newport es imposible sin mentalidad de crecimiento — alguien con mentalidad fija evita exactamente las situaciones donde podría quedar expuesto como menos que brillante.
+
+**La crisis de replicabilidad:** Varios estudios de replicación del efecto de las intervenciones de mindset en aulas han producido resultados mixtos. El efecto parece más robusto cuando se implementa con fidelidad y en contextos con condiciones de seguridad psicológica. Dweck ha respondido refinando el modelo, pero es importante no sobre-generalizar las aplicaciones educativas.
+
+**Para líderes de equipos:** la pregunta más útil del libro no es «¿cómo cambio mi mindset?» sino «¿qué señales en nuestro entorno están creando mentalidad fija en mi equipo?» Los sistemas de evaluación, cómo se habla del fracaso en las reuniones y quién recibe visibilidad son los vectores más poderosos.`,
+    critiques: [
+      "La división en dos mentalidades es didácticamente útil pero psicológicamente simplista. La mayoría de personas tiene mentalidad fija en algunos dominios (matemáticas, deportes) y de crecimiento en otros. El libro no aborda suficientemente esta variabilidad intra-personal.",
+      "La crisis de replicabilidad afecta directamente las intervenciones educativas: los metaanálisis de 2018-2022 muestran efectos mucho más pequeños en aulas reales que los reportados en los estudios originales, especialmente en contextos socioeconómicos adversos.",
+      "El libro cae en cierto voluntarismo: si crees lo suficiente en tu capacidad de crecer, crecerás. Esto puede derivar en una narrativa de culpabilización individual que ignora estructuras sistémicas — acceso a recursos, discriminación — que limitan el desarrollo independientemente del mindset.",
+    ],
+    exercises: [
+      {
+        prompt:
+          "Piensa en un área donde tienes mentalidad fija ('no soy bueno en esto'). Escribe 3 momentos específicos en que esa creencia te llevó a evitar un reto o rendirte antes de tiempo. ¿Qué habría pasado si hubieras persistido con la mentalidad de que podías mejorar?",
+        type: "reflection",
+      },
+      {
+        prompt:
+          "La próxima vez que enfrentes un fracaso o crítica esta semana, escríbela en papel. Luego respóndete: ¿Qué aprendí? ¿Qué estrategia diferente podría probar? Practica conscientemente convertir la reacción fija en respuesta de crecimiento.",
+        type: "action",
+      },
+      {
+        prompt:
+          "Revisa cómo elogias a alguien que lideras o enseñas — o cómo te elogias a ti mismo. ¿Estás elogiando el resultado y el talento, o el proceso y el esfuerzo? Escribe 3 frases concretas de elogio orientadas al proceso que usarás esta semana.",
+        type: "reflection",
+      },
+    ],
   },
   {
     id: "deep-work",
@@ -227,6 +574,146 @@ LAS 4 REGLAS DEL TRABAJO PROFUNDO:
 MÉTRICAS: Horas de trabajo profundo por día como KPI principal. Newport sugiere construir hacia 4 horas/día de trabajo profundo real.
 
 ECONOMÍA DEL CONOCIMIENTO: Quienes pueden 1) aprender cosas difíciles rápido y 2) producir al mejor nivel en términos de calidad y velocidad prosperarán. Ambas habilidades dependen del trabajo profundo.`,
+    overview: `## Trabajo Profundo — Resumen Ejecutivo
+
+Cal Newport define el **trabajo profundo** como actividad cognitiva realizada en estado de concentración sin distracciones que lleva las capacidades al límite. Su hipótesis central: en la economía del conocimiento del siglo XXI, esta habilidad es simultáneamente la **más valiosa** y la **más escasa**.
+
+### Por qué el trabajo profundo está desapareciendo
+La cultura corporativa moderna privilegia la conectividad constante — emails, Slack, reuniones — que fragmenta la atención de forma permanente. Newport argumenta que este paradigma beneficia a la organización en términos de visibilidad, pero destruye el valor que los trabajadores del conocimiento pueden crear.
+
+### Las cuatro filosofías del trabajo profundo
+Newport no prescribe un único modelo — cada persona debe encontrar el suyo:
+- **Monástica:** eliminar casi completamente las obligaciones superficiales
+- **Bimodal:** periodos largos de aislamiento total alternados con tiempo normal
+- **Rítmica:** sesiones cortas diarias a la misma hora (la más sostenible para la mayoría)
+- **Periodística:** insertar trabajo profundo en los huecos del día (requiere entrenamiento)
+
+### Las cuatro reglas
+1. **Trabaja profundamente** — elige tu filosofía, crea rituales, haz gestos grandes
+2. **Abraza el aburrimiento** — programa el uso de internet, practica la meditación productiva
+3. **Abandona las redes sociales** — aplica la ley del artesano: ¿sus beneficios superan claramente sus costos?
+4. **Drena lo superficial** — agenda cada minuto, cuantifica la profundidad de cada tarea, termina a hora fija
+
+El objetivo: construir hacia **4 horas/día de trabajo profundo real**, que supera en output a 8 horas de trabajo fragmentado.`,
+    chapters: [
+      {
+        title: "Trabajo Profundo: La Hipótesis Central",
+        content: `## Trabajo Profundo: La Hipótesis Central
+
+Newport abre con una pregunta: ¿qué tienen en común Carl Jung, J.K. Rowling, Bill Gates en sus "semanas de reflexión" y el escritor Neal Stephenson que no responde emails? Todos practican el trabajo profundo de forma sistemática y deliberada.
+
+**Definición formal:** el trabajo profundo es la actividad profesional realizada en estado de concentración sin distracciones que lleva las capacidades cognitivas al límite. Crea nuevo valor, mejora habilidades y es difícil de replicar.
+
+**La hipótesis:** en la nueva economía, quienes dominan el trabajo profundo prosperarán. El trabajo profundo te permite (1) aprender cosas difíciles rápidamente y (2) producir al mejor nivel en términos de calidad y velocidad. Ambas capacidades son la base del éxito en la economía del conocimiento.
+
+**El trabajo superficial** — emails, reuniones de status, tareas administrativas realizadas distraído — es fácil de replicar y crea poco valor. Es visible y parece productivo, pero no produce las cosas que realmente importan.
+
+Newport argumenta que no es coincidencia que el trabajo profundo sea valioso *y* escaso al mismo tiempo — son causalmente relacionados. La misma cultura que destruye la capacidad de concentración también incrementa el valor de quienes la mantienen.`,
+      },
+      {
+        title: "El Trabajo Profundo es Raro (y por qué las organizaciones lo sabotean)",
+        content: `## El Trabajo Profundo es Raro
+
+Newport identifica tres fuerzas que empujan a las organizaciones hacia la superficialidad:
+
+**1. La métrica de la ocupación visible:** en ausencia de indicadores claros de productividad, los trabajadores del conocimiento recurren a la señal más fácil de medir: parecer ocupado. Responder emails inmediatamente, estar disponible en Slack, tener el calendario lleno. Estas señales son visibles pero no crean valor real.
+
+**2. La cultura de la conectividad:** la comunicación instantánea facilita la coordinación y resuelve problemas inmediatos, pero fragmenta la atención de todos permanentemente. Las organizaciones rara vez calculan el costo cognitivo acumulado.
+
+**3. La ideología de internet:** hay una presunción cultural de que todo lo nuevo y conectado es bueno. Resistir las últimas herramientas de comunicación parece retrógrado, aunque esas herramientas destruyan la capacidad de producir trabajo profundo.
+
+El resultado: las organizaciones sistemáticamente crean condiciones donde el trabajo profundo es casi imposible, y luego se preguntan por qué la innovación y la productividad real son tan difíciles de sostener.`,
+      },
+      {
+        title: "Regla 1: Trabaja Profundamente",
+        content: `## Regla 1: Trabaja Profundamente
+
+Querer hacer trabajo profundo no es suficiente — debes diseñar tu vida para que sea posible. Newport propone cuatro filosofías:
+
+**Monástica:** eliminar o reducir radicalmente las obligaciones superficiales. El matemático Donald Knuth no tiene email. El novelista Neal Stephenson no acepta solicitudes de reunión. Solo viable para quienes tienen completa autonomía sobre su tiempo.
+
+**Bimodal:** dividir el tiempo en bloques amplios de trabajo profundo y períodos de disponibilidad normal. Jung construyó una torre en Bollingen donde se retiraba durante semanas. Los académicos frecuentemente usan veranos o sabbaticals.
+
+**Rítmica:** la más práctica para la mayoría. Bloques cortos diarios a la misma hora — típicamente las primeras 2-4 horas del día, antes de que el mundo llegue. Se convierte en hábito y no requiere decisiones.
+
+**Periodística:** insertar trabajo profundo en cualquier hueco disponible del día. Difícil de implementar porque requiere entrenamiento previo — el cerebro debe poder entrar en modo profundo rápidamente.
+
+**Rituales de inicio y cierre:** define exactamente cómo empiezas (un café, revisar los objetivos del bloque, silenciar el teléfono) y cómo terminas (revisión de lo logrado, listar próximos pasos, decirte explícitamente "trabajo terminado por hoy").`,
+      },
+      {
+        title: "Regla 2: Abraza el Aburrimiento",
+        content: `## Regla 2: Abraza el Aburrimiento
+
+El mayor error es creer que puedes trabajar distraído todo el día y luego concentrarte profundamente cuando lo necesitas. La concentración es un músculo que se atrofia con el desuso.
+
+**El problema de la estimulación constante:** cuando entrenamos al cerebro para buscar novedad en cualquier momento de aburrimiento (revisar el teléfono en la fila, en el semáforo, esperando el ascensor), debilitamos la capacidad de mantener la atención durante el trabajo profundo.
+
+**Programa el uso de internet:** en lugar de desconectarte de internet periódicamente, Newport propone lo contrario — programa bloques específicos para usar internet y mantén la conexión prohibida fuera de esos bloques. Esto incluye email, redes sociales y cualquier sitio de distracción. El efecto: entrenas al cerebro a resistir los impulsos de cambiar el foco.
+
+**Meditación productiva:** durante actividades físicas que no requieren atención mental (caminar, correr, ducharse), enfoca activamente tu pensamiento en un problema profesional. No dejes que la mente divague — trabaja en el problema. Los filósofos peripatéticos ya sabían que el movimiento y el pensamiento profundo son compatibles.
+
+**Abraza el aburrimiento real:** cuando esperas, no saques el teléfono. Deja que la mente procese, divague brevemente y regrese. Esta práctica, acumulada, reconstruye la tolerancia al aburrimiento que es prerequisito del trabajo profundo.`,
+      },
+      {
+        title: "Regla 3: Abandona las Redes Sociales",
+        content: `## Regla 3: Abandona las Redes Sociales
+
+Newport no argumenta que las redes sociales son inherentemente malas — argumenta que la decisión de adoptarlas se toma con criterios equivocados.
+
+**La lógica del mínimo beneficio:** "Esta herramienta tiene algún beneficio para mí, por lo tanto debo usarla." El problema: ignora el costo de usar esa herramienta, particularmente el costo de atención fragmentada.
+
+**La ley del artesano:** adopta una herramienta solo si sus beneficios para tus metas más importantes superan claramente sus desventajas. Un carpintero experto elige sus herramientas con criterio — no porque "podrían ser útiles" sino porque son las mejores para el trabajo específico.
+
+Aplicado a redes sociales: lista tus dos o tres objetivos más importantes (profesionales y personales). Para cada red social que usas, evalúa si contribuye *significativamente* a esos objetivos, o solo marginalmente. La mayoría de redes sociales ofrecen beneficios marginales y costos de atención sustanciales.
+
+**El experimento de 30 días:** deja de usar la red social sin anuncio dramático. Después de 30 días, pregúntate: ¿alguien notó que no estaba? ¿Extrañé algo importante? ¿Habría sido peor mi vida o trabajo sin ella? La mayoría de respuestas son "no".`,
+      },
+      {
+        title: "Regla 4: Drena lo Superficial",
+        content: `## Regla 4: Drena lo Superficial
+
+El trabajo superficial es inevitable pero no debe dominar el calendario. La estrategia de Newport para contenerlo:
+
+**Agenda cada minuto del día:** al inicio de cada jornada, divide el día en bloques de 30 minutos y asigna una tarea a cada bloque. No para seguir el plan rígidamente — para obligarte a tomar decisiones conscientes sobre el tiempo en lugar de dejar que las distracciones decidan.
+
+**Cuantifica la profundidad:** para cada actividad importante, pregúntate: "¿Cuántos meses de entrenamiento necesitaría un recién graduado inteligente para hacer esta tarea?" Alta profundidad = meses. Baja profundidad = días o ninguno. Usa esto para priorizar dónde poner la energía.
+
+**Fija una cuota de trabajo superficial:** decide qué porcentaje del día puede ser superficial (30-50% para la mayoría de trabajos del conocimiento) y no superes ese límite conscientemente.
+
+**Termina a una hora fija:** determina con anticipación a qué hora terminas el trabajo, sin excepción. Esto crea presión para usar el tiempo disponible en lo que importa. Newport termina a las 17:30 todos los días — y produce más que la mayoría de académicos con horarios "abiertos". El principio: un límite claro fuerza la eficiencia.`,
+      },
+    ],
+    analysis: `## "So What" — Por Qué Importa Ahora
+
+**Newport tenía razón — y la IA lo amplifica:** Escribió el libro en 2016 anticipando que las tareas superficiales serían automatizadas. En 2024-2025, eso está ocurriendo. Los modelos de lenguaje grandes automatizan emails, resúmenes y tareas cognitivas rutinarias. Lo que permanece insustituible es exactamente la síntesis creativa compleja, el juicio estratégico y la producción de trabajo original — todas actividades que requieren trabajo profundo.
+
+**Newport complementa a Clear:** *Hábitos Atómicos* te construye el hábito de sentarte a trabajar; *Trabajo Profundo* te dice qué hacer durante esas horas. Son el par más poderoso de la biblioteca de productividad. Usa a Clear para establecer el ritual; usa a Newport para entender por qué vale la pena protegerlo.
+
+**Conexión con Csikszentmihalyi:** el estado de «trabajo profundo» de Newport y el «flujo» de Csikszentmihalyi son el mismo fenómeno descrito desde perspectivas distintas — productividad vs. psicología positiva. Leer ambos juntos da una imagen más completa: Newport te dice cuándo y cómo crear las condiciones; Csikszentmihalyi explica por qué el resultado vale la pena.
+
+**El límite real:** Newport diagnostica un problema estructural (las organizaciones incentivan la superficialidad) pero ofrece soluciones mayormente individuales. El cambio real requiere transformar cómo los equipos miden el rendimiento — no solo cómo el individuo gestiona su calendario. Sin cambio organizacional, el individuo que intenta hacer trabajo profundo en una cultura superficial paga un costo social alto.`,
+    critiques: [
+      "Newport sobrestima la posibilidad de aislar el trabajo de las demandas organizacionales. En la mayoría de empleos, la disponibilidad constante no es una preferencia sino un requisito explícito. Su consejo implica un privilegio de autonomía que pocos trabajadores tienen.",
+      "La hostilidad hacia las redes sociales es filosóficamente coherente pero empíricamente cuestionable: hay evidencia de que el uso moderado mejora el acceso a información relevante y las redes profesionales, especialmente para emprendedores y creativos que dependen de la visibilidad.",
+      "El modelo de 4 horas de trabajo profundo máximo al día puede desanimar a quienes no alcanzan ese ideal, creando una forma de perfeccionismo productivo. Newport no aborda suficientemente la curva de aprendizaje para quienes entrenan esta capacidad desde cero.",
+    ],
+    exercises: [
+      {
+        prompt:
+          "Registra mañana completo en bloques de 30 minutos. Clasifica cada bloque como 'profundo' (concentración total, cognitivamente exigente), 'superficial' (email, reuniones, admin) o 'logístico'. ¿Cuántas horas reales de trabajo profundo tuviste?",
+        type: "action",
+      },
+      {
+        prompt:
+          "Diseña tu ritual de trabajo profundo: define duración (empieza con 60-90 min), lugar específico, qué está permitido y qué prohibido durante ese bloque, y cómo cierras la sesión. Impleméntalo mañana.",
+        type: "action",
+      },
+      {
+        prompt:
+          "Elige una red social que uses regularmente. Aplica la 'ley del artesano' de Newport: lista los beneficios concretos para tus 2-3 metas más importantes vs. los costos en atención fragmentada. ¿La balanza justifica mantenerla?",
+        type: "reflection",
+      },
+    ],
   },
   {
     id: "power-of-habit",
@@ -268,6 +755,22 @@ FUERZA DE VOLUNTAD COMO RECURSO LIMITADO: Se agota durante el día (depleción d
 CRAVING (ANHELO): Los hábitos son poderosos porque crean antojos neurológicos. El cerebro anticipa la recompensa antes de obtenerla. El marketing lo explota, tú también puedes aprovecharlo.
 
 CONTEXTO ORGANIZACIONAL: Las empresas tienen hábitos institucionales (rutinas, procesos). Las crisis son oportunidades para cambiarlos porque desestabilizan el equilibrio de fuerzas.`,
+    overview: `## El Poder del Hábito — Resumen Ejecutivo
+
+Duhigg revela la neurociencia detrás del loop **señal → rutina → recompensa** que gobierna todo comportamiento automático. Su hallazgo más importante: los hábitos nunca se eliminan — solo se reemplazan. El cerebro los codifica permanentemente en los ganglios basales, listos para reactivarse con la señal correcta.
+
+### La regla de oro del cambio de hábito
+Mantén la señal y la recompensa; cambia solo la rutina. Si comes galletas a las 3pm (señal: el reloj; recompensa: socialización y estímulo), no intentes eliminar el snack — reemplaza la rutina por caminar hasta el escritorio de un colega.
+
+### Los hábitos clave (keystone habits)
+Algunos hábitos desencadenan cambios positivos en cascada. El ejercicio es el más poderoso: quienes comienzan a ejercitar regularmente también empiezan a comer mejor, dormir más, beber menos y ser más productivos en el trabajo. Identificar y transformar tu hábito clave tiene efecto multiplicador.
+
+### La fuerza de voluntad no es suficiente
+La voluntad es un recurso limitado que se agota durante el día. El diseño de rutinas — convertir las decisiones importantes en automáticas — es más confiable que depender del autocontrol. Los equipos de alto rendimiento y las empresas excelentes convierten las buenas decisiones en hábitos institucionales.`,
+    chapters: NO_CHAPTERS,
+    analysis: "",
+    critiques: [],
+    exercises: NO_EXERCISES,
   },
   {
     id: "think-rich",
@@ -306,6 +809,24 @@ LOS 13 PRINCIPIOS DEL ÉXITO:
 11. EL SUBCONSCIENTE: El enlace entre la mente finita y la inteligencia infinita. Se alimenta de deseos emocionales.
 12. EL CEREBRO: Emisora y receptora de pensamientos. Sintoniza con otras mentes a través de la emoción.
 13. EL SEXTO SENTIDO: La Inteligencia Infinita. Desarrollado solo después de dominar los 12 principios anteriores.`,
+    overview: `## Piense y Hágase Rico — Resumen Ejecutivo
+
+Basado en 20 años de investigación sobre los hombres más exitosos de América (Carnegie, Ford, Edison, Roosevelt), Hill sintetiza 13 principios que transforman el **deseo ardiente** en su equivalente físico. Su tesis central: el éxito empieza en la mente, y la mente puede entrenarse para atraer lo que busca.
+
+### Los principios más accionables
+
+**Deseo** — el punto de partida no es un deseo vago ("quiero ser rico") sino uno específico con monto exacto, fecha límite y precio claro a pagar. Escríbelo y léelo dos veces al día.
+
+**Mente Maestra** — dos o más mentes coordinadas con armonía hacia un objetivo común crean una inteligencia combinada superior a la suma de las partes. Hill considera este el principio más poderoso para los negocios.
+
+**Persistencia** — Hill considera la falta de persistencia la causa número uno del fracaso. El momento más cercano al éxito frecuentemente llega justo después del punto donde la mayoría se rinde.
+
+### Contexto histórico
+Publicado en 1937, durante la Gran Depresión, el libro fue deliberadamente optimista en un momento de desesperanza colectiva. Muchos de sus principios sobre el subconsciente y la «ley de atracción» carecen de base científica moderna, pero el núcleo práctico — deseo específico, plan escrito, persistencia, redes de apoyo — sigue siendo sólido.`,
+    chapters: NO_CHAPTERS,
+    analysis: "",
+    critiques: [],
+    exercises: NO_EXERCISES,
   },
   {
     id: "man-search-meaning",
@@ -352,6 +873,28 @@ CONCEPTOS CLAVE:
 - Auto-trascendencia: el ser humano se realiza en la medida en que se entrega a algo más grande que sí mismo
 
 LECCIÓN PARA LA VIDA MODERNA: El aburrimiento, la depresión y el nihilismo contemporáneo son síntomas del vacío existencial. La cura es el compromiso con un propósito.`,
+    overview: `## El Hombre en Busca de Sentido — Resumen Ejecutivo
+
+Viktor Frankl, psiquiatra vienés, sobrevivió tres años en Auschwitz y Dachau perdiendo a casi toda su familia. De esa experiencia surgió la **Logoterapia** — su sistema psicoterapéutico — y su tesis central: el ser humano puede soportar cualquier «cómo» si tiene un «para qué» suficientemente poderoso.
+
+### La Logoterapia en tres premisas
+1. La vida tiene sentido bajo **cualquier** circunstancia, incluso en el sufrimiento
+2. El ser humano está motivado principalmente por la **voluntad de sentido** (no por el placer como Freud, ni por el poder como Adler)
+3. El ser humano tiene **libertad** para encontrar ese sentido
+
+### Los tres caminos hacia el sentido
+- **Crear o trabajar** — contribuir algo al mundo
+- **Amar** — amar a una persona por lo que es, no por lo que da
+- **Sufrir con dignidad** — elegir la actitud ante el sufrimiento inevitable
+
+### La paradoja de la felicidad
+Buscar la felicidad directamente la aleja. La felicidad y el éxito son **efectos secundarios** del compromiso con algo más grande que uno mismo. "No preguntes qué esperas de la vida — pregunta qué espera la vida de ti."
+
+La cita más citada del libro: *"Entre el estímulo y la respuesta existe un espacio. En ese espacio reside nuestra libertad."*`,
+    chapters: NO_CHAPTERS,
+    analysis: "",
+    critiques: [],
+    exercises: NO_EXERCISES,
   },
   {
     id: "intelligent-investor",
@@ -403,6 +946,25 @@ ANÁLISIS DE ACCIONES VS. ESPECULACIÓN:
 INFLACIÓN: El mayor peligro a largo plazo. Las acciones son mejor cobertura que los bonos.
 
 ADVERTENCIA: La mayoría de inversores NO deberían intentar superar el mercado. Los fondos indexados de bajo costo ganan a la mayoría de gestores activos a largo plazo.`,
+    overview: `## El Inversor Inteligente — Resumen Ejecutivo
+
+Benjamin Graham, mentor de Warren Buffett, escribió la biblia del **value investing**. Su mensaje central: trata las acciones como lo que son — participaciones en negocios reales — y usa las oscilaciones del mercado en tu favor, no como guía de tus decisiones.
+
+### La metáfora de Mr. Market
+Imagina un socio irracional (Mr. Market) que cada día te ofrece precios distintos por tu participación en un negocio, oscilando entre el optimismo irracional y el pánico extremo. Tu trabajo no es seguir sus estados de ánimo — es reconocer cuándo sus precios son irracionales y aprovecharte de ellos.
+
+### Dos tipos de inversores
+- **Defensivo (pasivo):** diversificación amplia, fondos indexados de bajo costo, rebalanceo periódico, ignorar las fluctuaciones diarias. Requiere poco tiempo y produce resultados adecuados para la mayoría.
+- **Emprendedor (activo):** busca acciones por debajo de su valor intrínseco. Requiere conocimiento significativamente superior al promedio y tiempo sustancial. Muy pocos lo hacen bien de forma consistente.
+
+### El margen de seguridad: el concepto más importante
+Compra solo activos significativamente más baratos que su valor calculado. El margen protege contra errores de análisis, mala suerte y hechos imprevistos. "En inversión, el precio es lo que pagas; el valor es lo que recibes."
+
+**Advertencia de Graham:** la mayoría de inversores individuales y gestores activos no superan el mercado a largo plazo. Los fondos indexados de bajo costo son la estrategia correcta para la mayoría.`,
+    chapters: NO_CHAPTERS,
+    analysis: "",
+    critiques: [],
+    exercises: NO_EXERCISES,
   },
   {
     id: "4-hour-week",
@@ -451,6 +1013,26 @@ HERRAMIENTAS PRÁCTICAS:
 - Dieta de noticias: no consumir noticias por 5 días
 - 3 preguntas de productividad diaria: ¿Qué 3 cosas, si se hacen hoy, me harían sentir que el día fue exitoso?
 - Preguntas de miedo: ¿Cuál es el peor caso real? ¿Cuán probable es? ¿Cómo me recupero?`,
+    overview: `## La Semana Laboral de 4 Horas — Resumen Ejecutivo
+
+Ferriss desafía el modelo de «trabajar 40 años para jubilarse» y propone el marco **DEAL**: Definición, Eliminación, Automatización, Liberación. Su argumento: la riqueza de estilo de vida — tiempo + movilidad + dinero suficiente — es alcanzable ahora, no en la jubilación.
+
+### El marco DEAL
+
+**Definición:** los "Nuevos Ricos" no tienen metas de dinero sino de estilo de vida. Define qué quieres hacer, ser y tener — con detalle concreto. ¿Cuánto dinero necesitas realmente para esa vida?
+
+**Eliminación:** aplica el 80/20 radicalmente. El 20% de tus clientes genera el 80% de tus ingresos; el 20% de tus actividades produce el 80% de tus resultados. Elimina o limita el 80% restante. Añade la dieta de información: consume solo lo necesario para tomar decisiones.
+
+**Automatización:** crea sistemas que funcionen sin ti. Asistentes virtuales para tareas delegables, productos de información para ingresos pasivos, procesos automatizados para ventas y soporte.
+
+**Liberación:** negocia trabajo remoto o construye un negocio portable. La geolibertad — vivir en mercados de bajo costo con ingresos de alto costo — multiplica el poder adquisitivo.
+
+### La pregunta del miedo
+Antes de cualquier decisión que temes: ¿cuál es el peor caso real? ¿Cuán probable es? ¿Cómo te recuperarías? La mayoría de miedos no sobreviven este análisis.`,
+    chapters: NO_CHAPTERS,
+    analysis: "",
+    critiques: [],
+    exercises: NO_EXERCISES,
   },
   {
     id: "flow",
@@ -506,6 +1088,27 @@ ENTROPÍA PSÍQUICA vs CONSCIENCIA ORDENADA:
 EL SELF: En flujo, el yo desaparece temporalmente, pero emerge más complejo y fuerte después. Este es el mecanismo del crecimiento personal.
 
 APLICACIÓN PRÁCTICA: Transforma cualquier tarea en actividad de flujo definiendo metas claras, buscando feedback inmediato y ajustando la dificultad al borde de tus capacidades.`,
+    overview: `## Fluir (Flow) — Resumen Ejecutivo
+
+Csikszentmihalyi pasó décadas estudiando cuándo las personas son más felices y más productivas. Su hallazgo: el estado de **flow** — absorción total en una actividad desafiante — es la experiencia humana óptima. No el placer pasivo ni el descanso, sino la implicación activa al límite de las propias capacidades.
+
+### Las condiciones del flow
+El flow ocurre cuando se cumplen tres condiciones simultáneamente:
+1. **Metas claras** en cada paso de la actividad
+2. **Feedback inmediato** sobre el progreso
+3. **Equilibrio desafío-habilidad:** la tarea está en el límite exacto de tus capacidades — ni tan fácil que aburra, ni tan difícil que genere ansiedad
+
+### La paradoja del ocio
+El tiempo libre produce *menos* flow que el trabajo bien estructurado. Ver televisión, navegar redes sociales y el descanso pasivo son psicológicamente empobrecedores comparados con actividades activas como la música, el deporte, la conversación profunda o el trabajo creativo.
+
+### El self que desaparece y vuelve más fuerte
+En el estado de flow, el sentido del yo desaparece temporalmente — no hay autoconsciencia, solo la actividad. Pero al salir del flow, el yo emerge más complejo, más capaz. Este es el mecanismo del crecimiento personal: la actividad al límite que produce desarrollo real.
+
+**Aplicación práctica:** cualquier tarea puede convertirse en flow si le añades metas claras, buscas feedback inmediato y ajustas la dificultad justo por encima de tu nivel actual.`,
+    chapters: NO_CHAPTERS,
+    analysis: "",
+    critiques: [],
+    exercises: NO_EXERCISES,
   },
   {
     id: "how-to-win-friends",
@@ -557,6 +1160,26 @@ PARTE 3 - CÓMO INFLUIR SOBRE LOS DEMÁS:
 11. Dramatiza tus ideas
 
 PARTE 4 - SEA UN LÍDER: Cómo cambiar a los demás sin ofenderlos ni despertar resentimientos.`,
+    overview: `## Cómo Ganar Amigos e Influir Sobre las Personas — Resumen Ejecutivo
+
+Publicado en 1936 y con más de 30 millones de copias vendidas, Carnegie demostró que el **85% del éxito profesional** proviene de habilidades de relaciones interpersonales, no del conocimiento técnico. El libro sigue siendo el manual de inteligencia social más práctico disponible.
+
+### Los tres principios fundamentales
+1. **No critiques, no condenes, no te quejes** — la crítica nunca produce el cambio que buscas; solo genera resentimiento y defensividad
+2. **Da apreciación sincera y honesta** — el deseo más profundo de la naturaleza humana es sentirse importante; quien satisface ese deseo genuinamente tiene un poder enorme
+3. **Despierta en el otro un deseo ferviente** — habla siempre en términos de los intereses de la otra persona, no de los tuyos
+
+### Las seis maneras de agradar
+Interésate genuinamente por los demás · Sonríe · Recuerda y usa los nombres · Sé un oyente genuino · Habla de los intereses del otro · Haz sentir importante a la otra persona
+
+### Cómo influir sin imponer
+Carnegie enseña a cambiar comportamientos sin crear resistencia: nunca decir «estás equivocado», empezar con preguntas que obtengan síes, dejar que el otro sienta que la idea fue suya, reconocer los propios errores rápida y enfáticamente.
+
+La palabra clave en todo el libro: **sinceramente**. Estas técnicas funcionan solo cuando nacen de un interés genuino por las personas, no como manipulación.`,
+    chapters: NO_CHAPTERS,
+    analysis: "",
+    critiques: [],
+    exercises: NO_EXERCISES,
   },
   {
     id: "think-fast-slow",
@@ -613,6 +1236,28 @@ APLICACIÓN PRÁCTICA:
 - Para tomar mejores decisiones: activa el Sistema 2 antes de decidir sobre cosas importantes
 - Implementa premortem: antes de un proyecto, imagina que falló y explica por qué
 - Busca "disconfirmadores" activamente para combatir el sesgo de confirmación`,
+    overview: `## Pensar Rápido, Pensar Despacio — Resumen Ejecutivo
+
+Daniel Kahneman, Premio Nobel de Economía, pasó décadas con Amos Tversky estudiando cómo los humanos toman decisiones. Su hallazgo central: el pensamiento humano opera con dos sistemas que frecuentemente entran en conflicto.
+
+### Los dos sistemas
+
+**Sistema 1 (Rápido):** automático, intuitivo, emocional, inconsciente. Opera sin esfuerzo y constantemente. Es la fuente de primeras impresiones, intuiciones y reacciones emocionales. También es la fuente de sesgos cognitivos.
+
+**Sistema 2 (Lento):** deliberado, analítico, lógico, consciente. Se activa con esfuerzo y es costoso energéticamente. Es perezoso por naturaleza — busca delegar en el Sistema 1 siempre que puede.
+
+### Los sesgos más importantes
+- **Anclaje:** el primer número escuchado domina las estimaciones posteriores
+- **Aversión a la pérdida:** perder $100 duele aproximadamente el doble de lo que alegra ganar $100
+- **WYSIATI:** tomamos decisiones como si la información disponible fuera toda la información relevante
+- **Exceso de confianza:** sistemáticamente subestimamos el tiempo, costo y riesgo de proyectos
+
+### Cómo tomar mejores decisiones
+Activa el Sistema 2 antes de decisiones importantes. Implementa el **premortem**: antes de lanzar un proyecto, imagina que falló y explica por qué. Busca activamente información que *contradiga* tu hipótesis (combate el sesgo de confirmación). Usa listas de verificación para decisiones repetibles.`,
+    chapters: NO_CHAPTERS,
+    analysis: "",
+    critiques: [],
+    exercises: NO_EXERCISES,
   },
 ];
 
