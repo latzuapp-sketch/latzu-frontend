@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { TaskBoardColumn } from "@/components/planning/TaskBoardColumn";
-import { TaskDetailDrawer } from "@/components/planning/TaskDetailDrawer";
+import { TaskIssueModal } from "@/components/planning/TaskIssueModal";
 import type { ActivityEvent, BoardList, CreateTaskInput, PlanningTask } from "@/types/planning";
 import { CheckCircle2, Circle, Clock, ListTodo } from "lucide-react";
 
@@ -105,7 +105,7 @@ export function TaskBoard({ tasks, lists, onCreateTask, onUpdateTask, onDeleteTa
         ))}
       </div>
 
-      <TaskDetailDrawer
+      <TaskIssueModal
         task={selectedTask}
         open={!!selectedTask}
         onOpenChange={(open) => {
@@ -113,6 +113,7 @@ export function TaskBoard({ tasks, lists, onCreateTask, onUpdateTask, onDeleteTa
         }}
         onUpdate={onUpdateTask}
         onDelete={onDeleteTask}
+        onCreateTask={onCreateTask}
         allTasks={tasks}
       />
     </>

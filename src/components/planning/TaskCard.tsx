@@ -92,6 +92,7 @@ interface TaskCardProps {
   task: PlanningTask;
   onStatusChange: (status: PlanningTask["status"]) => void;
   onDelete: () => void;
+  onOpen?: () => void;
   onPushToCalendar?: () => Promise<void>;
   canPushToCalendar?: boolean;
   compact?: boolean;
@@ -101,6 +102,7 @@ export function TaskCard({
   task,
   onStatusChange,
   onDelete,
+  onOpen,
   onPushToCalendar,
   canPushToCalendar,
   compact = false,
@@ -250,6 +252,19 @@ export function TaskCard({
         {/* Actions */}
         {!compact && (
           <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
+            {onOpen && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onOpen}
+                title="Abrir detalle"
+                className="h-8 w-8 md:h-7 md:w-7 p-0 text-muted-foreground hover:text-foreground"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <path d="M15 3h6v6M14 10l6.1-6.1M9 21H3v-6M10 14l-6.1 6.1" />
+                </svg>
+              </Button>
+            )}
             {canPushToCalendar && !task.googleEventId && (
               <Button
                 variant="ghost"

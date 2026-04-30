@@ -1,20 +1,19 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { PlanningTask } from "@/types/planning";
-import { Bot, CalendarDays, Clock, GripVertical, Tag, UserRound } from "lucide-react";
+import { Bot, CalendarDays, Clock, GitBranch, GripVertical, UserRound } from "lucide-react";
 
-const priorityClasses: Record<PlanningTask["priority"], string> = {
-  high: "border-red-500/30 bg-red-500/10 text-red-400",
-  medium: "border-amber-500/30 bg-amber-500/10 text-amber-400",
-  low: "border-sky-500/30 bg-sky-500/10 text-sky-400",
+const priorityDot: Record<PlanningTask["priority"], string> = {
+  high:   "bg-red-500",
+  medium: "bg-amber-400",
+  low:    "bg-sky-400",
 };
 
-const priorityLabels: Record<PlanningTask["priority"], string> = {
-  high: "Alta",
+const priorityLabel: Record<PlanningTask["priority"], string> = {
+  high:   "Alta",
   medium: "Media",
-  low: "Baja",
+  low:    "Baja",
 };
 
 function formatDueDate(date: string | null): string | null {
@@ -26,7 +25,7 @@ function formatDueDate(date: string | null): string | null {
   if (diff === 0) return "Hoy";
   if (diff === 1) return "Mañana";
   if (diff === -1) return "Ayer";
-  if (diff < 0) return `Hace ${Math.abs(diff)} días`;
+  if (diff < 0) return `Hace ${Math.abs(diff)}d`;
   return due.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
 }
 
@@ -43,67 +42,100 @@ export function TaskBoardCard({ task, onOpen, onDragStart }: TaskBoardCardProps)
     task.status !== "done" &&
     new Date(`${task.dueDate}T00:00:00`) < new Date(new Date().setHours(0, 0, 0, 0));
 
+  const hasSubtasks = false; // subtask count requires allTasks — shown in modal
+
   return (
     <button
       type="button"
       draggable
       onClick={onOpen}
       onDragStart={() => onDragStart(task.id)}
-      className="group w-full rounded-xl border border-border/50 bg-card/80 p-3 text-left shadow-sm transition-all hover:border-primary/40 hover:bg-card focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+      className="group w-full rounded-xl border border-border/50 bg-card/80 p-3 text-left shadow-sm transition-all hover:border-primary/40 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
     >
-      <div className="flex items-start gap-2">
-        <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <p className={cn("text-sm font-medium leading-snug", task.status === "done" && "text-muted-foreground line-through")}>
-              {task.title}
-            </p>
-            {task.createdBy === "ai" || task.source === "ai" ? (
-              <Bot className="h-3.5 w-3.5 shrink-0 text-violet-400" />
-            ) : null}
-          </div>
-
-          {task.description && (
-            <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-              {task.description}
-            </p>
+      {/* Top row: issue key + AI badge + drag handle */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          {task.issueKey && (
+            <span className="font-mono text-[10px] text-muted-foreground/60 font-medium">
+              {task.issueKey}
+            </span>
           )}
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="outline" className={cn("border text-[10px]", priorityClasses[task.priority])}>
-              {priorityLabels[task.priority]}
-            </Badge>
-            {due && (
-              <span className={cn("inline-flex items-center gap-1 text-[11px]", isOverdue ? "text-red-400" : "text-muted-foreground")}>
-                <CalendarDays className="h-3 w-3" />
-                {due}
-              </span>
-            )}
-            {task.estimateMinutes ? (
-              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                {task.estimateMinutes}m
-              </span>
-            ) : null}
-            {task.assigneeName ? (
-              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                <UserRound className="h-3 w-3" />
-                {task.assigneeName}
-              </span>
-            ) : null}
-          </div>
-
-          {task.labels && task.labels.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {task.labels.slice(0, 4).map((label) => (
-                <span key={label} className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[10px] text-muted-foreground">
-                  <Tag className="h-2.5 w-2.5" />
-                  {label}
-                </span>
-              ))}
-            </div>
+          {(task.createdBy === "ai" || task.source === "ai") && (
+            <Bot className="h-3 w-3 text-violet-400/70" />
           )}
         </div>
+        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 transition-colors group-hover:text-muted-foreground/60" />
+      </div>
+
+      {/* Title */}
+      <p
+        className={cn(
+          "text-sm font-medium leading-snug mb-2",
+          task.status === "done" && "text-muted-foreground line-through"
+        )}
+      >
+        {task.title}
+      </p>
+
+      {/* Description */}
+      {task.description && (
+        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground mb-2">
+          {task.description}
+        </p>
+      )}
+
+      {/* Labels */}
+      {task.labels && task.labels.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {task.labels.slice(0, 3).map((label) => (
+            <span
+              key={label}
+              className="rounded-full bg-primary/10 border border-primary/20 px-1.5 py-0.5 text-[10px] text-primary/70"
+            >
+              {label}
+            </span>
+          ))}
+          {task.labels.length > 3 && (
+            <span className="rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+              +{task.labels.length - 3}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Footer: metadata chips */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+        {/* Priority dot */}
+        <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <span className={cn("w-2 h-2 rounded-full shrink-0", priorityDot[task.priority])} />
+          {priorityLabel[task.priority]}
+        </span>
+
+        {due && (
+          <span
+            className={cn(
+              "flex items-center gap-1 text-[11px]",
+              isOverdue ? "text-red-400 font-medium" : "text-muted-foreground"
+            )}
+          >
+            <CalendarDays className="h-3 w-3" />
+            {due}
+          </span>
+        )}
+
+        {task.estimateMinutes ? (
+          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+            <Clock className="h-3 w-3" />
+            {task.estimateMinutes}m
+          </span>
+        ) : null}
+
+        {task.assigneeName ? (
+          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+            <UserRound className="h-3 w-3" />
+            {task.assigneeName}
+          </span>
+        ) : null}
       </div>
     </button>
   );

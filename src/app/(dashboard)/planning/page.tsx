@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { TaskCard } from "@/components/planning/TaskCard";
 import { TaskForm } from "@/components/planning/TaskForm";
+import { TaskIssueModal } from "@/components/planning/TaskIssueModal";
 import { CalendarGrid } from "@/components/planning/CalendarGrid";
 import { PlannerAgent } from "@/components/planning/PlannerAgent";
 import { TaskBoard } from "@/components/planning/TaskBoard";
@@ -127,7 +128,7 @@ function MobileDayPicker({ days, selectedDate, tasks, onSelect }: {
 
 // ── Mobile day view ───────────────────────────────────────────────────────────
 
-function MobileDayView({ day, tasks, calendarEvents, calendarConnected, onStatusChange, onDelete, onCreateTask }: {
+function MobileDayView({ day, tasks, calendarEvents, calendarConnected, onStatusChange, onDelete, onCreateTask, onOpenTask }: {
   day: Date;
   tasks: PlanningTask[];
   calendarEvents: import("@/types/planning").CalendarEvent[];
@@ -135,6 +136,7 @@ function MobileDayView({ day, tasks, calendarEvents, calendarConnected, onStatus
   onStatusChange: (id: string, s: PlanningTask["status"]) => void;
   onDelete: (id: string) => void;
   onCreateTask: (input: CreateTaskInput) => Promise<void>;
+  onOpenTask: (id: string) => void;
 }) {
   const [quickAdd, setQuickAdd] = useState(false);
   const dateStr = toDateString(day);
@@ -163,6 +165,7 @@ function MobileDayView({ day, tasks, calendarEvents, calendarConnected, onStatus
           <TaskCard key={task.id} task={task}
             onStatusChange={(s) => onStatusChange(task.id, s)}
             onDelete={() => onDelete(task.id)}
+            onOpen={() => onOpenTask(task.id)}
             canPushToCalendar={!!calendarConnected}
           />
         ))}
@@ -202,6 +205,7 @@ export default function PlanningPage() {
   const [agentOpen, setAgentOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
+  const [issueModalTaskId, setIssueModalTaskId] = useState<string | null>(null);
 
   const { weekStart, weekEnd, days, prevWeek, nextWeek, goToToday } = useWeekNavigation();
 
@@ -251,6 +255,10 @@ export default function PlanningPage() {
     [boardLists, selectedBoard?.id],
   );
   const boardTasks = useBoardTasks(tasks, selectedProject?.id, selectedBoard?.id, selectedBoardLists);
+  const issueModalTask = useMemo(
+    () => boardTasks.find((t) => t.id === issueModalTaskId) ?? null,
+    [boardTasks, issueModalTaskId]
+  );
 
   const handlePushToCalendar = useCallback(async (task: PlanningTask) => {
     const eventId = await pushEvent(task);
@@ -488,6 +496,7 @@ export default function PlanningPage() {
                         onStatusChange={(id, status) => handleUpdateTask(id, { status })}
                         onDelete={deleteTask}
                         onCreateTask={handleCreateTask}
+                        onOpenTask={setIssueModalTaskId}
                       />
                   }
                 </div>
@@ -539,6 +548,7 @@ export default function PlanningPage() {
                           task={task}
                           onStatusChange={(s) => handleUpdateTask(task.id, { status: s })}
                           onDelete={() => deleteTask(task.id)}
+                          onOpen={() => setIssueModalTaskId(task.id)}
                           onPushToCalendar={calendarConnected ? () => handlePushToCalendar(task) : undefined}
                           canPushToCalendar={!!calendarConnected}
                         />
@@ -595,6 +605,17 @@ export default function PlanningPage() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Issue detail modal (list + calendar views) */}
+      <TaskIssueModal
+        task={issueModalTask}
+        open={!!issueModalTask}
+        onOpenChange={(open) => { if (!open) setIssueModalTaskId(null); }}
+        onUpdate={handleUpdateTask}
+        onDelete={async (id) => { await deleteTask(id); setIssueModalTaskId(null); }}
+        onCreateTask={handleCreateTask}
+        allTasks={boardTasks}
+      />
     </div>
   );
 }
