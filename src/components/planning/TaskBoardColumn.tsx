@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { TaskBoardCard } from "@/components/planning/TaskBoardCard";
 import { TaskForm } from "@/components/planning/TaskForm";
 import { cn } from "@/lib/utils";
-import type { CreateTaskInput, PlanningTask, TaskStatus } from "@/types/planning";
+import type { BoardList, CreateTaskInput, PlanningTask, TaskStatus } from "@/types/planning";
 import { Plus, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 
 interface TaskBoardColumnProps {
-  status: TaskStatus;
+  list: BoardList;
   title: string;
   description: string;
   icon: LucideIcon;
@@ -18,13 +18,13 @@ interface TaskBoardColumnProps {
   tasks: PlanningTask[];
   draggedTaskId: string | null;
   onCreateTask: (input: CreateTaskInput) => Promise<void>;
-  onDropTask: (taskId: string, status: TaskStatus) => void;
+  onDropTask: (taskId: string, list: BoardList) => void;
   onOpenTask: (task: PlanningTask) => void;
   onDragStart: (taskId: string) => void;
 }
 
 export function TaskBoardColumn({
-  status,
+  list,
   title,
   description,
   icon: Icon,
@@ -49,7 +49,7 @@ export function TaskBoardColumn({
       onDrop={(event) => {
         event.preventDefault();
         setIsOver(false);
-        if (draggedTaskId) onDropTask(draggedTaskId, status);
+        if (draggedTaskId) onDropTask(draggedTaskId, list);
       }}
       className={cn(
         "flex min-h-[22rem] min-w-[18rem] flex-1 flex-col rounded-2xl border bg-muted/20 transition-colors",
@@ -90,10 +90,16 @@ export function TaskBoardColumn({
               exit={{ opacity: 0, y: -8 }}
             >
               <TaskForm
-                defaultStatus={status}
+                defaultStatus={list.mapsToTaskStatus as TaskStatus}
                 defaultSource="manual"
                 onSubmit={async (input) => {
-                  await onCreateTask(input);
+                  await onCreateTask({
+                    ...input,
+                    projectId: list.projectId,
+                    boardId: list.boardId,
+                    listId: list.id,
+                    status: list.mapsToTaskStatus,
+                  });
                   setAdding(false);
                 }}
                 onClose={() => setAdding(false)}

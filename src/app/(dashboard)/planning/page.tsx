@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -10,15 +10,19 @@ import { TaskForm } from "@/components/planning/TaskForm";
 import { CalendarGrid } from "@/components/planning/CalendarGrid";
 import { PlannerAgent } from "@/components/planning/PlannerAgent";
 import { TaskBoard } from "@/components/planning/TaskBoard";
+import { ProjectBoardShell } from "@/components/planning/ProjectBoardShell";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import {
   useTasks,
   useCalendarEvents,
+  useProjectBoards,
+  useBoardTasks,
+  useTaskActivity,
   useWeekNavigation,
   toDateString,
   isSameDay,
 } from "@/hooks/usePlanning";
-import type { CreateTaskInput, PlanningTask, TaskStatus } from "@/types/planning";
+import type { ActivityEvent, BoardList, CreateTaskInput, PlanningTask, ProjectBoard, ProjectBoardProject, TaskStatus } from "@/types/planning";
 import {
   ChevronLeft,
   ChevronRight,
@@ -196,6 +200,8 @@ export default function PlanningPage() {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date>(new Date());
   const [agentOpen, setAgentOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
 
   const { weekStart, weekEnd, days, prevWeek, nextWeek, goToToday } = useWeekNavigation();
 
@@ -205,7 +211,46 @@ export default function PlanningPage() {
   const { events: calendarEvents, connected: calendarConnected, loading: calendarLoading, pushEvent, updateEvent, deleteEvent, refetch: refetchCalendar } = useCalendarEvents(timeMin, timeMax);
 
   const calendarActions = useMemo(() => ({ connected: calendarConnected, pushEvent, updateEvent, deleteEvent }), [calendarConnected, pushEvent, updateEvent, deleteEvent]);
-  const { tasks, loading: tasksLoading, createTask, updateTask, deleteTask, setStatus, refetch: refetchTasks } = useTasks(calendarActions);
+  const { tasks, loading: tasksLoading, createTask, updateTask, deleteTask, refetch: refetchTasks } = useTasks(calendarActions);
+  const {
+    projects,
+    boards,
+    boardLists,
+    loading: boardsLoading,
+    createProject,
+    createBoard,
+    updateProject,
+    ensureDefaultWorkspace,
+  } = useProjectBoards();
+  const { recordActivity } = useTaskActivity();
+
+  useEffect(() => {
+    let cancelled = false;
+    ensureDefaultWorkspace().then((workspace) => {
+      if (cancelled || !workspace) return;
+      setSelectedProjectId((current) => current ?? workspace.project.id);
+      setSelectedBoardId((current) => current ?? workspace.board?.id ?? null);
+    });
+    return () => { cancelled = true; };
+  }, [ensureDefaultWorkspace]);
+
+  const selectedProject = useMemo(
+    () => projects.find((project: ProjectBoardProject) => project.id === selectedProjectId) ?? projects[0] ?? null,
+    [projects, selectedProjectId],
+  );
+  const projectBoards = useMemo(
+    () => boards.filter((board: ProjectBoard) => board.projectId === selectedProject?.id),
+    [boards, selectedProject?.id],
+  );
+  const selectedBoard = useMemo(
+    () => projectBoards.find((board: ProjectBoard) => board.id === selectedBoardId) ?? projectBoards[0] ?? null,
+    [projectBoards, selectedBoardId],
+  );
+  const selectedBoardLists = useMemo(
+    () => boardLists.filter((list: BoardList) => list.boardId === selectedBoard?.id),
+    [boardLists, selectedBoard?.id],
+  );
+  const boardTasks = useBoardTasks(tasks, selectedProject?.id, selectedBoard?.id, selectedBoardLists);
 
   const handlePushToCalendar = useCallback(async (task: PlanningTask) => {
     const eventId = await pushEvent(task);
@@ -213,12 +258,34 @@ export default function PlanningPage() {
   }, [pushEvent, updateTask]);
 
   const handleCreateTask = useCallback(async (input: CreateTaskInput) => {
-    await createTask(input);
+    const task = await createTask({
+      ...input,
+      projectId: input.projectId ?? selectedProject?.id,
+      boardId: input.boardId ?? selectedBoard?.id,
+    });
+    if (task) {
+      await recordActivity({
+        taskId: task.id,
+        projectId: task.projectId,
+        boardId: task.boardId,
+        action: "created_task",
+        summary: "Creó una tarea",
+      });
+    }
     setShowTaskForm(false);
-  }, [createTask]);
+  }, [createTask, recordActivity, selectedBoard?.id, selectedProject?.id]);
+
+  const handleUpdateTask = useCallback(async (id: string, props: Partial<Omit<PlanningTask, "id" | "createdAt">>) => {
+    const actorName = session?.user?.name ?? "Usuario";
+    await updateTask(id, {
+      ...props,
+      lastEditedByUserId: session?.user?.id,
+      lastEditedByName: actorName,
+    });
+  }, [session?.user?.id, session?.user?.name, updateTask]);
 
   const filteredTasks = useMemo(() => {
-    let list = [...tasks];
+    let list = [...boardTasks];
     if (statusFilter !== "all") list = list.filter((t) => t.status === statusFilter);
     return list.sort((a, b) => {
       const order: Record<TaskStatus, number> = { todo: 0, in_progress: 1, done: 2 };
@@ -227,14 +294,14 @@ export default function PlanningPage() {
       if (a.dueDate) return -1; if (b.dueDate) return 1;
       return 0;
     });
-  }, [tasks, statusFilter]);
+  }, [boardTasks, statusFilter]);
 
   const stats = useMemo(() => ({
-    total:      tasks.length,
-    done:       tasks.filter((t) => t.status === "done").length,
-    inProgress: tasks.filter((t) => t.status === "in_progress").length,
-    overdue:    tasks.filter((t) => t.dueDate && t.status !== "done" && new Date(t.dueDate + "T00:00:00") < new Date(new Date().setHours(0, 0, 0, 0))).length,
-  }), [tasks]);
+    total:      boardTasks.length,
+    done:       boardTasks.filter((t) => t.status === "done").length,
+    inProgress: boardTasks.filter((t) => t.status === "in_progress").length,
+    overdue:    boardTasks.filter((t) => t.dueDate && t.status !== "done" && new Date(t.dueDate + "T00:00:00") < new Date(new Date().setHours(0, 0, 0, 0))).length,
+  }), [boardTasks]);
 
   const firstName = (session?.user?.name?.split(" ")[0]) ?? "Usuario";
 
@@ -304,6 +371,33 @@ export default function PlanningPage() {
         </div>
 
         {/* Row 2: Stats */}
+        <ProjectBoardShell
+          projects={projects}
+          boards={projectBoards}
+          selectedProject={selectedProject}
+          selectedBoard={selectedBoard}
+          onSelectProject={(projectId) => {
+            setSelectedProjectId(projectId);
+            const nextBoard = boards.find((board: ProjectBoard) => board.projectId === projectId);
+            setSelectedBoardId(nextBoard?.id ?? null);
+          }}
+          onSelectBoard={setSelectedBoardId}
+          onCreateProject={async (name) => {
+            const project = await createProject({ name, key: name.slice(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, "") || "PROJ" });
+            if (project) setSelectedProjectId(project.id);
+          }}
+          onCreateBoard={async (name) => {
+            if (!selectedProject) return;
+            const board = await createBoard({ projectId: selectedProject.id, name });
+            if (board) setSelectedBoardId(board.id);
+          }}
+          onAddMember={async (name) => {
+            if (!selectedProject) return;
+            const memberNames = Array.from(new Set([...(selectedProject.memberNames ?? []), name]));
+            await updateProject(selectedProject.id, { memberNames });
+          }}
+        />
+
         <div className="grid grid-cols-4 gap-1.5">
           <StatChip label="Total"       value={stats.total}      icon={TrendingUp}   color="border-border/50 bg-card/40" />
           <StatChip label="Progreso"    value={stats.inProgress} icon={Clock}        color="border-amber-500/20 bg-amber-500/5 text-amber-400" />
@@ -360,18 +454,18 @@ export default function PlanningPage() {
             <>
               {!isMobile && (
                 <div className="flex-1 min-h-0 p-3 md:p-4">
-                  {tasksLoading ? (
+                  {tasksLoading || boardsLoading ? (
                     <div className="flex items-center justify-center h-full">
                       <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                     </div>
                   ) : (
                     <CalendarGrid
                       days={days}
-                      tasks={tasks}
+                      tasks={boardTasks}
                       calendarEvents={calendarEvents}
                       calendarConnected={calendarConnected}
-                      onStatusChange={setStatus}
-                      onCreateTask={async (input) => { await createTask(input); }}
+                      onStatusChange={(id, status) => handleUpdateTask(id, { status })}
+                      onCreateTask={handleCreateTask}
                       onPushToCalendar={handlePushToCalendar}
                     />
                   )}
@@ -382,18 +476,18 @@ export default function PlanningPage() {
               {isMobile && (
                 <div className="flex flex-col flex-1 min-h-0">
                   <div className="py-3 border-b border-border/40 shrink-0">
-                    <MobileDayPicker days={days} selectedDate={selectedDay} tasks={tasks} onSelect={setSelectedDay} />
+                    <MobileDayPicker days={days} selectedDate={selectedDay} tasks={boardTasks} onSelect={setSelectedDay} />
                   </div>
-                  {tasksLoading
+                  {tasksLoading || boardsLoading
                     ? <div className="flex items-center justify-center flex-1"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
                     : <MobileDayView
                         day={selectedDay}
-                        tasks={tasks}
+                        tasks={boardTasks}
                         calendarEvents={calendarEvents}
                         calendarConnected={calendarConnected}
-                        onStatusChange={setStatus}
+                        onStatusChange={(id, status) => handleUpdateTask(id, { status })}
                         onDelete={deleteTask}
-                        onCreateTask={async (input) => { await createTask(input); }}
+                        onCreateTask={handleCreateTask}
                       />
                   }
                 </div>
@@ -406,7 +500,7 @@ export default function PlanningPage() {
             <div className="flex-1 overflow-hidden flex flex-col">
               <div className="px-3 md:px-5 pt-3 flex items-center gap-1.5 shrink-0 overflow-x-auto pb-1 scrollbar-none">
                 {STATUS_TABS.map(({ value, label, Icon }) => {
-                  const count = value === "all" ? tasks.length : tasks.filter((t) => t.status === value).length;
+                  const count = value === "all" ? boardTasks.length : boardTasks.filter((t) => t.status === value).length;
                   return (
                     <button
                       key={value}
@@ -443,7 +537,7 @@ export default function PlanningPage() {
                         <TaskCard
                           key={task.id}
                           task={task}
-                          onStatusChange={(s) => setStatus(task.id, s)}
+                          onStatusChange={(s) => handleUpdateTask(task.id, { status: s })}
                           onDelete={() => deleteTask(task.id)}
                           onPushToCalendar={calendarConnected ? () => handlePushToCalendar(task) : undefined}
                           canPushToCalendar={!!calendarConnected}
@@ -459,16 +553,18 @@ export default function PlanningPage() {
           {/* ── Board view ── */}
           {viewMode === "board" && (
             <div className="flex-1 overflow-hidden">
-              {tasksLoading ? (
+              {tasksLoading || boardsLoading ? (
                 <div className="flex h-full items-center justify-center">
                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (
                 <TaskBoard
-                  tasks={tasks}
-                  onCreateTask={async (input) => { await createTask(input); }}
-                  onUpdateTask={updateTask}
+                  tasks={boardTasks}
+                  lists={selectedBoardLists}
+                  onCreateTask={handleCreateTask}
+                  onUpdateTask={handleUpdateTask}
                   onDeleteTask={deleteTask}
+                  onRecordActivity={async (event: Partial<ActivityEvent>) => { await recordActivity(event); }}
                 />
               )}
             </div>
@@ -489,7 +585,7 @@ export default function PlanningPage() {
               )}
             >
               <PlannerAgent
-                tasks={tasks}
+                tasks={boardTasks}
                 calendarEvents={calendarEvents}
                 onClose={() => setAgentOpen(false)}
                 onTasksChanged={refetchTasks}

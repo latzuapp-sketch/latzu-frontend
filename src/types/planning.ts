@@ -6,6 +6,9 @@ export type ABCDEPriority = "A" | "B" | "C" | "D" | "E";
 export type LifeArea = "career" | "health" | "relationships" | "growth";
 export type TaskSource = "manual" | "ai" | "plan" | "calendar" | "system";
 export type TaskCreator = "user" | "ai" | "system";
+export type BoardListKind = "todo" | "in_progress" | "done" | "custom";
+export type ProjectRole = "owner" | "admin" | "member" | "viewer";
+export type TaskRelationshipType = "BLOCKS" | "RELATES_TO" | "DUPLICATES" | "PARENT_OF";
 
 export type TaskCategory =
   | "task"
@@ -59,6 +62,10 @@ export interface PlanningTask {
   phaseIndex?: number;
   subPhaseId?: string;
   planId?: string;
+  projectId?: string;
+  boardId?: string;
+  listId?: string;
+  issueKey?: string;
   lessonRef?: string;
   googleEventId?: string;
   source?: TaskSource;
@@ -70,6 +77,11 @@ export interface PlanningTask {
   rank?: number;
   parentTaskId?: string;
   blockedBy?: string[];
+  watcherUserIds?: string[];
+  memberUserIds?: string[];
+  lastEditedByUserId?: string;
+  lastEditedByName?: string;
+  linkedTaskIds?: string[];
   acceptanceCriteria?: string;
   createdBy?: TaskCreator;
   userId: string;
@@ -118,6 +130,10 @@ export interface CreateTaskInput {
   phaseIndex?: number;
   subPhaseId?: string;
   planId?: string;
+  projectId?: string;
+  boardId?: string;
+  listId?: string;
+  issueKey?: string;
   lessonRef?: string;
   source?: TaskSource;
   labels?: string[];
@@ -128,8 +144,94 @@ export interface CreateTaskInput {
   rank?: number;
   parentTaskId?: string;
   blockedBy?: string[];
+  watcherUserIds?: string[];
+  memberUserIds?: string[];
+  lastEditedByUserId?: string;
+  lastEditedByName?: string;
+  linkedTaskIds?: string[];
   acceptanceCriteria?: string;
   createdBy?: TaskCreator;
+}
+
+export interface ProjectMember {
+  userId: string;
+  name: string;
+  email?: string;
+  role: ProjectRole;
+}
+
+export interface ProjectBoardProject {
+  id: string;
+  name: string;
+  key: string;
+  description: string;
+  ownerUserId: string;
+  ownerName?: string;
+  tenantId?: string;
+  memberUserIds: string[];
+  memberNames: string[];
+  members: ProjectMember[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ProjectBoard {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string;
+  ownerUserId: string;
+  memberUserIds: string[];
+  memberNames: string[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface BoardList {
+  id: string;
+  projectId: string;
+  boardId: string;
+  name: string;
+  description: string;
+  order: number;
+  kind: BoardListKind;
+  mapsToTaskStatus: TaskStatus;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface TaskComment {
+  id: string;
+  taskId: string;
+  projectId?: string;
+  boardId?: string;
+  authorUserId: string;
+  authorName: string;
+  body: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ActivityEvent {
+  id: string;
+  taskId?: string;
+  projectId?: string;
+  boardId?: string;
+  actorUserId: string;
+  actorName: string;
+  action: string;
+  summary: string;
+  payload?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface EntityRelationship {
+  fromId: string;
+  toId: string;
+  relationshipType: string;
+  fromEntityType?: string | null;
+  toEntityType?: string | null;
+  createdAt?: string | null;
 }
 
 export interface CreatePlanInput {

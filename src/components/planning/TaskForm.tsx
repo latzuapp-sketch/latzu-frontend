@@ -15,6 +15,9 @@ interface TaskFormProps {
   defaultDate?: string; // YYYY-MM-DD
   defaultStatus?: TaskStatus;
   defaultSource?: TaskSource;
+  defaultProjectId?: string;
+  defaultBoardId?: string;
+  defaultListId?: string;
 }
 
 const categoryOptions: { value: TaskCategory; label: string; Icon: typeof Plus }[] = [
@@ -44,7 +47,16 @@ const lifeAreaOptions: { value: LifeArea; label: string; emoji: string }[] = [
   { value: "growth", label: "Crecimiento", emoji: "🧠" },
 ];
 
-export function TaskForm({ onSubmit, onClose, defaultDate, defaultStatus = "todo", defaultSource = "manual" }: TaskFormProps) {
+export function TaskForm({
+  onSubmit,
+  onClose,
+  defaultDate,
+  defaultStatus = "todo",
+  defaultSource = "manual",
+  defaultProjectId,
+  defaultBoardId,
+  defaultListId,
+}: TaskFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState(defaultDate ?? "");
@@ -73,6 +85,9 @@ export function TaskForm({ onSubmit, onClose, defaultDate, defaultStatus = "todo
       category,
       status: defaultStatus,
       source: defaultSource,
+      projectId: defaultProjectId,
+      boardId: defaultBoardId,
+      listId: defaultListId,
       labels: labels
         .split(",")
         .map((label) => label.trim())

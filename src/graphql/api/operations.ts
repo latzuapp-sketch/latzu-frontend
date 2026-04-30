@@ -234,6 +234,41 @@ export const DELETE_ENTITY = gql`
   }
 `;
 
+export const GET_ENTITY_RELATIONSHIPS = gql`
+  query GetEntityRelationships($id: String!, $direction: String) {
+    entityRelationships(id: $id, direction: $direction) {
+      fromId
+      toId
+      relationshipType
+      createdAt
+      fromEntityType
+      toEntityType
+    }
+  }
+`;
+
+export const CREATE_ENTITY_RELATIONSHIP = gql`
+  mutation CreateEntityRelationship($fromId: String!, $toId: String!, $relationshipType: String!) {
+    createEntityRelationship(fromId: $fromId, toId: $toId, relationshipType: $relationshipType) {
+      fromId
+      toId
+      relationshipType
+      createdAt
+      fromEntityType
+      toEntityType
+    }
+  }
+`;
+
+export const DELETE_ENTITY_RELATIONSHIP = gql`
+  mutation DeleteEntityRelationship($fromId: String!, $toId: String!, $relationshipType: String!) {
+    deleteEntityRelationship(fromId: $fromId, toId: $toId, relationshipType: $relationshipType) {
+      success
+      message
+    }
+  }
+`;
+
 export const GET_USER_SUBSCRIPTION = gql`
   query GetUserSubscription($userId: String!) {
     userSubscription(userId: $userId) {
