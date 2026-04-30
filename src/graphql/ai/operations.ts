@@ -696,3 +696,79 @@ export const GENERATE_TASK_CONTENT = gql`
     }
   }
 `;
+
+// ─── Organizer agent ──────────────────────────────────────────────────────────
+
+export const GET_AGENT_INTENTS = gql`
+  query GetAgentIntents($userId: String!, $status: String, $limit: Int) {
+    agentIntents(userId: $userId, status: $status, limit: $limit) {
+      id
+      type
+      title
+      description
+      risk
+      status
+      payload
+      createdAt
+    }
+  }
+`;
+
+export const GET_INTERACTION_STATS = gql`
+  query GetInteractionStats($userId: String!) {
+    userInteractionStats(userId: $userId) {
+      totalEvents
+      uniqueTargets
+      eventTypes
+      lastReflection
+    }
+  }
+`;
+
+export const TRACK_INTERACTION = gql`
+  mutation TrackInteraction(
+    $eventType: String!
+    $targetId: String
+    $targetType: String
+    $workspaceId: String
+    $durationMs: Int
+  ) {
+    trackInteraction(
+      eventType: $eventType
+      targetId: $targetId
+      targetType: $targetType
+      workspaceId: $workspaceId
+      durationMs: $durationMs
+    ) {
+      eventId
+      recorded
+    }
+  }
+`;
+
+export const APPROVE_INTENT = gql`
+  mutation ApproveIntent($intentId: String!) {
+    approveIntent(intentId: $intentId) {
+      intentId
+      success
+    }
+  }
+`;
+
+export const DISMISS_INTENT = gql`
+  mutation DismissIntent($intentId: String!) {
+    dismissIntent(intentId: $intentId) {
+      intentId
+      success
+    }
+  }
+`;
+
+export const TRIGGER_REFLECTION = gql`
+  mutation TriggerReflection {
+    triggerReflection {
+      success
+      message
+    }
+  }
+`;

@@ -14,6 +14,7 @@ import { FileUploadZone } from "@/components/biblioteca/FileUploadZone";
 import { getNodeTypeConfig } from "@/components/biblioteca/NodeTypeConfig";
 import { useKnowledgeNodes, useKnowledgeStats, useLibraryBooks } from "@/hooks/useLibrary";
 import { useLibraryFiles } from "@/hooks/useLibraryFiles";
+import { useTrackInteraction } from "@/hooks/useOrganizerAgent";
 import { BOOK_CATEGORY_CONFIG } from "@/data/curated-books";
 import type { LibraryBook } from "@/types/library";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,7 @@ function ReadingsTab() {
   const [selectedBook, setSelectedBook] = useState<LibraryBook | null>(null);
 
   const { books, loading, error } = useLibraryBooks();
+  const { track } = useTrackInteraction();
 
   const filtered = books.filter((b) => {
     const matchCat = !activeCategory || b.category === activeCategory;
@@ -137,7 +139,16 @@ function ReadingsTab() {
                   book={book}
                   index={i}
                   isSelected={selectedBook?.id === book.id}
-                  onClick={() => setSelectedBook((prev) => prev?.id === book.id ? null : book)}
+                  onClick={() => {
+                    const next = selectedBook?.id === book.id ? null : book;
+                    setSelectedBook(next);
+                    if (next) {
+                      track("book.opened", {
+                        targetId: `book::${book.id}`,
+                        targetType: "book",
+                      });
+                    }
+                  }}
                 />
               ))}
             </div>

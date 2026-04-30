@@ -259,3 +259,44 @@ export interface CreateEntityInput {
 export interface UpdateEntityInput {
   properties: Record<string, unknown>;
 }
+
+// ─── Organizer agent types (:8001) ────────────────────────────────────────────
+
+export type AgentIntentType =
+  | "tag_node"
+  | "link_nodes"
+  | "create_workspace"
+  | "move_to_workspace"
+  | "surface_connection"
+  | "archive_stale";
+
+export type AgentIntentRisk = "low" | "medium" | "high";
+export type AgentIntentStatus = "pending" | "applied" | "dismissed" | "failed";
+
+export interface AgentIntent {
+  id: string;
+  type: AgentIntentType;
+  title: string;
+  description: string;
+  risk: AgentIntentRisk;
+  status: AgentIntentStatus;
+  payload: string; // JSON string
+  createdAt: string;
+}
+
+export interface InteractionStats {
+  totalEvents: number;
+  uniqueTargets: number;
+  eventTypes: string[];
+  lastReflection: string | null;
+}
+
+export interface RecordInteractionResult {
+  eventId: string;
+  recorded: boolean;
+}
+
+export interface IntentActionResult {
+  intentId: string;
+  success: boolean;
+}
