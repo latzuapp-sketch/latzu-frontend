@@ -4,6 +4,8 @@ export type TaskStatus = "todo" | "in_progress" | "done";
 export type TaskPriority = "low" | "medium" | "high";
 export type ABCDEPriority = "A" | "B" | "C" | "D" | "E";
 export type LifeArea = "career" | "health" | "relationships" | "growth";
+export type TaskSource = "manual" | "ai" | "plan" | "calendar" | "system";
+export type TaskCreator = "user" | "ai" | "system";
 
 export type TaskCategory =
   | "task"
@@ -59,8 +61,20 @@ export interface PlanningTask {
   planId?: string;
   lessonRef?: string;
   googleEventId?: string;
+  source?: TaskSource;
+  labels?: string[];
+  assigneeUserId?: string;
+  assigneeName?: string;
+  estimateMinutes?: number;
+  spentMinutes?: number;
+  rank?: number;
+  parentTaskId?: string;
+  blockedBy?: string[];
+  acceptanceCriteria?: string;
+  createdBy?: TaskCreator;
   userId: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface ActionPlan {
@@ -102,8 +116,20 @@ export interface CreateTaskInput {
   contentType?: TaskCategory;
   contentRef?: string;
   phaseIndex?: number;
+  subPhaseId?: string;
   planId?: string;
   lessonRef?: string;
+  source?: TaskSource;
+  labels?: string[];
+  assigneeUserId?: string;
+  assigneeName?: string;
+  estimateMinutes?: number;
+  spentMinutes?: number;
+  rank?: number;
+  parentTaskId?: string;
+  blockedBy?: string[];
+  acceptanceCriteria?: string;
+  createdBy?: TaskCreator;
 }
 
 export interface CreatePlanInput {

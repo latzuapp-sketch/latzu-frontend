@@ -6,13 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import type { CreateTaskInput, TaskCategory, TaskPriority, ABCDEPriority, LifeArea } from "@/types/planning";
+import type { CreateTaskInput, TaskCategory, TaskPriority, ABCDEPriority, LifeArea, TaskStatus, TaskSource } from "@/types/planning";
 import { X, Plus, ArrowUpCircle, BookOpen, Bell } from "lucide-react";
 
 interface TaskFormProps {
   onSubmit: (input: CreateTaskInput) => Promise<void>;
   onClose: () => void;
   defaultDate?: string; // YYYY-MM-DD
+  defaultStatus?: TaskStatus;
+  defaultSource?: TaskSource;
 }
 
 const categoryOptions: { value: TaskCategory; label: string; Icon: typeof Plus }[] = [
@@ -42,11 +44,13 @@ const lifeAreaOptions: { value: LifeArea; label: string; emoji: string }[] = [
   { value: "growth", label: "Crecimiento", emoji: "🧠" },
 ];
 
-export function TaskForm({ onSubmit, onClose, defaultDate }: TaskFormProps) {
+export function TaskForm({ onSubmit, onClose, defaultDate, defaultStatus = "todo", defaultSource = "manual" }: TaskFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState(defaultDate ?? "");
   const [dueTime, setDueTime] = useState("");
+  const [labels, setLabels] = useState("");
+  const [estimateMinutes, setEstimateMinutes] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [abcdePriority, setAbcdePriority] = useState<ABCDEPriority | null>(null);
   const [lifeArea, setLifeArea] = useState<LifeArea | null>(null);
@@ -67,7 +71,13 @@ export function TaskForm({ onSubmit, onClose, defaultDate }: TaskFormProps) {
       abcdePriority: abcdePriority ?? undefined,
       lifeArea: lifeArea ?? undefined,
       category,
-      status: "todo",
+      status: defaultStatus,
+      source: defaultSource,
+      labels: labels
+        .split(",")
+        .map((label) => label.trim())
+        .filter(Boolean),
+      estimateMinutes: estimateMinutes ? Number(estimateMinutes) : undefined,
     });
     setSubmitting(false);
     onClose();
@@ -113,6 +123,23 @@ export function TaskForm({ onSubmit, onClose, defaultDate }: TaskFormProps) {
           />
         </div>
 
+        <div className="flex gap-2">
+          <Input
+            value={labels}
+            onChange={(e) => setLabels(e.target.value)}
+            placeholder="Etiquetas: diseño, IA…"
+            className="text-sm h-8 flex-1"
+          />
+          <Input
+            type="number"
+            min={0}
+            value={estimateMinutes}
+            onChange={(e) => setEstimateMinutes(e.target.value)}
+            placeholder="min"
+            className="text-sm h-8 w-20"
+          />
+        </div>
+
         {/* ABCDE Priority */}
         <div className="space-y-1">
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Prioridad ABCDE</p>
@@ -139,6 +166,27 @@ export function TaskForm({ onSubmit, onClose, defaultDate }: TaskFormProps) {
               {abcdeOptions.find(o => o.value === abcdePriority)?.desc}
             </p>
           )}
+        </div>
+
+        <div className="space-y-1">
+          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Prioridad</p>
+          <div className="flex gap-1.5">
+            {priorityOptions.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setPriority(opt.value)}
+                className={cn(
+                  "flex-1 rounded-lg border px-2 py-1.5 text-xs font-medium transition-all",
+                  priority === opt.value
+                    ? opt.color
+                    : "border-border/50 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Life Area */}

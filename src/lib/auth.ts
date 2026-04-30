@@ -194,6 +194,29 @@ async function fetchUserProfileType(userId: string): Promise<ProfileType | undef
   return undefined;
 }
 
+async function refreshBackendSession(token: JWT): Promise<Partial<JWT>> {
+  if (!token.email) return {};
+
+  const backendData = await syncUserToBackend(
+    {
+      id: token.userId || token.sub || token.email,
+      email: token.email,
+      name: token.name || token.email,
+      image: token.picture ?? undefined,
+    },
+    null,
+    'next-auth'
+  );
+
+  return {
+    profileType: backendData.profileType,
+    tenantId: backendData.tenantId,
+    role: backendData.role,
+    needsOnboarding: backendData.needsOnboarding,
+    backendToken: backendData.backendToken,
+  };
+}
+
 // ─── Providers ────────────────────────────────────────────────────────────────
 
 const GOOGLE_SCOPES = [
@@ -302,6 +325,12 @@ export const authOptions: NextAuthOptions = {
       if (!token.profileType && token.userId) {
         token.profileType = await fetchUserProfileType(token.userId);
         if (token.profileType) token.needsOnboarding = false;
+      }
+
+      // ── Recover backend JWT for older sessions that predate backendToken ────
+      if (!token.backendToken) {
+        const backendSession = await refreshBackendSession(token);
+        token = { ...token, ...backendSession };
       }
 
       // ── Return token if still valid ────────────────────────────────────────

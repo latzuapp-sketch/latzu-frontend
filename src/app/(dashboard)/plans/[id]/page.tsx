@@ -21,6 +21,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import {
+  createTaskProperties,
+  entityToPlanningTask,
+  PLANNING_TASK_ENTITY_TYPE,
+  PLANNING_TASK_QUERY_LIMIT,
+  taskToProperties,
+} from "@/lib/planning";
 import { BlockEditor } from "@/components/biblioteca/BlockEditor";
 import type {
   ActionPlan,
@@ -100,29 +107,6 @@ function entityToPlan(e: { id: string; properties: Record<string, unknown>; crea
     userId: String(p.userId ?? ""),
     createdAt: e.createdAt ?? new Date().toISOString(),
     aiGenerated: Boolean(p.aiGenerated ?? false),
-  };
-}
-
-function entityToTask(e: { id: string; properties: Record<string, unknown>; createdAt: string | null }): PlanningTask {
-  const p = e.properties ?? {};
-  return {
-    id: e.id,
-    title: String(p.title ?? ""),
-    description: String(p.description ?? ""),
-    status: (p.status as PlanningTask["status"]) ?? "todo",
-    priority: (p.priority as PlanningTask["priority"]) ?? "medium",
-    dueDate: p.dueDate ? String(p.dueDate) : null,
-    dueTime: p.dueTime ? String(p.dueTime) : null,
-    category: (p.category as PlanningTask["category"]) ?? "task",
-    contentType: p.contentType ? (p.contentType as PlanningTask["contentType"]) : undefined,
-    contentRef: p.contentRef ? String(p.contentRef) : undefined,
-    phaseIndex: p.phaseIndex != null ? Number(p.phaseIndex) : undefined,
-    subPhaseId: p.subPhaseId ? String(p.subPhaseId) : undefined,
-    planId: p.planId ? String(p.planId) : undefined,
-    lessonRef: p.lessonRef ? String(p.lessonRef) : undefined,
-    googleEventId: p.googleEventId ? String(p.googleEventId) : undefined,
-    userId: String(p.userId ?? ""),
-    createdAt: e.createdAt ?? new Date().toISOString(),
   };
 }
 
@@ -323,7 +307,6 @@ function InlineTitle({ value, onSave, placeholder }: {
   const [draft, setDraft] = useState(value);
   const ref = useRef<HTMLInputElement>(null);
 
-  useEffect(() => setDraft(value), [value]);
   useEffect(() => { if (editing) { ref.current?.focus(); ref.current?.select(); } }, [editing]);
 
   const commit = () => {
@@ -349,7 +332,10 @@ function InlineTitle({ value, onSave, placeholder }: {
 
   return (
     <h1
-      onClick={() => setEditing(true)}
+      onClick={() => {
+        setDraft(value);
+        setEditing(true);
+      }}
       className={cn(
         "text-4xl font-heading font-bold leading-tight tracking-tight cursor-text hover:bg-muted/20 rounded px-1 -mx-1 transition-colors",
         !value && "text-muted-foreground/40 italic"
@@ -547,7 +533,7 @@ function NewTaskRow({
 
   const [createEntity, { loading }] = useMutation(CREATE_ENTITY, {
     client: entityClient,
-    refetchQueries: [{ query: GET_ENTITIES, variables: { entityType: "PlanningTask", skip: 0, limit: 200 } }],
+    refetchQueries: [{ query: GET_ENTITIES, variables: { entityType: PLANNING_TASK_ENTITY_TYPE, skip: 0, limit: PLANNING_TASK_QUERY_LIMIT } }],
   });
 
   const submit = async () => {
@@ -555,8 +541,8 @@ function NewTaskRow({
     await createEntity({
       variables: {
         input: {
-          entityType: "PlanningTask",
-          properties: {
+          entityType: PLANNING_TASK_ENTITY_TYPE,
+          properties: createTaskProperties({
             title: title.trim(),
             description: "",
             status: "todo",
@@ -565,12 +551,11 @@ function NewTaskRow({
             dueTime: dueTime || null,
             category: "task",
             planId,
-            phaseIndex: defaultPhaseIndex ?? null,
-            subPhaseId: defaultSubPhaseId ?? null,
-            lessonRef: null,
-            googleEventId: null,
-            userId,
-          },
+            phaseIndex: defaultPhaseIndex,
+            subPhaseId: defaultSubPhaseId,
+            source: "manual",
+            createdBy: "user",
+          }, userId),
         },
       },
     });
@@ -677,11 +662,21 @@ function PhasesView({
 
   const togglePhase = (id: string) => {
     setPhaseUserToggled(true);
-    setExpandedPhases((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+    setExpandedPhases((prev) => {
+      const s = new Set(prev);
+      if (s.has(id)) s.delete(id);
+      else s.add(id);
+      return s;
+    });
   };
 
   const toggleSubPhase = (id: string) =>
-    setExpandedSubPhases((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+    setExpandedSubPhases((prev) => {
+      const s = new Set(prev);
+      if (s.has(id)) s.delete(id);
+      else s.add(id);
+      return s;
+    });
 
   const filterTasks = (ts: PlanningTask[]) => {
     if (taskFilter === "done") return ts.filter((t) => t.status === "done");
@@ -1005,15 +1000,22 @@ function WeeklyMapView({
   // Once user manually toggles, stop auto-computing.
   const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
   const [weekUserToggled, setWeekUserToggled] = useState(false);
-
-  useEffect(() => {
-    if (weekUserToggled) return;
-    setExpandedWeeks(new Set(weeks.filter(({ key }) => key <= currentWeekKey).map(({ key }) => key)));
-  }, [weeks, currentWeekKey, weekUserToggled]);
+  const visibleExpandedWeeks = useMemo(
+    () => weekUserToggled
+      ? expandedWeeks
+      : new Set(weeks.filter(({ key }) => key <= currentWeekKey).map(({ key }) => key)),
+    [expandedWeeks, weekUserToggled, weeks, currentWeekKey],
+  );
 
   const toggleWeek = (key: string) => {
     setWeekUserToggled(true);
-    setExpandedWeeks((prev) => { const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s; });
+    setExpandedWeeks((prev) => {
+      const seed = weekUserToggled ? prev : visibleExpandedWeeks;
+      const s = new Set(seed);
+      if (s.has(key)) s.delete(key);
+      else s.add(key);
+      return s;
+    });
   };
 
   if (weeks.length === 0 && unscheduled.length === 0) {
@@ -1030,7 +1032,7 @@ function WeeklyMapView({
         const isCurrent = key === currentWeekKey;
         const isPast = key < currentWeekKey;
         const isFuture = key > currentWeekKey;
-        const isExpanded = expandedWeeks.has(key);
+        const isExpanded = visibleExpandedWeeks.has(key);
         const [, weekNum] = key.split("-W");
         const range = getWeekRange(key);
         const done = weekTasks.filter((t) => t.status === "done").length;
@@ -1197,7 +1199,7 @@ export default function PlanDetailPage() {
 
   const { data: tasksData, loading: tasksLoading, refetch: refetchTasks } = useQuery(GET_ENTITIES, {
     client: entityClient,
-    variables: { entityType: "PlanningTask", skip: 0, limit: 200 },
+    variables: { entityType: PLANNING_TASK_ENTITY_TYPE, skip: 0, limit: PLANNING_TASK_QUERY_LIMIT },
     fetchPolicy: "cache-and-network",
   });
 
@@ -1265,8 +1267,8 @@ export default function PlanDetailPage() {
 
   const planTasks: PlanningTask[] = useMemo(() => {
     const items = tasksData?.entities?.items ?? [];
-    return (items as Array<{ id: string; properties: Record<string, unknown>; createdAt: string | null }>)
-      .map(entityToTask)
+    return (items as Array<{ id: string; properties: Record<string, unknown>; createdAt: string | null; updatedAt?: string | null }>)
+      .map(entityToPlanningTask)
       .filter((t: PlanningTask) => t.planId === id)
       .sort((a: PlanningTask, b: PlanningTask) => {
         if (a.status === "done" && b.status !== "done") return 1;
@@ -1301,14 +1303,7 @@ export default function PlanDetailPage() {
   const updateTask = useCallback(async (taskId: string, props: Partial<PlanningTask>) => {
     const task = planTasks.find((t) => t.id === taskId);
     if (!task) return;
-    const current: Record<string, unknown> = {
-      title: task.title, description: task.description, status: task.status,
-      priority: task.priority, dueDate: task.dueDate, dueTime: task.dueTime,
-      category: task.category, contentType: task.contentType, contentRef: task.contentRef,
-      phaseIndex: task.phaseIndex, subPhaseId: task.subPhaseId ?? null,
-      planId: task.planId, lessonRef: task.lessonRef,
-      googleEventId: task.googleEventId, userId: task.userId,
-    };
+    const current = taskToProperties(task);
     await updateEntity({ variables: { id: taskId, input: { properties: { ...current, ...props } } } });
   }, [planTasks, updateEntity]);
 

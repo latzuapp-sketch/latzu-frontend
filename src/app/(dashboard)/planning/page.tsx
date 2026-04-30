@@ -9,6 +9,7 @@ import { TaskCard } from "@/components/planning/TaskCard";
 import { TaskForm } from "@/components/planning/TaskForm";
 import { CalendarGrid } from "@/components/planning/CalendarGrid";
 import { PlannerAgent } from "@/components/planning/PlannerAgent";
+import { TaskBoard } from "@/components/planning/TaskBoard";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import {
   useTasks,
@@ -24,6 +25,7 @@ import {
   CalendarDays,
   ListTodo,
   CalendarRange,
+  Columns3,
   Plus,
   Calendar,
   CheckCircle2,
@@ -35,7 +37,6 @@ import {
   ExternalLink,
   TrendingUp,
   Sparkles,
-  X,
 } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -185,7 +186,7 @@ function MobileDayView({ day, tasks, calendarEvents, calendarConnected, onStatus
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-type ViewMode = "calendar" | "list";
+type ViewMode = "calendar" | "list" | "board";
 
 export default function PlanningPage() {
   const { data: session } = useSession();
@@ -253,6 +254,7 @@ export default function PlanningPage() {
               {([
                 { id: "calendar" as ViewMode, Icon: CalendarRange, label: "Calendario" },
                 { id: "list"     as ViewMode, Icon: ListTodo,       label: "Lista" },
+                { id: "board"    as ViewMode, Icon: Columns3,       label: "Tablero" },
               ] as const).map(({ id, Icon, label }) => (
                 <button
                   key={id}
@@ -451,6 +453,24 @@ export default function PlanningPage() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* ── Board view ── */}
+          {viewMode === "board" && (
+            <div className="flex-1 overflow-hidden">
+              {tasksLoading ? (
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <TaskBoard
+                  tasks={tasks}
+                  onCreateTask={async (input) => { await createTask(input); }}
+                  onUpdateTask={updateTask}
+                  onDeleteTask={deleteTask}
+                />
+              )}
             </div>
           )}
         </div>

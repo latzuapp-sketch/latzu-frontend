@@ -27,43 +27,20 @@ import type {
   CalendarEvent,
   CreateTaskInput,
   TaskStatus,
-  ABCDEPriority,
-  TaskPriority,
 } from "@/types/planning";
+import {
+  createTaskProperties,
+  entityToPlanningTask,
+  PLANNING_TASK_ENTITY_TYPE,
+  PLANNING_TASK_QUERY_LIMIT,
+  taskPatchProperties,
+} from "@/lib/planning";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ENTITY_TYPE = "PlanningTask";
+const ENTITY_TYPE = PLANNING_TASK_ENTITY_TYPE;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function entityToTask(entity: {
-  id: string;
-  properties: Record<string, unknown>;
-  createdAt: string | null;
-}): PlanningTask {
-  const p = entity.properties ?? {};
-  return {
-    id: entity.id,
-    title: String(p.title ?? ""),
-    description: String(p.description ?? ""),
-    status: (p.status as PlanningTask["status"]) ?? "todo",
-    priority: (p.priority as PlanningTask["priority"]) ?? "medium",
-    abcdePriority: p.abcdePriority ? (p.abcdePriority as ABCDEPriority) : undefined,
-    lifeArea: p.lifeArea ? (p.lifeArea as PlanningTask["lifeArea"]) : undefined,
-    dueDate: p.dueDate ? String(p.dueDate) : null,
-    dueTime: p.dueTime ? String(p.dueTime) : null,
-    category: (p.category as PlanningTask["category"]) ?? "task",
-    contentType: p.contentType ? (p.contentType as PlanningTask["category"]) : undefined,
-    contentRef: p.contentRef ? String(p.contentRef) : undefined,
-    phaseIndex: p.phaseIndex !== undefined ? Number(p.phaseIndex) : undefined,
-    planId: p.planId ? String(p.planId) : undefined,
-    lessonRef: p.lessonRef ? String(p.lessonRef) : undefined,
-    googleEventId: p.googleEventId ? String(p.googleEventId) : undefined,
-    userId: String(p.userId ?? ""),
-    createdAt: entity.createdAt ?? new Date().toISOString(),
-  };
-}
 
 function taskToEventTimes(task: { dueDate: string; dueTime?: string | null }) {
   const allDay = !task.dueTime;
@@ -232,13 +209,13 @@ export function useTasks(calendar?: CalendarActions) {
 
   const { data, loading, refetch } = useQuery(GET_ENTITIES, {
     client: entityClient,
-    variables: { entityType: ENTITY_TYPE, skip: 0, limit: 50 },
+    variables: { entityType: ENTITY_TYPE, skip: 0, limit: PLANNING_TASK_QUERY_LIMIT },
     fetchPolicy: "cache-and-network",
   });
 
   const [createEntityMutation] = useMutation(CREATE_ENTITY, {
     client: entityClient,
-    refetchQueries: [{ query: GET_ENTITIES, variables: { entityType: ENTITY_TYPE, skip: 0, limit: 50 } }],
+    refetchQueries: [{ query: GET_ENTITIES, variables: { entityType: ENTITY_TYPE, skip: 0, limit: PLANNING_TASK_QUERY_LIMIT } }],
   });
 
   const [updateEntityMutation] = useMutation(UPDATE_ENTITY, {
@@ -268,14 +245,14 @@ export function useTasks(calendar?: CalendarActions) {
 
   const allTasks: PlanningTask[] = useMemo(() => {
     const items = data?.entities?.items ?? [];
-    const mapped: PlanningTask[] = items.map(entityToTask);
+    const mapped: PlanningTask[] = items.map(entityToPlanningTask);
     if (!userId) return mapped;
     return mapped.filter((t) => !t.userId || t.userId === userId);
   }, [data, userId]);
 
   const _updateEntity = useCallback(
     async (id: string, props: Partial<Omit<PlanningTask, "id" | "createdAt">>) => {
-      await updateEntityMutation({ variables: { id, input: { properties: props } } });
+      await updateEntityMutation({ variables: { id, input: { properties: taskPatchProperties(props) } } });
     },
     [updateEntityMutation],
   );
@@ -284,37 +261,16 @@ export function useTasks(calendar?: CalendarActions) {
     async (input: CreateTaskInput): Promise<PlanningTask | null> => {
       if (!userId) return null;
       try {
-        const abcdeToPriority: Record<ABCDEPriority, TaskPriority> = {
-          A: "high", B: "high", C: "medium", D: "low", E: "low",
-        };
-        const derivedPriority = input.abcdePriority
-          ? abcdeToPriority[input.abcdePriority]
-          : (input.priority ?? "medium");
-
         const { data: res } = await createEntityMutation({
           variables: {
             input: {
               entityType: ENTITY_TYPE,
-              properties: {
-                title: input.title,
-                description: input.description ?? "",
-                status: input.status ?? "todo",
-                priority: derivedPriority,
-                abcdePriority: input.abcdePriority ?? null,
-                lifeArea: input.lifeArea ?? null,
-                dueDate: input.dueDate ?? null,
-                dueTime: input.dueTime ?? null,
-                category: input.category ?? "task",
-                planId: input.planId ?? null,
-                lessonRef: input.lessonRef ?? null,
-                googleEventId: null,
-                userId,
-              },
+              properties: createTaskProperties(input, userId),
             },
           },
         });
 
-        const task = res?.createEntity ? entityToTask(res.createEntity) : null;
+        const task = res?.createEntity ? entityToPlanningTask(res.createEntity) : null;
 
         // Auto-push to Calendar if connected and task has a date
         if (task && task.dueDate && calendar?.connected) {
