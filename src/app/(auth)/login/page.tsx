@@ -10,9 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Brain, Zap, Mail, Lock, Loader2 } from "lucide-react";
+import { Brain, Zap, Mail, Lock, Loader2, Sparkles } from "lucide-react";
 import Image from "next/image";
-import { useUserStore } from "@/stores/userStore";
 import { useLanguage, LangToggle } from "@/lib/i18n";
 
 function LoginContent() {
@@ -20,11 +19,8 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
-  const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const enableGuestMode = useUserStore((state) => state.enableGuestMode);
-  const isGuest = useUserStore((state) => state.isGuest);
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const urlError = searchParams.get("error");
   const { t } = useLanguage();
@@ -38,12 +34,6 @@ function LoginContent() {
       }
     }
   }, [status, session, router, callbackUrl]);
-
-  useEffect(() => {
-    if (isGuest) {
-      router.push("/dashboard");
-    }
-  }, [isGuest, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -89,12 +79,6 @@ function LoginContent() {
       console.error("Sign in error:", err);
       setIsLoading(false);
     }
-  };
-
-  const handleGuestMode = () => {
-    setIsGuestLoading(true);
-    enableGuestMode("estudiante");
-    router.push("/dashboard");
   };
 
   const featureIcons = [Brain, Sparkles, Zap];
@@ -236,32 +220,6 @@ function LoginContent() {
             </TabsContent>
           </Tabs>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">{t.login.orDivider}</span>
-            </div>
-          </div>
-
-          {/* Guest Mode Button */}
-          <Button
-            onClick={handleGuestMode}
-            disabled={isGuestLoading}
-            variant="secondary"
-            className="w-full"
-          >
-            {isGuestLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                {t.login.guestButton}
-              </>
-            )}
-          </Button>
-
           {/* Features */}
           <div className="space-y-3 pt-2">
             {t.login.features.map((feature, index) => {
@@ -289,20 +247,6 @@ function LoginContent() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Info */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="text-center"
-      >
-        <p className="text-xs text-muted-foreground">
-          {t.login.guestInfo1}
-          <br />
-          {t.login.guestInfo2}
-        </p>
-      </motion.div>
     </motion.div>
   );
 }

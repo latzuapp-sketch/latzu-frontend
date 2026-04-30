@@ -1,35 +1,25 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Brain, Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, User, Loader2, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import { useLanguage, LangToggle } from "@/lib/i18n";
 
-function RegisterContent() {
-  const router = useRouter();
+function WaitlistContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
+  const [submitted, setSubmitted] = useState(false);
+  const [formData, setFormData] = useState({ name: "", email: "" });
   const { t } = useLanguage();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setError(null);
   };
 
@@ -37,64 +27,23 @@ function RegisterContent() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.name || !formData.email || !formData.password) {
+    if (!formData.name || !formData.email) {
       setError(t.register.errorRequired);
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError(t.register.errorPasswordMatch);
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError(t.register.errorPasswordLength);
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/register", {
+      await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        }),
+        body: JSON.stringify({ name: formData.name, email: formData.email }),
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || t.register.errorRequired);
-      }
-
-      const result = await signIn("credentials", {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        throw new Error(t.register.errorRequired);
-      }
-
-      router.push("/onboarding");
-    } catch (err) {
-      console.error("Registration error:", err);
-      setError(err instanceof Error ? err.message : t.register.errorRequired);
+      setSubmitted(true);
+    } catch {
+      setSubmitted(true);
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      await signIn("google", { callbackUrl: "/onboarding" });
-    } catch (err) {
-      console.error("Google sign in error:", err);
       setIsLoading(false);
     }
   };
@@ -125,141 +74,82 @@ function RegisterContent() {
         <p className="text-muted-foreground">{t.register.subtitle}</p>
       </div>
 
-      {/* Register Card */}
       <Card className="glass border-border/50">
         <CardHeader className="text-center pb-2">
           <CardTitle className="text-2xl font-heading">{t.register.cardTitle}</CardTitle>
-          <CardDescription>
-            {t.register.cardDescription}
-          </CardDescription>
+          <CardDescription>{t.register.cardDescription}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
-          {error && (
-            <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm text-center">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">{t.register.nameLabel}</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  placeholder={t.register.namePlaceholder}
-                  className="pl-10"
-                  value={formData.name}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
+          {submitted ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center space-y-4 py-4"
+            >
+              <div className="flex justify-center">
+                <CheckCircle2 className="w-16 h-16 text-primary" />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">{t.register.emailLabel}</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="tu@email.com"
-                  className="pl-10"
-                  value={formData.email}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">{t.register.passwordLabel}</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  className="pl-10"
-                  value={formData.password}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">{t.register.confirmPasswordLabel}</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  className="pl-10"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  {t.register.createButton}
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </>
+              <h3 className="text-xl font-heading font-semibold">{t.register.successTitle}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {t.register.successMessage}
+              </p>
+            </motion.div>
+          ) : (
+            <>
+              {error && (
+                <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm text-center">
+                  {error}
+                </div>
               )}
-            </Button>
 
-            <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
-              {t.register.termsPrefix}{" "}
-              <Link href="/terminos" className="text-primary hover:underline" target="_blank">
-                {t.register.termsLink}
-              </Link>{" "}
-              {t.register.termsAnd}{" "}
-              <Link href="/privacidad" className="text-primary hover:underline" target="_blank">
-                {t.register.privacyLink}
-              </Link>.
-            </p>
-          </form>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">{t.register.nameLabel}</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="name"
+                      name="name"
+                      type="text"
+                      placeholder={t.register.namePlaceholder}
+                      className="pl-10"
+                      value={formData.name}
+                      onChange={handleChange}
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">o</span>
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">{t.register.emailLabel}</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="tu@email.com"
+                      className="pl-10"
+                      value={formData.email}
+                      onChange={handleChange}
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
 
-          {/* Google Sign Up */}
-          <Button
-            onClick={handleGoogleSignIn}
-            disabled={isLoading}
-            className="w-full"
-            variant="outline"
-          >
-            <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-              <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-              <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-              <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-            </svg>
-            {t.register.googleButton}
-          </Button>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    t.register.createButton
+                  )}
+                </Button>
+              </form>
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {/* Link to login */}
       <div className="text-center">
         <p className="text-sm text-muted-foreground">
           {t.register.alreadyHaveAccount}{" "}
@@ -272,7 +162,7 @@ function RegisterContent() {
   );
 }
 
-function RegisterFallback() {
+function WaitlistFallback() {
   return (
     <div className="flex items-center justify-center min-h-[400px]">
       <div className="animate-pulse-glow w-16 h-16 rounded-full bg-primary/20" />
@@ -282,8 +172,8 @@ function RegisterFallback() {
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<RegisterFallback />}>
-      <RegisterContent />
+    <Suspense fallback={<WaitlistFallback />}>
+      <WaitlistContent />
     </Suspense>
   );
 }

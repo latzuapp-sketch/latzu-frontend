@@ -95,7 +95,7 @@ function Navbar() {
               <Link href="/login">{t.nav.login}</Link>
             </Button>
             <Button size="sm" className="gap-1.5 hidden md:inline-flex" asChild>
-              <Link href="/login">
+              <Link href="/register">
                 <Sparkles className="w-3.5 h-3.5" />
                 {t.nav.tryFree}
               </Link>
@@ -139,7 +139,7 @@ function Navbar() {
                   <Link href="/login" onClick={() => setMobileOpen(false)}>{t.nav.login}</Link>
                 </Button>
                 <Button size="sm" className="gap-1.5 w-full" asChild>
-                  <Link href="/login" onClick={() => setMobileOpen(false)}>
+                  <Link href="/register" onClick={() => setMobileOpen(false)}>
                     <Sparkles className="w-3.5 h-3.5" />
                     {t.nav.tryFree}
                   </Link>
@@ -254,7 +254,7 @@ function PricingCard({ tier, delay = 0 }: { tier: PricingTier; delay?: number })
         className="w-full gap-2"
         asChild
       >
-        <Link href="/login">
+        <Link href="/register">
           {tier.cta}
           <ArrowRight className="w-4 h-4" />
         </Link>
@@ -429,7 +429,7 @@ export default function HomePage() {
             }}
             asChild
           >
-            <Link href="/login">
+            <Link href="/register">
               <Sparkles className="w-4 h-4" />
               {t.hero.ctaPrimary}
             </Link>
@@ -762,7 +762,7 @@ export default function HomePage() {
                     }}
                     asChild
                   >
-                    <Link href="/login">
+                    <Link href="/register">
                       <Sparkles className="w-4 h-4" />
                       {t.finalCtaSection.ctaPrimary}
                     </Link>
