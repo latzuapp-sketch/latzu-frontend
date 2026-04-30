@@ -12,9 +12,9 @@ import { FileCard } from "@/components/biblioteca/FileCard";
 import { FileDetail } from "@/components/biblioteca/FileDetail";
 import { FileUploadZone } from "@/components/biblioteca/FileUploadZone";
 import { getNodeTypeConfig } from "@/components/biblioteca/NodeTypeConfig";
-import { useKnowledgeNodes, useKnowledgeStats } from "@/hooks/useLibrary";
+import { useKnowledgeNodes, useKnowledgeStats, useLibraryBooks } from "@/hooks/useLibrary";
 import { useLibraryFiles } from "@/hooks/useLibraryFiles";
-import { CURATED_BOOKS, BOOK_CATEGORY_CONFIG } from "@/data/curated-books";
+import { BOOK_CATEGORY_CONFIG } from "@/data/curated-books";
 import type { LibraryBook } from "@/types/library";
 import { cn } from "@/lib/utils";
 import {
@@ -27,6 +27,7 @@ import {
   SlidersHorizontal,
   Upload,
   FileText,
+  RefreshCw,
 } from "lucide-react";
 
 // ─── Tab type ────────────────────────────────────────────────────────────────
@@ -46,7 +47,9 @@ function ReadingsTab() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedBook, setSelectedBook] = useState<LibraryBook | null>(null);
 
-  const filtered = CURATED_BOOKS.filter((b) => {
+  const { books, loading, error } = useLibraryBooks();
+
+  const filtered = books.filter((b) => {
     const matchCat = !activeCategory || b.category === activeCategory;
     const q = search.toLowerCase();
     const matchQ = !q ||
@@ -56,7 +59,7 @@ function ReadingsTab() {
     return matchCat && matchQ;
   });
 
-  const categories = Array.from(new Set(CURATED_BOOKS.map((b) => b.category)));
+  const categories = Array.from(new Set(books.map((b) => b.category)));
 
   return (
     <div className="flex h-full gap-0">
@@ -111,7 +114,17 @@ function ReadingsTab() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          {filtered.length === 0 ? (
+          {loading && books.length === 0 ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <RefreshCw className="w-8 h-8 text-muted-foreground/30 mb-3" />
+              <p className="text-sm font-medium mb-1">Error al cargar libros</p>
+              <p className="text-xs text-muted-foreground">{error}</p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <BookOpen className="w-8 h-8 text-muted-foreground/30 mb-3" />
               <p className="text-sm text-muted-foreground">Sin resultados</p>

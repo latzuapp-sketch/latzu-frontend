@@ -268,6 +268,44 @@ export const GET_KNOWLEDGE_STATS = gql`
   }
 `;
 
+// ─── Library books ────────────────────────────────────────────────────────────
+
+/**
+ * Fetch curated library books from Neo4j.
+ *
+ * Variables: { category?: string, search?: string, limit?: number }
+ */
+export const GET_LIBRARY_BOOKS = gql`
+  query GetLibraryBooks($category: String, $search: String, $limit: Int) {
+    libraryBooks(category: $category, search: $search, limit: $limit) {
+      id
+      bookId
+      title
+      author
+      year
+      category
+      coverGradient
+      pages
+      readMinutes
+      summary
+      overview
+      tags
+      insights
+      chapters {
+        title
+        content
+      }
+      analysis
+      critiques
+      exercises {
+        prompt
+        type
+      }
+      aiContext
+    }
+  }
+`;
+
 // ─── Biblioteca mutations ─────────────────────────────────────────────────────
 
 /**

@@ -16,6 +16,7 @@ import {
   GET_KNOWLEDGE_NODE,
   GET_KNOWLEDGE_NODES,
   GET_KNOWLEDGE_STATS,
+  GET_LIBRARY_BOOKS,
   UPDATE_KNOWLEDGE_NODE,
 } from "@/graphql/ai/operations";
 import type {
@@ -23,7 +24,9 @@ import type {
   KnowledgeNodeDetail,
   KnowledgeNodeList,
   KnowledgeStats,
+  LibraryBookAPI,
 } from "@/graphql/types";
+import type { LibraryBook } from "@/types/library";
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
 
@@ -33,6 +36,51 @@ export interface LibraryFilters {
   sourceRef?: string;
   skip?: number;
   limit?: number;
+}
+
+// ─── useLibraryBooks ──────────────────────────────────────────────────────────
+
+function toLibraryBook(b: LibraryBookAPI): LibraryBook {
+  return {
+    id: b.bookId,
+    title: b.title,
+    author: b.author,
+    year: b.year,
+    category: b.category as LibraryBook["category"],
+    coverGradient: b.coverGradient,
+    pages: b.pages,
+    readMinutes: b.readMinutes,
+    summary: b.summary,
+    overview: b.overview,
+    tags: b.tags,
+    insights: b.insights,
+    chapters: b.chapters,
+    analysis: b.analysis,
+    critiques: b.critiques,
+    exercises: b.exercises,
+    aiContext: b.aiContext,
+  };
+}
+
+export function useLibraryBooks(filters: { category?: string; search?: string } = {}) {
+  const { category, search } = filters;
+
+  const { data, loading, error, refetch } = useQuery<{ libraryBooks: LibraryBookAPI[] }>(
+    GET_LIBRARY_BOOKS,
+    {
+      client: aiClient,
+      variables: {
+        category: category || null,
+        search: search || null,
+        limit: 200,
+      },
+      fetchPolicy: "cache-and-network",
+    }
+  );
+
+  const books: LibraryBook[] = (data?.libraryBooks ?? []).map(toLibraryBook);
+
+  return { books, loading, error: error?.message ?? null, refetch };
 }
 
 // ─── useKnowledgeNodes ────────────────────────────────────────────────────────

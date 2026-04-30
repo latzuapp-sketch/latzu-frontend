@@ -157,6 +157,40 @@ export interface YouTubeResult {
   summary: string;
 }
 
+// ─── Library books (:8001) ────────────────────────────────────────────────────
+
+export interface LibraryBookChapter {
+  title: string;
+  content: string;
+}
+
+export interface LibraryBookExercise {
+  prompt: string;
+  type: "reflection" | "action";
+}
+
+/** A curated book returned by the `libraryBooks` GraphQL query. */
+export interface LibraryBookAPI {
+  id: string;
+  bookId: string;
+  title: string;
+  author: string;
+  year: number;
+  category: string;
+  coverGradient: string;
+  pages: number;
+  readMinutes: number;
+  summary: string;
+  overview: string;
+  tags: string[];
+  insights: string[];
+  chapters: LibraryBookChapter[];
+  analysis: string;
+  critiques: string[];
+  exercises: LibraryBookExercise[];
+  aiContext: string;
+}
+
 // ─── Biblioteca / Knowledge node types (:8001) ───────────────────────────────
 
 /** A single node in the knowledge graph extracted by the AI. */
