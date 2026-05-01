@@ -20,11 +20,11 @@ const translations = {
     },
 
     hero: {
-      badge: "The all-in-one platform for learning and productivity",
-      headline1: "Your space to learn,",
-      headline2: "organize and execute",
+      badge: "Adaptive Intelligence Platform",
+      headline1: "Your second brain.",
+      headline2: "Powered by AI.",
       subtitle:
-        "Notes and knowledge · Tasks and projects · Book library · Adaptive learning — all connected by an AI agent that organizes everything for you.",
+        "A system that learns how you learn, connects what you know, and gets sharper every time you use it.",
       ctaPrimary: "Join the waitlist",
       ctaSecondary: "How it works",
       socialProof: "Free early access · No credit card required",
@@ -79,9 +79,9 @@ const translations = {
 
     replacesSection: {
       badge: "One platform",
-      title: "Everything you already use — all in one place",
+      title: "Every module makes the next one smarter",
       subtitle:
-        "Latzu brings together what 5 separate tools do, and connects them through AI so they actually work together.",
+        "Notes feed your knowledge graph. Your graph improves your study plans. Your plans inform your tasks. Everything compounds — nothing is siloed.",
       items: [
         { label: "Notes & workspace", sublabel: "Knowledge management" },
         { label: "Tasks & projects", sublabel: "Planning & execution" },
@@ -93,48 +93,48 @@ const translations = {
     },
 
     whySection: {
-      badge: "Why it works",
-      title: "When everything is in one place, the AI can see the full picture",
+      badge: "The compound flywheel",
+      title: "The intelligence that compounds",
       subtitle:
-        "The real power isn't any single feature — it's that your notes, tasks, books, and learning all feed into one system that understands you.",
+        "Each session makes Latzu smarter about you. Not just stored data — a living model of how you think, learn, and work.",
       items: [
         {
-          title: "Your knowledge, connected",
+          title: "You chat → it learns your style",
           description:
-            "Notes link to tasks, books connect to study plans, ideas surface as you need them. The graph grows with you.",
+            "Your AI tutor adapts to your pace, your gaps, and your preferred way of understanding. Every conversation makes it more accurate.",
         },
         {
-          title: "Planning that knows what you know",
+          title: "You save a note → the graph connects it",
           description:
-            "Your task board is aware of your learning goals. The agent creates plans based on your actual knowledge gaps.",
+            "Every idea you capture gets linked to what you already know. Concepts from different areas start talking to each other.",
         },
         {
-          title: "Learning that remembers",
+          title: "You complete a task → the plan adapts",
           description:
-            "Spaced repetition and adaptive knowledge tracing ensure nothing slips through the cracks — the system reviews what matters, when it matters.",
+            "Outcomes feed back into your study plan in real time. Behind schedule? It adjusts. Ahead? It accelerates. Never static.",
         },
         {
-          title: "An agent that sees everything",
+          title: "The agent sees all → acts for you",
           description:
-            "Because all your data lives in one place, the AI agent can connect ideas, spot patterns, and proactively organize — something no single-purpose tool can do.",
+            "One agent with a full view of your knowledge, tasks, and goals. It connects ideas you missed, surfaces what's urgent, and organizes what's stale.",
         },
       ],
     },
 
     agentSection: {
       badge: "The Organizer Agent",
-      title: "The intelligence that works when you're not",
+      title: "The agent that works while you work",
       subtitle:
-        "Most tools wait for you to ask. Latzu's agent observes your patterns, connects ideas in the background, and proactively surfaces what matters.",
+        "Most tools are reactive — they wait for you to ask. Latzu's agent is proactive — it watches, connects, and acts on your behalf.",
       points: [
-        "Detects themes and patterns across your notes",
-        "Proposes connections between ideas you haven't seen",
-        "Reorganizes stale content automatically",
+        "Detects patterns across your notes, tasks, and books",
+        "Proposes connections between ideas you didn't see",
+        "Reorganizes stale content before it becomes noise",
         "Maps your life areas: work, learning, projects, goals",
         "Sends focus signals at the right moment — not at random",
       ],
       insight:
-        "The more you use Latzu, the better it understands you — and the less manual organization you need.",
+        "After a few weeks, Latzu knows you better than any app ever has. And it keeps getting better.",
       activityLog: [
         { action: "Connected", detail: "\"React Hooks\" → \"State Management\"", time: "2m ago" },
         { action: "Proposed", detail: "New workspace: \"Frontend Architecture\"", time: "15m ago" },
@@ -145,77 +145,77 @@ const translations = {
 
     librarySection: {
       badge: "Book Library",
-      title: "78 books. AI-enriched. Interactive.",
+      title: "78 books. Not to read. To integrate.",
       subtitle:
-        "Not just summaries you read and forget. Each book comes with chapters, key concepts, exercises, and auto-generated flashcards — and you can ask the AI about any part.",
+        "Every book connects to your knowledge graph. Chat with it, pull flashcards from it, or let the agent recommend a chapter based on what you're learning this week.",
       points: [
-        "AI-enriched summaries per chapter",
-        "Key concepts and actionable exercises",
-        "Auto-generated flashcards for retention",
-        "Chat with any book — ask questions, get examples",
-        "Connect book insights to your personal knowledge graph",
+        "AI-enriched chapters, concepts, and exercises",
+        "Auto-generated flashcards — integrated into your decks",
+        "Chat directly with any book",
+        "Agent links book insights to your existing knowledge",
+        "Curated for students, professionals, and founders",
       ],
     },
 
     featuresSection: {
-      badge: "Features",
-      title1: "Everything you need to",
-      title2: "learn without limits",
+      badge: "What's inside",
+      title1: "Every tool you need.",
+      title2: "All working together.",
       subtitle:
-        "Latzu combines the best of modern AI with proven pedagogical principles to create a unique learning experience.",
+        "Not features bolted together — modules built from the ground up to share intelligence and compound over time.",
       items: [
         {
           title: "Adaptive AI Tutor",
           description:
-            "Your personal learning assistant that adapts its teaching style, remembers your context, and is available 24/7. Listen to any lesson with real-time voice narration powered by Gemini 2.5 Flash TTS.",
+            "Remembers every conversation, knows your weak spots, and adapts its teaching in real time. Explains concepts in multiple ways until you truly understand. Voice narration included.",
         },
         {
-          title: "Knowledge Library",
+          title: "Knowledge Graph",
           description:
-            "Organize concepts, notes, and resources in an interconnected knowledge graph. Never lose an important idea.",
+            "Capture notes, PDFs, YouTube videos, and web pages. Latzu extracts key concepts and builds a graph of connections — including ones you didn't know existed.",
         },
         {
           title: "Smart Planning",
           description:
-            "Create study plans and tasks with AI — or let the agent create them directly from the chat. Sync with Google Calendar and receive personalized reminders.",
+            "Create plans and tasks from chat — or let the agent build them based on your knowledge gaps. Your schedule adapts as you progress, never static.",
         },
         {
           title: "Adaptive Learning Engine",
           description:
-            "Powered by BKT (Bayesian Knowledge Tracing) and Ebbinghaus spaced repetition. Latzu tracks your knowledge score per concept and adjusts the learning path to maximize long-term retention.",
+            "SM-2 spaced repetition + Bayesian Knowledge Tracing. Measures your real knowledge per concept and prioritizes exactly what needs reinforcement — not what feels easy.",
         },
         {
           title: "Learning Analytics",
           description:
-            "Visualize your progress with detailed metrics: study streak, mastered concepts, knowledge score per topic, time invested, and more.",
+            "Know exactly where you stand: study streak, mastered concepts, weak topics, time invested. Clear data on your actual progress, not just activity.",
         },
         {
-          title: "Studio IA",
+          title: "AI Studio",
           description:
-            "Generate flashcards, quizzes, and mind maps from your study materials in seconds. The AI agent also creates tasks and manages workflows directly from the chat.",
+            "Generate flashcards, quizzes, summaries, and mind maps from any source in seconds. The agent manages your workflows and creates tasks directly from chat.",
         },
       ],
     },
 
     howSection: {
       badge: "How it works",
-      title1: "Up and running in",
-      title2: "3 steps",
+      title1: "Built for you in",
+      title2: "minutes",
       steps: [
         {
-          title: "Define your goals",
+          title: "Tell it who you are",
           description:
-            "Tell Latzu what you want to learn, what industry you're in, and what your goals are. In minutes you'll have a personalized platform.",
+            "Set your goals, your field, your current level. Latzu builds a personalized system from day one — not a generic template you have to configure.",
         },
         {
-          title: "Learn with AI",
+          title: "Use it like any app",
           description:
-            "Chat with your tutor, organize your knowledge, create study plans, and receive daily recommendations tailored to your profile.",
+            "Chat, take notes, read books, manage tasks. Every action feeds the system. Every session makes it smarter about you.",
         },
         {
-          title: "Grow faster",
+          title: "Watch it compound",
           description:
-            "Latzu tracks your progress, identifies gaps in your knowledge, and adjusts the learning path to maximize your growth.",
+            "After a few weeks, Latzu knows you better than any app ever has. Your second brain, growing with you — every day.",
         },
       ],
     },
@@ -344,10 +344,10 @@ const translations = {
     },
 
     finalCtaSection: {
-      title1: "Stop starting over.",
-      title2: "Build your mind.",
+      title1: "Start building",
+      title2: "your second brain.",
       subtitle:
-        "Join the first learners who have an AI that truly knows them — one that remembers, organizes, and grows with them every day.",
+        "Join the first users building an AI that truly knows them. The earlier you start, the smarter it gets.",
       ctaPrimary: "Join the waitlist",
       ctaSecondary: "Log in",
       socialProof: "Free early access · No credit card required · HTTPS encrypted",
@@ -438,11 +438,11 @@ const translations = {
     },
 
     hero: {
-      badge: "La plataforma todo en uno para aprendizaje y productividad",
-      headline1: "Tu espacio para aprender,",
-      headline2: "organizar y ejecutar",
+      badge: "Plataforma de Inteligencia Adaptativa",
+      headline1: "Tu segunda mente.",
+      headline2: "Potenciada por IA.",
       subtitle:
-        "Notas y conocimiento · Tareas y proyectos · Biblioteca de libros · Aprendizaje adaptativo — todo conectado por un agente IA que organiza todo por ti.",
+        "Un sistema que aprende cómo aprendes, conecta lo que sabes y mejora cada vez que lo usas.",
       ctaPrimary: "Únete a la lista de espera",
       ctaSecondary: "Cómo funciona",
       socialProof: "Acceso anticipado gratuito · Sin tarjeta de crédito",
@@ -498,9 +498,9 @@ const translations = {
 
     replacesSection: {
       badge: "Una sola plataforma",
-      title: "Todo lo que ya usas — en un solo lugar",
+      title: "Cada módulo hace al siguiente más inteligente",
       subtitle:
-        "Latzu reúne lo que hacen 5 herramientas separadas y las conecta con IA para que realmente trabajen juntas.",
+        "Las notas alimentan tu grafo de conocimiento. El grafo mejora tus planes. Los planes informan tus tareas. Todo se acumula — nada queda en silos.",
       items: [
         { label: "Notas y workspace", sublabel: "Gestión de conocimiento" },
         { label: "Tareas y proyectos", sublabel: "Planificación y ejecución" },
@@ -512,48 +512,48 @@ const translations = {
     },
 
     whySection: {
-      badge: "Por qué funciona",
-      title: "Cuando todo está en un lugar, la IA puede ver el cuadro completo",
+      badge: "El volante compuesto",
+      title: "La inteligencia que se acumula",
       subtitle:
-        "El poder real no está en una función sola — está en que tus notas, tareas, libros y aprendizaje alimentan un mismo sistema que te entiende.",
+        "Cada sesión hace a Latzu más inteligente sobre ti. No solo datos guardados — un modelo vivo de cómo piensas, aprendes y trabajas.",
       items: [
         {
-          title: "Tu conocimiento, conectado",
+          title: "Chateas → aprende tu estilo",
           description:
-            "Las notas se ligan a tareas, los libros conectan con planes de estudio, las ideas aparecen cuando las necesitas. El grafo crece contigo.",
+            "Tu tutor IA se adapta a tu ritmo, tus brechas y tu forma de entender. Cada conversación lo hace más preciso sobre ti.",
         },
         {
-          title: "Planificación que sabe lo que sabes",
+          title: "Guardas una nota → el grafo la conecta",
           description:
-            "Tu tablero de tareas está al tanto de tus metas de aprendizaje. El agente crea planes basados en tus brechas reales de conocimiento.",
+            "Cada idea que capturas se vincula con lo que ya sabes. Conceptos de distintas áreas empiezan a hablarse entre sí.",
         },
         {
-          title: "Aprendizaje que recuerda",
+          title: "Completas una tarea → el plan se ajusta",
           description:
-            "La repetición espaciada y el seguimiento adaptativo aseguran que nada se pierda — el sistema repasa lo importante, cuando importa.",
+            "Los resultados alimentan tu plan en tiempo real. ¿Atrasado? Se ajusta. ¿Adelantado? Acelera. Nunca estático.",
         },
         {
-          title: "Un agente que ve todo",
+          title: "El agente ve todo → actúa por ti",
           description:
-            "Porque todos tus datos viven en un solo lugar, el agente IA puede conectar ideas, detectar patrones y organizarse solo — algo que ninguna herramienta individual puede hacer.",
+            "Un agente con visión completa de tu conocimiento, tus tareas y tus metas. Conecta ideas que perdiste, muestra lo urgente y organiza lo que se acumula.",
         },
       ],
     },
 
     agentSection: {
       badge: "El Agente Organizador",
-      title: "La inteligencia que trabaja cuando tú no",
+      title: "El agente que trabaja mientras tú trabajas",
       subtitle:
-        "La mayoría de herramientas esperan que preguntes. El agente de Latzu observa tus patrones, conecta ideas en segundo plano y te muestra proactivamente lo que importa.",
+        "La mayoría de herramientas son reactivas — esperan que preguntes. El agente de Latzu es proactivo — observa, conecta y actúa en tu nombre.",
       points: [
-        "Detecta temas y patrones en tus notas",
+        "Detecta patrones en tus notas, tareas y libros",
         "Propone conexiones entre ideas que no habías visto",
-        "Reorganiza contenido inactivo automáticamente",
+        "Reorganiza contenido inactivo antes de que se vuelva ruido",
         "Mapea tus áreas de vida: trabajo, aprendizaje, proyectos, metas",
         "Envía señales de foco en el momento adecuado — no al azar",
       ],
       insight:
-        "Cuanto más usas Latzu, mejor te entiende — y menos organización manual necesitas.",
+        "Después de unas semanas, Latzu te conoce mejor que cualquier app. Y sigue mejorando.",
       activityLog: [
         { action: "Conectó", detail: "\"React Hooks\" → \"Gestión de Estado\"", time: "hace 2m" },
         { action: "Propuso", detail: "Nuevo workspace: \"Arquitectura Frontend\"", time: "hace 15m" },
@@ -564,77 +564,77 @@ const translations = {
 
     librarySection: {
       badge: "Biblioteca de Libros",
-      title: "78 libros. Enriquecidos con IA. Interactivos.",
+      title: "78 libros. No para leer. Para integrar.",
       subtitle:
-        "No solo resúmenes que lees y olvidas. Cada libro trae capítulos, conceptos clave, ejercicios y flashcards autogeneradas — y puedes preguntarle a la IA sobre cualquier parte.",
+        "Cada libro se conecta a tu grafo de conocimiento. Chatea con él, extrae flashcards, o deja que el agente recomiende un capítulo según lo que estás aprendiendo esta semana.",
       points: [
-        "Resúmenes enriquecidos por IA por capítulo",
-        "Conceptos clave y ejercicios accionables",
-        "Flashcards autogeneradas para retención",
-        "Chatea con cualquier libro — haz preguntas, obtén ejemplos",
-        "Conecta los aprendizajes a tu grafo de conocimiento personal",
+        "Capítulos, conceptos y ejercicios enriquecidos con IA",
+        "Flashcards autogeneradas — integradas a tus mazos",
+        "Chatea directamente con cualquier libro",
+        "El agente vincula los aprendizajes a tu conocimiento existente",
+        "Curada para estudiantes, profesionales y emprendedores",
       ],
     },
 
     featuresSection: {
-      badge: "Funciones",
-      title1: "Todo lo que necesitas para",
-      title2: "aprender sin límites",
+      badge: "Qué incluye",
+      title1: "Cada herramienta que necesitas.",
+      title2: "Todas trabajando juntas.",
       subtitle:
-        "Latzu combina lo mejor de la IA moderna con principios pedagógicos probados para crear una experiencia de aprendizaje única.",
+        "No funciones ensambladas — módulos construidos desde cero para compartir inteligencia y acumularse con el tiempo.",
       items: [
         {
           title: "Tutor IA Adaptativo",
           description:
-            "Tu asistente personal que adapta su estilo pedagógico, recuerda tu contexto y está disponible 24/7. Escucha cualquier lección con narración de voz en tiempo real impulsada por Gemini 2.5 Flash TTS.",
+            "Recuerda cada conversación, conoce tus puntos débiles y adapta su enseñanza en tiempo real. Explica conceptos de múltiples formas hasta que los entiendas. Narración de voz incluida.",
         },
         {
-          title: "Biblioteca de Conocimiento",
+          title: "Grafo de Conocimiento",
           description:
-            "Organiza conceptos, notas y recursos en un grafo de conocimiento interconectado. Nunca pierdas una idea importante.",
+            "Captura notas, PDFs, videos de YouTube y páginas web. Latzu extrae los conceptos clave y construye un grafo de conexiones — incluyendo las que no sabías que existían.",
         },
         {
           title: "Planificación Inteligente",
           description:
-            "Crea planes de estudio y tareas con IA — o deja que el agente las cree directamente desde el chat. Sincroniza con Google Calendar y recibe recordatorios personalizados.",
+            "Crea planes y tareas desde el chat — o deja que el agente los construya según tus brechas de conocimiento. Tu agenda se adapta a medida que avanzas, nunca estática.",
         },
         {
           title: "Motor de Aprendizaje Adaptativo",
           description:
-            "Impulsado por BKT (Bayesian Knowledge Tracing) y repetición espaciada de Ebbinghaus. Latzu mide tu puntuación de conocimiento por concepto y ajusta el camino de aprendizaje para maximizar la retención a largo plazo.",
+            "Repetición espaciada SM-2 + Bayesian Knowledge Tracing. Mide tu conocimiento real por concepto y prioriza exactamente lo que necesita refuerzo — no lo que se siente fácil.",
         },
         {
           title: "Analytics de Aprendizaje",
           description:
-            "Visualiza tu progreso con métricas detalladas: racha de estudio, conceptos dominados, puntuación de conocimiento por tema, tiempo invertido y más.",
+            "Sabe exactamente dónde estás: racha de estudio, conceptos dominados, temas débiles, tiempo invertido. Datos claros de tu progreso real, no solo actividad.",
         },
         {
           title: "Studio IA",
           description:
-            "Genera flashcards, quizzes y mapas mentales desde tus materiales de estudio en segundos. El agente IA también crea tareas y gestiona flujos de trabajo directamente desde el chat.",
+            "Genera flashcards, quizzes, resúmenes y mapas mentales desde cualquier fuente en segundos. El agente gestiona tus flujos de trabajo y crea tareas directamente desde el chat.",
         },
       ],
     },
 
     howSection: {
       badge: "Cómo funciona",
-      title1: "En marcha en",
-      title2: "3 pasos",
+      title1: "Listo para ti en",
+      title2: "minutos",
       steps: [
         {
-          title: "Define tus objetivos",
+          title: "Cuéntale quién eres",
           description:
-            "Cuéntale a Latzu qué quieres aprender, en qué industria trabajas y cuáles son tus metas. En minutos tendrás una plataforma personalizada.",
+            "Define tus metas, tu área y tu nivel actual. Latzu construye tu sistema personalizado desde el primer día — no una plantilla genérica que tienes que configurar.",
         },
         {
-          title: "Aprende con IA",
+          title: "Úsalo como cualquier app",
           description:
-            "Chatea con tu tutor, organiza tu conocimiento, crea planes de estudio y recibe recomendaciones diarias adaptadas a tu perfil.",
+            "Chatea, toma notas, lee libros, gestiona tareas. Cada acción alimenta el sistema. Cada sesión lo hace más inteligente sobre ti.",
         },
         {
-          title: "Crece más rápido",
+          title: "Observa cómo se acumula",
           description:
-            "Latzu registra tu progreso, identifica brechas en tu conocimiento y ajusta el camino de aprendizaje para maximizar tu crecimiento.",
+            "Después de unas semanas, Latzu te conoce mejor que cualquier app. Tu segunda mente, creciendo contigo — cada día.",
         },
       ],
     },
@@ -763,10 +763,10 @@ const translations = {
     },
 
     finalCtaSection: {
-      title1: "Deja de empezar desde cero.",
-      title2: "Construye tu mente.",
+      title1: "Empieza a construir",
+      title2: "tu segunda mente.",
       subtitle:
-        "Únete a los primeros estudiantes que tienen una IA que realmente los conoce — que recuerda, organiza y crece con ellos cada día.",
+        "Únete a los primeros usuarios construyendo una IA que realmente los conoce. Cuanto antes empieces, más inteligente se vuelve.",
       ctaPrimary: "Únete a la lista de espera",
       ctaSecondary: "Iniciar sesión",
       socialProof: "Acceso anticipado gratuito · Sin tarjeta de crédito · HTTPS cifrado",
