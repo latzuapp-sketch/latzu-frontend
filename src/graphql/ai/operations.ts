@@ -772,3 +772,104 @@ export const TRIGGER_REFLECTION = gql`
     }
   }
 `;
+
+export const TRIGGER_DEEP_REFLECTION = gql`
+  mutation TriggerDeepReflection {
+    triggerDeepReflection {
+      success
+      message
+    }
+  }
+`;
+
+// ─── Focus Signals ────────────────────────────────────────────────────────────
+
+export const GET_FOCUS_SIGNALS = gql`
+  query GetFocusSignals($userId: String!, $status: String, $limit: Int) {
+    focusSignals(userId: $userId, status: $status, limit: $limit) {
+      id
+      message
+      type
+      deliverAt
+      context
+      relatedNodeIds
+      actionPayload
+      status
+    }
+  }
+`;
+
+export const DISMISS_FOCUS_SIGNAL = gql`
+  mutation DismissFocusSignal($signalId: String!) {
+    dismissFocusSignal(signalId: $signalId) {
+      success
+      message
+    }
+  }
+`;
+
+// ─── User Model ───────────────────────────────────────────────────────────────
+
+export const GET_USER_MODEL = gql`
+  query GetUserModel($userId: String!) {
+    userModel(userId: $userId) {
+      userId
+      lifeAreas
+      currentFocus
+      longTermGoals
+      momentumTopics
+      staleAreas
+      blockers
+      behaviorPatterns
+      knowledgeFrontier
+      graphHealth
+      modelVersion
+      lastDeepReflection
+      updatedAt
+    }
+  }
+`;
+
+// ─── Plan Health ──────────────────────────────────────────────────────────────
+
+const PLAN_HEALTH_FIELDS = gql`
+  fragment PlanHealthFields on PlanHealthGQL {
+    planId
+    userId
+    score
+    status
+    totalTasks
+    doneTasks
+    inProgressTasks
+    completionPct
+    daysRemaining
+    projectedCompletion
+    daysSinceActivity
+    riskFactors
+    recommendation
+    updatedAt
+  }
+`;
+
+export const GET_PLAN_HEALTH = gql`
+  ${PLAN_HEALTH_FIELDS}
+  query GetPlanHealth($planId: String!) {
+    planHealth(planId: $planId) { ...PlanHealthFields }
+  }
+`;
+
+export const GET_ALL_PLAN_HEALTH = gql`
+  ${PLAN_HEALTH_FIELDS}
+  query GetAllPlanHealth($userId: String!) {
+    allPlanHealth(userId: $userId) { ...PlanHealthFields }
+  }
+`;
+
+export const REFRESH_PLAN_HEALTH = gql`
+  mutation RefreshPlanHealth($planId: String!) {
+    refreshPlanHealth(planId: $planId) {
+      success
+      message
+    }
+  }
+`;

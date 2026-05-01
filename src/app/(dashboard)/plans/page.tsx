@@ -14,14 +14,17 @@ import {
 import { cn } from "@/lib/utils";
 import { usePlans } from "@/hooks/usePlans";
 import { useTasks } from "@/hooks/usePlanning";
+import { useAllPlanHealth } from "@/hooks/usePlanHealth";
 import { aiClient } from "@/lib/apollo";
 import { SEND_MESSAGE } from "@/graphql/ai/operations";
 import type { ActionPlan, CreatePlanInput, PlanStatus, PlanType } from "@/types/planning";
+import type { PlanHealth, PlanHealthStatus } from "@/graphql/types";
 import {
   Plus, ClipboardList, Target, BookOpen, Zap,
   CheckCircle2, PauseCircle, PlayCircle, X, Loader2, Sparkles,
   CalendarDays, Search, ChevronDown, Circle,
   ArrowUpDown, TrendingUp, Clock, Maximize2,
+  AlertTriangle, AlertCircle, TrendingDown,
 } from "lucide-react";
 import { CreatePlanModal } from "@/components/planning/CreatePlanModal";
 import { AdaptivePlanModal } from "@/components/learning/AdaptivePlanModal";
@@ -47,16 +50,29 @@ const SORT_LABELS: Record<SortKey, string> = {
   progress: "Progreso",
 };
 
+// ─── Health meta ──────────────────────────────────────────────────────────────
+
+const HEALTH_META: Record<PlanHealthStatus, {
+  label: string; color: string; bg: string; barColor: string; Icon: typeof Circle;
+}> = {
+  on_track:  { label: "Al día",    color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", barColor: "bg-emerald-500", Icon: CheckCircle2 },
+  at_risk:   { label: "En riesgo", color: "text-amber-400",   bg: "bg-amber-500/10 border-amber-500/20",    barColor: "bg-amber-500",   Icon: AlertTriangle },
+  derailing: { label: "Descarrilado", color: "text-red-400",  bg: "bg-red-500/10 border-red-500/20",        barColor: "bg-red-500",     Icon: AlertCircle },
+  abandoned: { label: "Abandonado", color: "text-gray-400",   bg: "bg-gray-500/10 border-gray-500/20",      barColor: "bg-gray-500",    Icon: TrendingDown },
+};
+
 // ─── Plan card ────────────────────────────────────────────────────────────────
 
 function PlanCard({
-  plan, taskCount, doneCount, onClick,
+  plan, taskCount, doneCount, onClick, health,
 }: {
   plan: ActionPlan; taskCount: number; doneCount: number; onClick: () => void;
+  health?: PlanHealth | null;
 }) {
   const pct = taskCount === 0 ? 0 : Math.round((doneCount / taskCount) * 100);
   const { label: typeLabel, bg: typeBg, color: typeColor, Icon: TypeIcon } = TYPE_META[plan.type];
   const { dot: statusDot, label: statusLabel } = STATUS_META[plan.status];
+  const healthMeta = health ? HEALTH_META[health.status] : null;
 
   return (
     <motion.div
@@ -75,8 +91,8 @@ function PlanCard({
             <Maximize2 className="w-3.5 h-3.5 text-muted-foreground/50 hover:text-primary transition-colors" />
           </div>
 
-          {/* Type + status */}
-          <div className="flex items-center gap-2 pr-6">
+          {/* Type + status + health */}
+          <div className="flex items-center gap-2 pr-6 flex-wrap">
             <span className={cn("inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border", typeBg, typeColor)}>
               <TypeIcon className="w-2.5 h-2.5" />
               {typeLabel}
@@ -85,6 +101,12 @@ function PlanCard({
               <span className={cn("w-1.5 h-1.5 rounded-full", statusDot)} />
               {statusLabel}
             </span>
+            {healthMeta && health?.status !== "on_track" && (
+              <span className={cn("inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border", healthMeta.bg, healthMeta.color)}>
+                <healthMeta.Icon className="w-2.5 h-2.5" />
+                {healthMeta.label}
+              </span>
+            )}
             {plan.aiGenerated && (
               <span className="flex items-center gap-0.5 text-[10px] text-violet-400 ml-auto">
                 <Sparkles className="w-2.5 h-2.5" />
@@ -113,13 +135,20 @@ function PlanCard({
               </div>
               <div className="h-1 rounded-full bg-muted/50 overflow-hidden">
                 <motion.div
-                  className="h-full rounded-full bg-primary"
+                  className={cn("h-full rounded-full", healthMeta?.barColor ?? "bg-primary")}
                   initial={{ width: 0 }}
                   animate={{ width: `${pct}%` }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
                 />
               </div>
             </div>
+          )}
+
+          {/* Health recommendation */}
+          {health && health.status !== "on_track" && (
+            <p className={cn("text-[10px] leading-snug", healthMeta?.color ?? "text-muted-foreground")}>
+              {health.recommendation}
+            </p>
           )}
 
           {/* Due date */}
@@ -182,6 +211,7 @@ export default function PlansPage() {
 
   const { plans, loading, createPlan } = usePlans();
   const { tasks }                       = useTasks();
+  const { healthByPlanId }              = useAllPlanHealth();
   const [sendMessage]                   = useMutation(SEND_MESSAGE, { client: aiClient });
 
   // Task counts per plan
@@ -422,6 +452,7 @@ export default function PlansPage() {
                     taskCount={counts.total}
                     doneCount={counts.done}
                     onClick={() => router.push(`/plans/${plan.id}`)}
+                    health={healthByPlanId[plan.id] ?? null}
                   />
                 );
               })}

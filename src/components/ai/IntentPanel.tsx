@@ -15,6 +15,14 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
+  GitMerge,
+  Layers,
+  Globe,
+  GitBranch,
+  Flag,
+  Calendar,
+  EyeOff,
+  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,6 +38,15 @@ const INTENT_ICONS: Record<AgentIntentType, React.ElementType> = {
   move_to_workspace: FolderInput,
   surface_connection: Eye,
   archive_stale: Archive,
+  merge_nodes: GitMerge,
+  create_synthesis_node: Layers,
+  create_life_area: Globe,
+  link_to_life_area: Link2,
+  build_hierarchy: GitBranch,
+  update_task_priority: Flag,
+  update_task_due: Calendar,
+  deprecate_node: EyeOff,
+  queue_focus_signal: Bell,
 };
 
 const RISK_COLORS: Record<string, string> = {

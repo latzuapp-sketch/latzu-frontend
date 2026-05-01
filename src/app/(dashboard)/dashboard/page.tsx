@@ -10,6 +10,7 @@ import { UserMemoryCard } from "@/components/ai/UserMemoryCard";
 import { EatTheFrog } from "@/components/dashboard/EatTheFrog";
 import { LifeAreasWidget } from "@/components/dashboard/LifeAreasWidget";
 import { PlansSummaryWidget } from "@/components/dashboard/PlansSummaryWidget";
+import { AgentInsightCard } from "@/components/dashboard/AgentInsightCard";
 import { Button } from "@/components/ui/button";
 import { Sparkles, CalendarDays, Brain, TrendingUp } from "lucide-react";
 import Link from "next/link";
@@ -240,6 +241,10 @@ export default function DashboardPage() {
         {/* ── Right column (1/3) ── */}
         {!isGuest && (
           <div className="space-y-4">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.05 } }}>
+              <AgentInsightCard />
+            </motion.div>
+
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.1 } }}>
               <DailyBriefing />
             </motion.div>

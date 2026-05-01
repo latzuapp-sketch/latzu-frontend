@@ -268,7 +268,16 @@ export type AgentIntentType =
   | "create_workspace"
   | "move_to_workspace"
   | "surface_connection"
-  | "archive_stale";
+  | "archive_stale"
+  | "merge_nodes"
+  | "create_synthesis_node"
+  | "create_life_area"
+  | "link_to_life_area"
+  | "build_hierarchy"
+  | "update_task_priority"
+  | "update_task_due"
+  | "deprecate_node"
+  | "queue_focus_signal";
 
 export type AgentIntentRisk = "low" | "medium" | "high";
 export type AgentIntentStatus = "pending" | "applied" | "dismissed" | "failed";
@@ -299,4 +308,65 @@ export interface RecordInteractionResult {
 export interface IntentActionResult {
   intentId: string;
   success: boolean;
+}
+
+// ─── Smart Organizer types (:8001) ────────────────────────────────────────────
+
+export type FocusSignalType = "reminder" | "insight" | "warning" | "milestone" | "suggestion";
+export type FocusSignalStatus = "pending" | "delivered" | "dismissed" | "snoozed";
+
+export interface FocusSignal {
+  id: string;
+  message: string;
+  type: FocusSignalType;
+  deliverAt: string;
+  context: string | null; // JSON string
+  relatedNodeIds: string[];
+  actionPayload: string | null; // JSON string
+  status: FocusSignalStatus;
+}
+
+export interface UserModel {
+  userId: string;
+  lifeAreas: string;         // JSON: [{name, description, node_ids, strength, last_active}]
+  currentFocus: string;
+  longTermGoals: string;     // JSON array of strings
+  momentumTopics: string;    // JSON array of strings
+  staleAreas: string;        // JSON array of strings
+  blockers: string;          // JSON array of strings
+  behaviorPatterns: string;  // JSON array of strings
+  knowledgeFrontier: string; // JSON array of strings
+  graphHealth: string;       // fragmented | growing | healthy | stale | unknown
+  modelVersion: number;
+  lastDeepReflection: string | null;
+  updatedAt: string | null;
+}
+
+export interface LifeArea {
+  name: string;
+  description: string;
+  confidence: number;
+  lastActive: string | null;
+  nodeCount: number;
+}
+
+// ─── Plan Health types ────────────────────────────────────────────────────────
+
+export type PlanHealthStatus = "on_track" | "at_risk" | "derailing" | "abandoned";
+
+export interface PlanHealth {
+  planId: string;
+  userId: string;
+  score: number;
+  status: PlanHealthStatus;
+  totalTasks: number;
+  doneTasks: number;
+  inProgressTasks: number;
+  completionPct: number;
+  daysRemaining: number | null;
+  projectedCompletion: string | null;
+  daysSinceActivity: number;
+  riskFactors: string[];
+  recommendation: string;
+  updatedAt: string | null;
 }

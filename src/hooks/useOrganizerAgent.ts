@@ -7,11 +7,20 @@ import { aiClient } from "@/lib/apollo";
 import {
   APPROVE_INTENT,
   DISMISS_INTENT,
+  DISMISS_FOCUS_SIGNAL,
   GET_AGENT_INTENTS,
+  GET_FOCUS_SIGNALS,
+  GET_USER_MODEL,
   TRACK_INTERACTION,
   TRIGGER_REFLECTION,
 } from "@/graphql/ai/operations";
-import type { AgentIntent, IntentActionResult } from "@/graphql/types";
+import type {
+  AgentIntent,
+  DeleteResult,
+  FocusSignal,
+  IntentActionResult,
+  UserModel,
+} from "@/graphql/types";
 
 // ─── useAgentIntents ──────────────────────────────────────────────────────────
 
@@ -131,4 +140,76 @@ export function useTrackInteraction() {
   );
 
   return { track };
+}
+
+// ─── useFocusSignals ──────────────────────────────────────────────────────────
+
+export function useFocusSignals(status?: string) {
+  const { data: session } = useSession();
+  const userId = (session?.user as { id?: string })?.id ?? null;
+
+  const { data, loading, error, refetch } = useQuery<{
+    focusSignals: FocusSignal[];
+  }>(GET_FOCUS_SIGNALS, {
+    client: aiClient,
+    variables: { userId, status: status ?? "pending", limit: 10 },
+    skip: !userId,
+    fetchPolicy: "cache-and-network",
+    pollInterval: 60_000,
+  });
+
+  return {
+    signals: data?.focusSignals ?? [],
+    loading,
+    error: error?.message ?? null,
+    refetch,
+  };
+}
+
+// ─── useDismissFocusSignal ────────────────────────────────────────────────────
+
+export function useDismissFocusSignal() {
+  const [dismissMutation, { loading }] = useMutation<{
+    dismissFocusSignal: DeleteResult;
+  }>(DISMISS_FOCUS_SIGNAL, {
+    client: aiClient,
+    refetchQueries: [GET_FOCUS_SIGNALS],
+  });
+
+  const dismiss = useCallback(
+    async (signalId: string): Promise<boolean> => {
+      try {
+        const { data } = await dismissMutation({ variables: { signalId } });
+        return data?.dismissFocusSignal.success ?? false;
+      } catch {
+        return false;
+      }
+    },
+    [dismissMutation]
+  );
+
+  return { dismiss, loading };
+}
+
+// ─── useUserModel ─────────────────────────────────────────────────────────────
+
+export function useUserModel() {
+  const { data: session } = useSession();
+  const userId = (session?.user as { id?: string })?.id ?? null;
+
+  const { data, loading, error } = useQuery<{
+    userModel: UserModel | null;
+  }>(GET_USER_MODEL, {
+    client: aiClient,
+    variables: { userId },
+    skip: !userId,
+    fetchPolicy: "cache-and-network",
+    pollInterval: 300_000, // refresh every 5 min
+  });
+
+  return {
+    userModel: data?.userModel ?? null,
+    loading,
+    error: error?.message ?? null,
+  };
 }

@@ -9,6 +9,16 @@ import { useChatStore } from "@/stores/chatStore";
 import type { InteractionType } from "@/types/events";
 import type { ProactiveSuggestion } from "@/types/chat";
 
+interface FocusSignalPush {
+  id: string;
+  message: string;
+  type: "reminder" | "insight" | "warning" | "milestone" | "suggestion";
+  deliverAt: string;
+  context?: string;
+  relatedNodeIds?: string[];
+  actionPayload?: string;
+}
+
 interface UseWebSocketOptions {
   autoConnect?: boolean;
   onSuggestion?: (suggestion: ProactiveSuggestion) => void;
@@ -57,6 +67,20 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       }
     );
     unsubscribersRef.current.push(unsubSuggestion);
+
+    // Focus signals (pushed by notification poller)
+    const addNotification = useEventStore.getState().addNotification;
+    const unsubSignal = websocket.on<FocusSignalPush>("focus_signal", (signal) => {
+      addNotification({
+        id: signal.id,
+        type: "reminder",
+        title: signal.type.charAt(0).toUpperCase() + signal.type.slice(1),
+        message: signal.message,
+        timestamp: new Date(),
+        read: false,
+      });
+    });
+    unsubscribersRef.current.push(unsubSignal);
 
     // Knowledge updates
     if (options.onKnowledgeUpdate) {

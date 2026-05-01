@@ -16,8 +16,39 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useUserStore, useIsGuest } from "@/stores/userStore";
 import { useEventStore } from "@/stores/eventStore";
+import { useFocusSignals, useDismissFocusSignal } from "@/hooks/useOrganizerAgent";
 import { getTemplate } from "@/config/templates";
-import { Bell, Search, Sparkles, Wifi, WifiOff, User, LogIn, Menu } from "lucide-react";
+import type { FocusSignalType } from "@/graphql/types";
+import {
+  Bell,
+  Search,
+  Sparkles,
+  Wifi,
+  WifiOff,
+  User,
+  LogIn,
+  Menu,
+  AlertTriangle,
+  Trophy,
+  Lightbulb,
+  X,
+} from "lucide-react";
+
+const SIGNAL_ICONS: Record<FocusSignalType, React.ElementType> = {
+  reminder: Bell,
+  insight: Sparkles,
+  warning: AlertTriangle,
+  milestone: Trophy,
+  suggestion: Lightbulb,
+};
+
+const SIGNAL_COLORS: Record<FocusSignalType, string> = {
+  reminder: "text-blue-400",
+  insight: "text-violet-400",
+  warning: "text-amber-400",
+  milestone: "text-emerald-400",
+  suggestion: "text-sky-400",
+};
 
 interface HeaderProps {
   title?: string;
@@ -34,6 +65,12 @@ export function Header({ title, onMenuClick }: HeaderProps) {
   const notifications = useEventStore((state) => state.notifications);
   const unreadCount = useEventStore((state) => state.unreadCount);
   const markNotificationRead = useEventStore((state) => state.markNotificationRead);
+
+  const { signals: focusSignals } = useFocusSignals("pending");
+  const { dismiss: dismissSignal } = useDismissFocusSignal();
+  const now = new Date().toISOString();
+  const dueSignals = focusSignals.filter((s) => s.deliverAt <= now);
+  const totalUnread = unreadCount + dueSignals.length;
 
   const template = getTemplate(profileType || undefined);
   const displayTitle = title || template.dashboardTitle;
@@ -137,9 +174,9 @@ export function Header({ title, onMenuClick }: HeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="w-5 h-5" />
-                {unreadCount > 0 && (
+                {totalUnread > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
-                    {unreadCount > 9 ? "9+" : unreadCount}
+                    {totalUnread > 9 ? "9+" : totalUnread}
                   </span>
                 )}
               </Button>
@@ -147,12 +184,39 @@ export function Header({ title, onMenuClick }: HeaderProps) {
             <DropdownMenuContent align="end" className="w-80">
               <DropdownMenuLabel className="flex items-center justify-between">
                 Notificaciones
-                {unreadCount > 0 && (
-                  <Badge variant="secondary">{unreadCount} nuevas</Badge>
+                {totalUnread > 0 && (
+                  <Badge variant="secondary">{totalUnread} nuevas</Badge>
                 )}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {notifications.length === 0 ? (
+
+              {/* Focus Signals (agent-generated) */}
+              {dueSignals.map((signal) => {
+                const Icon = SIGNAL_ICONS[signal.type] ?? Bell;
+                return (
+                  <DropdownMenuItem
+                    key={signal.id}
+                    className="flex items-start gap-3 p-3 bg-primary/5 cursor-default focus:bg-primary/5"
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${SIGNAL_COLORS[signal.type]}`} />
+                    <span className="flex-1 text-sm leading-snug">{signal.message}</span>
+                    <button
+                      onClick={() => dismissSignal(signal.id)}
+                      className="flex-shrink-0 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </DropdownMenuItem>
+                );
+              })}
+
+              {dueSignals.length > 0 && notifications.length > 0 && (
+                <DropdownMenuSeparator />
+              )}
+
+              {/* Regular system notifications */}
+              {notifications.length === 0 && dueSignals.length === 0 ? (
                 <div className="py-6 text-center text-muted-foreground">
                   <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No hay notificaciones</p>
