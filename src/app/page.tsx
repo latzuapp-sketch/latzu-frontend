@@ -810,9 +810,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Pain ──────────────────────────────────────────────────────────── */}
-      <PainSection section={t.painSection} />
-
       {/* ── Replaces ──────────────────────────────────────────────────────── */}
       <ReplacesSection section={t.replacesSection} />
 
