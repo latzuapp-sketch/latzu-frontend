@@ -13,6 +13,7 @@ import { PlannerAgent } from "@/components/planning/PlannerAgent";
 import { TaskBoard } from "@/components/planning/TaskBoard";
 import { ProjectBoardShell } from "@/components/planning/ProjectBoardShell";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useTrackInteraction } from "@/hooks/useOrganizerAgent";
 import {
   useTasks,
   useCalendarEvents,
@@ -198,6 +199,7 @@ type ViewMode = "calendar" | "list" | "board";
 export default function PlanningPage() {
   const { data: session } = useSession();
   const isMobile = useIsMobile();
+  const { track } = useTrackInteraction();
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
   const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all");
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -272,6 +274,7 @@ export default function PlanningPage() {
       boardId: input.boardId ?? selectedBoard?.id,
     });
     if (task) {
+      track("task.created", { targetId: task.id, targetType: "task" });
       await recordActivity({
         taskId: task.id,
         projectId: task.projectId,
@@ -281,7 +284,7 @@ export default function PlanningPage() {
       });
     }
     setShowTaskForm(false);
-  }, [createTask, recordActivity, selectedBoard?.id, selectedProject?.id]);
+  }, [createTask, recordActivity, selectedBoard?.id, selectedProject?.id, track]);
 
   const handleUpdateTask = useCallback(async (id: string, props: Partial<Omit<PlanningTask, "id" | "createdAt">>) => {
     const actorName = session?.user?.name ?? "Usuario";
@@ -290,7 +293,12 @@ export default function PlanningPage() {
       lastEditedByUserId: session?.user?.id,
       lastEditedByName: actorName,
     });
-  }, [session?.user?.id, session?.user?.name, updateTask]);
+    if (props.status === "done") {
+      track("task.completed", { targetId: id, targetType: "task" });
+    } else {
+      track("task.updated", { targetId: id, targetType: "task" });
+    }
+  }, [session?.user?.id, session?.user?.name, updateTask, track]);
 
   const filteredTasks = useMemo(() => {
     let list = [...boardTasks];

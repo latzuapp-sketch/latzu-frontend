@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { CreatePlanModal } from "@/components/planning/CreatePlanModal";
 import { AdaptivePlanModal } from "@/components/learning/AdaptivePlanModal";
+import { useTrackInteraction } from "@/hooks/useOrganizerAgent";
 
 // ─── Meta ─────────────────────────────────────────────────────────────────────
 
@@ -167,6 +168,7 @@ function StatsStrip({ plans }: { plans: ActionPlan[] }) {
 
 export default function PlansPage() {
   const router = useRouter();
+  const { track } = useTrackInteraction();
 
   const [showCreateModal, setShowCreateModal]     = useState(false);
   const [showAdaptiveModal, setShowAdaptiveModal] = useState(false);
@@ -233,6 +235,7 @@ export default function PlansPage() {
   const handleCreate = useCallback(async (input: CreatePlanInput): Promise<ActionPlan | null> => {
     const plan = await createPlan(input);
     if (!plan) return null;
+    track("plan.created", { targetId: plan.id, targetType: "plan" });
     if (input.generateWithAI) {
       setGeneratingAI(true);
       try {

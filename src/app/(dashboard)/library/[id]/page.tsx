@@ -21,6 +21,7 @@ import {
   useUpdateKnowledgeNode,
   useDeleteKnowledgeNode,
 } from "@/hooks/useLibrary";
+import { useTrackInteraction } from "@/hooks/useOrganizerAgent";
 import {
   ArrowLeft, ArrowRight,
   Link2, Loader2,
@@ -142,16 +143,29 @@ export default function KnowledgeNodePage() {
   const { node, loading } = useKnowledgeNodeDetail(id);
   const { updateNode } = useUpdateKnowledgeNode();
   const { deleteNode, loading: deleting } = useDeleteKnowledgeNode();
+  const { track } = useTrackInteraction();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  useEffect(() => {
+    if (node?.id) {
+      track("knowledge.viewed", { targetId: node.id, targetType: node.type });
+    }
+  }, [node?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = useCallback(async () => {
     const ok = await deleteNode(id);
     if (ok) router.push("/library");
   }, [deleteNode, id, router]);
 
-  const saveName    = useCallback(async (name: string)    => { await updateNode(id, { name }); },    [updateNode, id]);
-  const saveContent = useCallback(async (content: string) => { await updateNode(id, { content }); }, [updateNode, id]);
+  const saveName = useCallback(async (name: string) => {
+    await updateNode(id, { name });
+  }, [updateNode, id]);
+
+  const saveContent = useCallback(async (content: string) => {
+    await updateNode(id, { content });
+    track("knowledge.saved", { targetId: id, targetType: node?.type });
+  }, [updateNode, id, track, node?.type]);
 
   // ── Loading ──
   if (loading && !node) {

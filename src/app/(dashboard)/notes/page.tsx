@@ -11,6 +11,7 @@ import { CREATE_FLASHCARD, DELETE_FLASHCARD } from "@/graphql/ai/operations";
 import { NoteCard } from "@/components/notes/NoteCard";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTrackInteraction } from "@/hooks/useOrganizerAgent";
 import {
   NOTE_COLORS, NOTE_COLOR_SWATCHES, noteColorBg,
   type Flashcard,
@@ -39,6 +40,7 @@ function QuickCreate({
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const { track } = useTrackInteraction();
 
   const [_create] = useMutation(CREATE_FLASHCARD, { client: aiClient });
   const [_delete] = useMutation(DELETE_FLASHCARD, { client: aiClient });
@@ -51,7 +53,7 @@ function QuickCreate({
     await _create({
       variables: { deckId: defaultDeckId, front: front.trim(), back: back.trim() },
     });
-    // Update color/checklist if needed via updateNote — omit for simplicity; backend defaults work
+    track("note.created");
     setFront("");
     setBack("");
     setColor("default");
@@ -216,10 +218,14 @@ export default function NotesPage() {
 
   // Debounce search
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      if (search.trim()) track("search.query");
+    }, 300);
     return () => clearTimeout(t);
-  }, [search]);
+  }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const { track } = useTrackInteraction();
   const { notes, loading, refetch, updateNote } = useAllNotes({
     search: debouncedSearch || undefined,
     includeArchived: showArchived,
@@ -253,7 +259,8 @@ export default function NotesPage() {
       back: updates.back,
       labels: updates.labels,
     });
-  }, [updateNote]);
+    track("note.updated", { targetId: id, targetType: "note" });
+  }, [updateNote, track]);
 
   const handleDelete = useCallback(async (id: string) => {
     await _deleteCard({ variables: { cardId: id } });

@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import type { ChatSession } from "@/graphql/types";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useTrackInteraction } from "@/hooks/useOrganizerAgent";
 import Link from "next/link";
 
 interface ChatContainerProps {
@@ -148,6 +149,7 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
   } = useChat({ sessionId });
 
   const template = getTemplate(profileType ?? undefined);
+  const { track } = useTrackInteraction();
 
   // Detect if the last message is an agent_action (used for status label)
   const lastMessageRole = messages[messages.length - 1]?.role;
@@ -223,6 +225,7 @@ export function ChatContainer({ sessionId, className }: ChatContainerProps) {
   const doSend = () => {
     if (!inputValue.trim() && !attachments.length) return;
     sendMessage(inputValue, true, attachments.map((a) => ({ type: a.type, data: a.data, mimeType: a.mimeType, name: a.name })));
+    track("chat.message");
     setAttachments([]);
   };
 
