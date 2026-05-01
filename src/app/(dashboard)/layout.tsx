@@ -2,11 +2,12 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useCallback, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { QuickCapture } from "@/components/capture/QuickCapture";
+import { CommandPalette } from "@/components/search/CommandPalette";
 import { useUserStore, useSidebarCollapsed, useIsGuest } from "@/stores/userStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { websocket } from "@/lib/websocket";
@@ -21,10 +22,26 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const collapsed = useSidebarCollapsed();
   const isMobile = useIsMobile();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const isGuest = useIsGuest();
   const guestId = useUserStore((state) => state.guestId);
   const setProfileType = useUserStore((state) => state.setProfileType);
   const setTenantId = useUserStore((state) => state.setTenantId);
+
+  const openPalette = useCallback(() => setPaletteOpen(true), []);
+  const closePalette = useCallback(() => setPaletteOpen(false), []);
+
+  // Global Cmd+K / Ctrl+K shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   // Sync session data to store for authenticated users
   useEffect(() => {
@@ -104,7 +121,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         transition={{ duration: 0.2, ease: "easeInOut" }}
         className="min-h-screen"
       >
-        <Header onMenuClick={() => setMobileSidebarOpen(true)} />
+        <Header onMenuClick={() => setMobileSidebarOpen(true)} onSearchClick={openPalette} />
 
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -118,6 +135,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Floating quick capture — only for authenticated users */}
       {!isGuest && <QuickCapture />}
+
+      {/* Global command palette */}
+      <CommandPalette open={paletteOpen} onClose={closePalette} />
     </div>
   );
 }

@@ -53,9 +53,10 @@ const SIGNAL_COLORS: Record<FocusSignalType, string> = {
 interface HeaderProps {
   title?: string;
   onMenuClick?: () => void;
+  onSearchClick?: () => void;
 }
 
-export function Header({ title, onMenuClick }: HeaderProps) {
+export function Header({ title, onMenuClick, onSearchClick }: HeaderProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const profileType = useUserStore((state) => state.profileType);
@@ -152,8 +153,14 @@ export function Header({ title, onMenuClick }: HeaderProps) {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-3">
-          {/* Search (placeholder) */}
-          <Button variant="ghost" size="icon" className="hidden sm:flex">
+          {/* Search — opens command palette */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden sm:flex"
+            onClick={onSearchClick}
+            title="Buscar (⌘K)"
+          >
             <Search className="w-5 h-5" />
           </Button>
 

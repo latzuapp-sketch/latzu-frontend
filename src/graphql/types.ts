@@ -350,6 +350,19 @@ export interface LifeArea {
   nodeCount: number;
 }
 
+// ─── Global search types ─────────────────────────────────────────────────────
+
+export type SearchResultType = "knowledge" | "book" | "note" | "plan" | "chat";
+
+export interface SearchResultItem {
+  id: string;
+  title: string;
+  snippet: string;
+  resultType: SearchResultType;
+  url: string;
+  metadata: string | null; // JSON string
+}
+
 // ─── Plan Health types ────────────────────────────────────────────────────────
 
 export type PlanHealthStatus = "on_track" | "at_risk" | "derailing" | "abandoned";

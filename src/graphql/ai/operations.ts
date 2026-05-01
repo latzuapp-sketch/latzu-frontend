@@ -873,3 +873,18 @@ export const REFRESH_PLAN_HEALTH = gql`
     }
   }
 `;
+
+// ─── Global search ─────────────────────────────────────────────────────────
+
+export const GLOBAL_SEARCH = gql`
+  query GlobalSearch($userId: String!, $query: String!, $limit: Int) {
+    globalSearch(userId: $userId, query: $query, limit: $limit) {
+      id
+      title
+      snippet
+      resultType
+      url
+      metadata
+    }
+  }
+`;
