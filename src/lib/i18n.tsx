@@ -20,11 +20,11 @@ const translations = {
     },
 
     hero: {
-      badge: "Beyond AI chat — a system that truly knows you",
-      headline1: "The intelligence that",
-      headline2: "never starts from zero",
+      badge: "The all-in-one platform for learning and productivity",
+      headline1: "Your space to learn,",
+      headline2: "organize and execute",
       subtitle:
-        "Every session builds on the last. Your goals, your knowledge, your learning gaps — all remembered, connected, and working for you. Not just answering your questions.",
+        "Notes and knowledge · Tasks and projects · Book library · Adaptive learning — all connected by an AI agent that organizes everything for you.",
       ctaPrimary: "Join the waitlist",
       ctaSecondary: "How it works",
       socialProof: "Free early access · No credit card required",
@@ -45,55 +45,78 @@ const translations = {
       { value: "100%", label: "Personalized for you" },
     ],
 
+    moduleStrip: [
+      { label: "Notes & Knowledge" },
+      { label: "Tasks & Projects" },
+      { label: "Book Library" },
+      { label: "Adaptive Learning" },
+      { label: "AI Agent" },
+    ],
+
     painSection: {
       badge: "The real problem",
-      title: "Your current tools are smart. They just don't know you.",
+      title: "5 tools. 5 tabs. No connection between them.",
       subtitle:
-        "You use several powerful tools every day. But each one forgets you the moment you close it.",
+        "You already have everything you need — scattered across apps that don't talk to each other.",
       items: [
         {
-          title: "AI that starts from zero",
+          title: "Constant context switching",
           description:
-            "Every new conversation begins with no memory of your goals, your progress, or what you learned last week. You explain yourself every time.",
+            "Notes in one app, tasks in another, books somewhere else. You spend more time switching than actually doing.",
         },
         {
-          title: "Knowledge that never connects",
+          title: "Knowledge trapped in silos",
           description:
-            "Notes in one place, bookmarks in another, ideas scattered everywhere. Your knowledge exists — but it doesn't think.",
+            "Your notes don't know about your tasks. Your books don't connect to your study plans. Nothing sees the full picture.",
         },
         {
-          title: "Learning that doesn't compound",
+          title: "5 subscriptions, 0 integration",
           description:
-            "You study hard, feel productive, and three weeks later it's gone. Nothing is reviewing what matters, when it matters.",
+            "You pay for multiple tools separately. None of them knows your goals, your progress, or what you learned last week.",
         },
       ],
     },
 
-    whySection: {
-      badge: "The Latzu difference",
-      title: "One system that remembers, connects, and grows with you",
+    replacesSection: {
+      badge: "One platform",
+      title: "Everything you already use — all in one place",
       subtitle:
-        "Latzu isn't one more tool. It's the layer that unifies your learning, your knowledge, and your goals — and actively works to grow them.",
+        "Latzu brings together what 5 separate tools do, and connects them through AI so they actually work together.",
+      items: [
+        { label: "Notes & workspace", sublabel: "Knowledge management" },
+        { label: "Tasks & projects", sublabel: "Planning & execution" },
+        { label: "Book summaries", sublabel: "Curated library of 78 books" },
+        { label: "Adaptive learning", sublabel: "Personalized study paths" },
+        { label: "AI on your knowledge", sublabel: "Agent that connects everything" },
+      ],
+      arrow: "→ Latzu",
+    },
+
+    whySection: {
+      badge: "Why it works",
+      title: "When everything is in one place, the AI can see the full picture",
+      subtitle:
+        "The real power isn't any single feature — it's that your notes, tasks, books, and learning all feed into one system that understands you.",
       items: [
         {
-          title: "Memory that persists",
+          title: "Your knowledge, connected",
           description:
-            "Latzu knows your goals, your style, what you've mastered and where you struggle — across every session, forever.",
+            "Notes link to tasks, books connect to study plans, ideas surface as you need them. The graph grows with you.",
         },
         {
-          title: "Knowledge that self-organizes",
+          title: "Planning that knows what you know",
           description:
-            "An AI agent connects your notes, discovers patterns, and reorganizes your workspace — without you asking.",
+            "Your task board is aware of your learning goals. The agent creates plans based on your actual knowledge gaps.",
         },
         {
-          title: "Learning that compounds",
+          title: "Learning that remembers",
           description:
-            "Spaced repetition and knowledge tracing ensure you retain what you learn. The system gets smarter about you over time.",
+            "Spaced repetition and adaptive knowledge tracing ensure nothing slips through the cracks — the system reviews what matters, when it matters.",
         },
         {
-          title: "Goals that get tracked",
+          title: "An agent that sees everything",
           description:
-            "From study plans to life areas, Latzu maps your priorities and proactively signals what needs attention — before you fall behind.",
+            "Because all your data lives in one place, the AI agent can connect ideas, spot patterns, and proactively organize — something no single-purpose tool can do.",
         },
       ],
     },
@@ -415,11 +438,11 @@ const translations = {
     },
 
     hero: {
-      badge: "Más allá del chat IA — un sistema que realmente te conoce",
-      headline1: "La inteligencia que",
-      headline2: "nunca empieza desde cero",
+      badge: "La plataforma todo en uno para aprendizaje y productividad",
+      headline1: "Tu espacio para aprender,",
+      headline2: "organizar y ejecutar",
       subtitle:
-        "Cada sesión construye sobre la anterior. Tus metas, tu conocimiento, tus brechas de aprendizaje — todo recordado, conectado y trabajando para ti. No solo respondiendo tus preguntas.",
+        "Notas y conocimiento · Tareas y proyectos · Biblioteca de libros · Aprendizaje adaptativo — todo conectado por un agente IA que organiza todo por ti.",
       ctaPrimary: "Únete a la lista de espera",
       ctaSecondary: "Cómo funciona",
       socialProof: "Acceso anticipado gratuito · Sin tarjeta de crédito",
@@ -441,55 +464,78 @@ const translations = {
       { value: "100%", label: "Personalizado para ti" },
     ],
 
+    moduleStrip: [
+      { label: "Notas y Conocimiento" },
+      { label: "Tareas y Proyectos" },
+      { label: "Biblioteca de Libros" },
+      { label: "Aprendizaje Adaptativo" },
+      { label: "Agente IA" },
+    ],
+
     painSection: {
       badge: "El problema real",
-      title: "Tus herramientas actuales son inteligentes. Solo que no te conocen.",
+      title: "5 herramientas. 5 pestañas. Sin conexión entre ellas.",
       subtitle:
-        "Usas varias herramientas poderosas cada día. Pero cada una te olvida en cuanto la cierras.",
+        "Ya tienes todo lo que necesitas — disperso en apps que no se hablan entre sí.",
       items: [
         {
-          title: "IA que empieza desde cero",
+          title: "Cambio de contexto constante",
           description:
-            "Cada conversación nueva comienza sin memoria de tus metas, tu progreso ni lo que aprendiste la semana pasada. Te explicas cada vez.",
+            "Notas en una app, tareas en otra, libros en otra más. Gastas más tiempo cambiando de herramienta que haciendo el trabajo.",
         },
         {
-          title: "Conocimiento que nunca conecta",
+          title: "Conocimiento atrapado en silos",
           description:
-            "Notas en un lugar, marcadores en otro, ideas dispersas en todas partes. Tu conocimiento existe — pero no piensa.",
+            "Tus notas no saben de tus tareas. Tus libros no conectan con tus planes de estudio. Ninguna herramienta ve el cuadro completo.",
         },
         {
-          title: "Aprendizaje que no se acumula",
+          title: "5 suscripciones, 0 integración",
           description:
-            "Estudias duro, te sientes productivo, y tres semanas después se fue. Nada repasa lo importante cuando importa.",
+            "Pagas por varias herramientas por separado. Ninguna conoce tus metas, tu progreso ni lo que aprendiste la semana pasada.",
         },
       ],
     },
 
-    whySection: {
-      badge: "La diferencia Latzu",
-      title: "Un sistema que recuerda, conecta y crece contigo",
+    replacesSection: {
+      badge: "Una sola plataforma",
+      title: "Todo lo que ya usas — en un solo lugar",
       subtitle:
-        "Latzu no es una herramienta más. Es la capa que unifica tu aprendizaje, tu conocimiento y tus metas — y trabaja activamente para hacerlos crecer.",
+        "Latzu reúne lo que hacen 5 herramientas separadas y las conecta con IA para que realmente trabajen juntas.",
+      items: [
+        { label: "Notas y workspace", sublabel: "Gestión de conocimiento" },
+        { label: "Tareas y proyectos", sublabel: "Planificación y ejecución" },
+        { label: "Resúmenes de libros", sublabel: "Biblioteca curada de 78 libros" },
+        { label: "Aprendizaje adaptativo", sublabel: "Rutas de estudio personalizadas" },
+        { label: "IA sobre tu conocimiento", sublabel: "Agente que conecta todo" },
+      ],
+      arrow: "→ Latzu",
+    },
+
+    whySection: {
+      badge: "Por qué funciona",
+      title: "Cuando todo está en un lugar, la IA puede ver el cuadro completo",
+      subtitle:
+        "El poder real no está en una función sola — está en que tus notas, tareas, libros y aprendizaje alimentan un mismo sistema que te entiende.",
       items: [
         {
-          title: "Memoria que persiste",
+          title: "Tu conocimiento, conectado",
           description:
-            "Latzu conoce tus metas, tu estilo, lo que has dominado y dónde te cuesta — a través de cada sesión, para siempre.",
+            "Las notas se ligan a tareas, los libros conectan con planes de estudio, las ideas aparecen cuando las necesitas. El grafo crece contigo.",
         },
         {
-          title: "Conocimiento que se autoorganiza",
+          title: "Planificación que sabe lo que sabes",
           description:
-            "Un agente IA conecta tus notas, descubre patrones y reorganiza tu workspace — sin que tengas que pedirlo.",
+            "Tu tablero de tareas está al tanto de tus metas de aprendizaje. El agente crea planes basados en tus brechas reales de conocimiento.",
         },
         {
-          title: "Aprendizaje que se acumula",
+          title: "Aprendizaje que recuerda",
           description:
-            "La repetición espaciada y el seguimiento de conocimiento aseguran que retengas lo que aprendes. El sistema se vuelve más inteligente sobre ti con el tiempo.",
+            "La repetición espaciada y el seguimiento adaptativo aseguran que nada se pierda — el sistema repasa lo importante, cuando importa.",
         },
         {
-          title: "Metas que se siguen",
+          title: "Un agente que ve todo",
           description:
-            "Desde planes de estudio hasta áreas de vida, Latzu mapea tus prioridades y señala proactivamente qué necesita atención — antes de que te quedes atrás.",
+            "Porque todos tus datos viven en un solo lugar, el agente IA puede conectar ideas, detectar patrones y organizarse solo — algo que ninguna herramienta individual puede hacer.",
         },
       ],
     },
