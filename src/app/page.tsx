@@ -296,7 +296,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 // ─── Module strip ─────────────────────────────────────────────────────────────
 
-function ModuleStrip({ modules }: { modules: { label: string }[] }) {
+function ModuleStrip({ modules }: { modules: readonly { label: string }[] }) {
   return (
     <div className="flex flex-wrap justify-center gap-3 mt-10">
       {modules.map((m, i) => {
@@ -325,7 +325,7 @@ function ModuleStrip({ modules }: { modules: { label: string }[] }) {
 
 // ─── Pain section ─────────────────────────────────────────────────────────────
 
-function PainSection({ section }: { section: { badge: string; title: string; subtitle: string; items: { title: string; description: string }[] } }) {
+function PainSection({ section }: { section: { badge: string; title: string; subtitle: string; items: readonly { title: string; description: string }[] } }) {
   return (
     <section className="py-20 md:py-28" style={{ background: "oklch(0.11 0.02 265 / 0.5)" }}>
       <div className="container mx-auto px-4">
@@ -368,7 +368,7 @@ function ReplacesSection({ section }: {
     badge: string;
     title: string;
     subtitle: string;
-    items: { label: string; sublabel: string }[];
+    items: readonly { label: string; sublabel: string }[];
     arrow: string;
   }
 }) {
@@ -464,7 +464,7 @@ function ReplacesSection({ section }: {
 
 // ─── Why section ──────────────────────────────────────────────────────────────
 
-function WhySection({ section }: { section: { badge: string; title: string; subtitle: string; items: { title: string; description: string }[] } }) {
+function WhySection({ section }: { section: { badge: string; title: string; subtitle: string; items: readonly { title: string; description: string }[] } }) {
   return (
     <section className="py-20 md:py-28 bg-muted/20">
       <div className="container mx-auto px-4">
@@ -511,8 +511,8 @@ function WhySection({ section }: { section: { badge: string; title: string; subt
 function AgentSection({ section }: {
   section: {
     badge: string; title: string; subtitle: string;
-    points: string[]; insight: string;
-    activityLog: { action: string; detail: string; time: string }[];
+    points: readonly string[]; insight: string;
+    activityLog: readonly { action: string; detail: string; time: string }[];
   }
 }) {
   return (
@@ -590,7 +590,7 @@ const BOOK_COVERS = [
   { gradient: "linear-gradient(135deg, oklch(0.60 0.26 340), oklch(0.48 0.26 10))", title: "Mindset" },
 ];
 
-function LibrarySection({ section }: { section: { badge: string; title: string; subtitle: string; points: string[] } }) {
+function LibrarySection({ section }: { section: { badge: string; title: string; subtitle: string; points: readonly string[] } }) {
   return (
     <section className="py-20 md:py-28 bg-muted/20">
       <div className="container mx-auto px-4">
