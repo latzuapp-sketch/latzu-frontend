@@ -4,6 +4,10 @@ export type ProfileType = 'estudiante' | 'aprendiz';
 
 export type LearningStyle = 'visual' | 'auditivo' | 'lectura' | 'kinestesico';
 
+export type PlanningStyle = 'structured' | 'flexible' | 'mixed';
+export type EnergyPeak = 'early_morning' | 'morning' | 'afternoon' | 'night' | 'varies';
+export type WorkPace = 'sprints' | 'steady' | 'streaks';
+
 export interface User {
   id: string;
   email: string;
@@ -49,20 +53,73 @@ export interface LifeAreaGoals {
   growth?: string;
 }
 
+// ─── New deep-profile onboarding data ────────────────────────────────────────
+
 export interface OnboardingData {
   profileType: ProfileType;
-  goals: string[];
-  lifeAreaGoals?: LifeAreaGoals;
-  experience: 'beginner' | 'intermediate' | 'advanced';
-  interests: string[];
-  learningStyle?: LearningStyle;
-  // Student-specific
+
+  // Step 2: Context
   country?: string;
   university?: string;
   career?: string;
   semester?: string;
-  // Aprendiz-specific
   studyFocus?: string;
-  // WhatsApp
   phoneNumber?: string;
+
+  // Step 3: Why are you here
+  motivations: string[];
+
+  // Step 4: What are you juggling
+  activeAreas: string[];
+
+  // Step 5: Personality
+  planningStyle?: string;
+  energyPeak?: string;
+  feedbackStyle?: string;
+  workPace?: string;
+  mainBlocker?: string;
+  mainMotivator?: string;
+  goalRelationship?: string;
+  whenBlocked?: string;
+  dailyTime?: string;
+
+  // Step 6: AI style
+  aiPersonality?: string[];
+
+  // Step 7: 90-day vision (area → level key)
+  vision90?: Record<string, string>;
+
+  // Legacy / backward compat
+  goals?: string[];
+  interests?: string[];
+  experience?: string;
+  learningStyle?: LearningStyle;
+  lifeAreaGoals?: LifeAreaGoals;
+}
+
+// ─── Onboarding preview types ─────────────────────────────────────────────────
+
+export interface ProposedPage {
+  title: string;
+  description: string;
+  icon: string;
+}
+
+export interface ProposedWorkspace {
+  title: string;
+  icon: string;
+  description: string;
+  pages: ProposedPage[];
+}
+
+export interface ProposedTask {
+  title: string;
+  area: string;
+}
+
+export interface OnboardingPreview {
+  personalityBadges: string[];
+  workspaces: ProposedWorkspace[];
+  initialTasks: ProposedTask[];
+  summary: string;
 }

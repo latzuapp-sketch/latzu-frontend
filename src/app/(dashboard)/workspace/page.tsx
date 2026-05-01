@@ -9,6 +9,7 @@ import { useWorkspaces } from "@/hooks/useWorkspace";
 import {
   Plus, Layers, Loader2, X, CalendarDays, Trash2, AlertTriangle,
 } from "lucide-react";
+import { WorkspaceAgent } from "@/components/workspace/WorkspaceAgent";
 
 // ─── Emoji picker ─────────────────────────────────────────────────────────────
 
@@ -258,13 +259,13 @@ export default function WorkspacePage() {
           </div>
         </div>
 
-        <Button
-          onClick={() => setShowCreate(true)}
-          className="gap-1.5"
-        >
-          <Plus className="w-4 h-4" />
-          Nueva área
-        </Button>
+        <div className="flex items-center gap-2">
+          <WorkspaceAgent onOrganized={() => {}} />
+          <Button onClick={() => setShowCreate(true)} className="gap-1.5">
+            <Plus className="w-4 h-4" />
+            Nueva área
+          </Button>
+        </div>
       </div>
 
       {/* Loading */}

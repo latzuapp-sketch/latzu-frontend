@@ -888,3 +888,62 @@ export const GLOBAL_SEARCH = gql`
     }
   }
 `;
+
+// ─── Onboarding preview ────────────────────────────────────────────────────
+
+export const GENERATE_ONBOARDING_PREVIEW = gql`
+  mutation GenerateOnboardingPreview($input: OnboardingPreviewInput!) {
+    generateOnboardingPreview(input: $input) {
+      personalityBadges
+      summary
+      workspaces {
+        title
+        icon
+        description
+        pages {
+          title
+          description
+          icon
+        }
+      }
+      initialTasks {
+        title
+        area
+      }
+    }
+  }
+`;
+
+// ─── Workspace organizer ───────────────────────────────────────────────────
+
+export const GET_WORKSPACE_SUGGESTIONS = gql`
+  mutation GetWorkspaceSuggestions {
+    getWorkspaceSuggestions {
+      id
+      type
+      title
+      description
+      affectedIds
+    }
+  }
+`;
+
+export const ORGANIZE_WORKSPACE_INSTRUCTION = gql`
+  mutation OrganizeWorkspaceInstruction($instruction: String!) {
+    organizeWorkspaceInstruction(instruction: $instruction) {
+      success
+      actionsTaken
+      message
+    }
+  }
+`;
+
+export const APPLY_WORKSPACE_SUGGESTION = gql`
+  mutation ApplyWorkspaceSuggestion($suggestionId: String!, $suggestionData: String!) {
+    applyWorkspaceSuggestion(suggestionId: $suggestionId, suggestionData: $suggestionData) {
+      success
+      actionsTaken
+      message
+    }
+  }
+`;
