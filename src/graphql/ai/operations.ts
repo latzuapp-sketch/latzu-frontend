@@ -947,3 +947,32 @@ export const APPLY_WORKSPACE_SUGGESTION = gql`
     }
   }
 `;
+
+// ─── Agent Network ────────────────────────────────────────────────────────────
+
+export const TRIGGER_AGENT_NETWORK = gql`
+  mutation TriggerAgentNetwork {
+    triggerAgentNetwork {
+      success
+      message
+    }
+  }
+`;
+
+export const GET_AGENT_NETWORK_STATUS = gql`
+  query GetAgentNetworkStatus($userId: String!) {
+    agentNetworkStatus(userId: $userId) {
+      agents {
+        agentName
+        insights
+        recommendations
+        metadata
+        updatedAt
+      }
+      lastDeepReflection
+      graphHealth
+      totalIntentsPending
+      totalSignalsPending
+    }
+  }
+`;
