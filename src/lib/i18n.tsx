@@ -143,6 +143,30 @@ const translations = {
       ],
     },
 
+    integrationsSection: {
+      badge: "Proactive Integrations",
+      title: "Latzu lives where you already work.",
+      subtitle:
+        "Connect your tools once. The agent reads your calendar, drives, and chats — then proactively organizes and reminds you, without you having to ask.",
+      integrations: [
+        { name: "WhatsApp", color: "oklch(0.65 0.22 145)", desc: "Morning briefings & reminders" },
+        { name: "Google Calendar", color: "oklch(0.68 0.24 268)", desc: "Reads your schedule, blocks focus time" },
+        { name: "Google Drive", color: "oklch(0.75 0.22 60)", desc: "Indexes your docs into the knowledge graph" },
+        { name: "YouTube", color: "oklch(0.65 0.25 25)", desc: "Extract concepts from any video" },
+        { name: "Web & PDF", color: "oklch(0.75 0.22 200)", desc: "Clip any page or document" },
+      ],
+      moreLabel: "+ more coming",
+      chat: {
+        agentName: "Latzu",
+        time: "7:58 AM",
+        messages: [
+          { from: "agent", text: "Good morning! You have an exam on Thursday. Based on your weak spots, I prepared a 20-min review on React Hooks. Want to start now?" },
+          { from: "user", text: "Yes, send it!" },
+          { from: "agent", text: "Done. I also found 2 chapters from \"The Pragmatic Programmer\" that connect directly to what you're studying. Added to your queue." },
+        ],
+      },
+    },
+
     librarySection: {
       badge: "Book Library",
       title: "78 books. Not to read. To integrate.",
@@ -560,6 +584,30 @@ const translations = {
         { action: "Señal", detail: "Repasa \"OSPF\" — 7 días sin verlo", time: "hace 1h" },
         { action: "Archivó", detail: "3 notas inactivas de hace 3 meses", time: "hace 3h" },
       ],
+    },
+
+    integrationsSection: {
+      badge: "Integraciones Proactivas",
+      title: "Latzu vive donde ya trabajas.",
+      subtitle:
+        "Conecta tus herramientas una sola vez. El agente lee tu calendario, drives y chats — y te organiza y recuerda proactivamente, sin que tengas que pedírselo.",
+      integrations: [
+        { name: "WhatsApp", color: "oklch(0.65 0.22 145)", desc: "Resúmenes matutinos y recordatorios" },
+        { name: "Google Calendar", color: "oklch(0.68 0.24 268)", desc: "Lee tu agenda y bloquea tiempo de enfoque" },
+        { name: "Google Drive", color: "oklch(0.75 0.22 60)", desc: "Indexa tus documentos al grafo de conocimiento" },
+        { name: "YouTube", color: "oklch(0.65 0.25 25)", desc: "Extrae conceptos de cualquier video" },
+        { name: "Web & PDF", color: "oklch(0.75 0.22 200)", desc: "Recorta cualquier página o documento" },
+      ],
+      moreLabel: "+ más próximamente",
+      chat: {
+        agentName: "Latzu",
+        time: "7:58 AM",
+        messages: [
+          { from: "agent", text: "¡Buenos días! Tienes un examen el jueves. Según tus puntos débiles, preparé un repaso de 20 min sobre React Hooks. ¿Empezamos?" },
+          { from: "user", text: "¡Sí, mándalo!" },
+          { from: "agent", text: "Listo. También encontré 2 capítulos de \"El Programador Pragmático\" que conectan directo con lo que estudias. Los agregué a tu cola." },
+        ],
+      },
     },
 
     librarySection: {

@@ -9,7 +9,7 @@ import {
   Network, CalendarDays, BarChart3, Check, ChevronDown, Shield,
   GraduationCap, Target, Star, Rocket, PlayCircle, Menu, X,
   FileText, ListTodo, BookOpen, Bot, TrendingUp,
-  MessageSquareOff, Layers, RefreshCw,
+  MessageSquareOff, Layers, RefreshCw, MessageCircle, Youtube, Globe, HardDrive, Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -580,6 +580,115 @@ function AgentSection({ section }: {
   );
 }
 
+// ─── Integrations section ─────────────────────────────────────────────────────
+
+const INTEGRATION_ICONS: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
+  WhatsApp: MessageCircle,
+  "Google Calendar": CalendarDays,
+  "Google Drive": HardDrive,
+  YouTube: Youtube,
+  "Web & PDF": Globe,
+};
+
+type IntegrationItem = { name: string; color: string; desc: string };
+type ChatMessage = { from: string; text: string };
+
+function IntegrationsSection({ section }: {
+  section: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    integrations: readonly IntegrationItem[];
+    moreLabel: string;
+    chat: { agentName: string; time: string; messages: readonly ChatMessage[] };
+  };
+}) {
+  return (
+    <section className="py-20 md:py-28">
+      <div className="container mx-auto px-4">
+        <FadeIn className="text-center mb-14 max-w-2xl mx-auto">
+          <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">{section.badge}</p>
+          <h2 className="text-3xl md:text-5xl font-heading font-bold mb-4">{section.title}</h2>
+          <p className="text-muted-foreground text-lg leading-relaxed">{section.subtitle}</p>
+        </FadeIn>
+
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
+          {/* Left: integration badges */}
+          <FadeIn delay={0.1}>
+            <div className="flex flex-col gap-3">
+              {section.integrations.map((item) => {
+                const Icon = INTEGRATION_ICONS[item.name] ?? Globe;
+                return (
+                  <div
+                    key={item.name}
+                    className="flex items-center gap-4 rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm px-4 py-3 hover:border-border transition-colors"
+                  >
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ background: `${item.color} / 0.15`.replace("/ 0.15", ""), backgroundColor: `color-mix(in oklch, ${item.color} 15%, transparent)` }}
+                    >
+                      <Icon className="w-5 h-5" style={{ color: item.color }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-foreground">{item.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
+                    </div>
+                    <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                  </div>
+                );
+              })}
+              <button className="flex items-center gap-2 rounded-xl border border-dashed border-border/50 px-4 py-3 text-sm text-muted-foreground hover:border-border/80 hover:text-foreground transition-colors">
+                <Plus className="w-4 h-4" />
+                {section.moreLabel}
+              </button>
+            </div>
+          </FadeIn>
+
+          {/* Right: WhatsApp mock chat */}
+          <FadeIn delay={0.2}>
+            <div className="rounded-2xl overflow-hidden border border-border/60 shadow-xl max-w-sm mx-auto">
+              {/* WhatsApp header */}
+              <div className="flex items-center gap-3 px-4 py-3" style={{ background: "oklch(0.40 0.18 145)" }}>
+                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
+                  <Brain className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">{section.chat.agentName}</p>
+                  <p className="text-xs text-white/70">{section.chat.time}</p>
+                </div>
+                <div className="ml-auto flex items-center gap-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-300" />
+                  <span className="text-xs text-white/70">online</span>
+                </div>
+              </div>
+
+              {/* Chat body */}
+              <div className="flex flex-col gap-3 p-4 bg-[oklch(0.97_0.005_75)]" style={{ minHeight: "220px" }}>
+                {section.chat.messages.map((msg, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 6 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.3 + i * 0.25 }}
+                    className={cn("max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed", {
+                      "bg-white text-foreground self-start shadow-sm rounded-tl-sm": msg.from === "agent",
+                      "self-end rounded-tr-sm text-white": msg.from === "user",
+                    })}
+                    style={msg.from === "user" ? { background: "oklch(0.40 0.18 145)" } : {}}
+                  >
+                    {msg.text}
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── Library section ──────────────────────────────────────────────────────────
 
 const BOOK_COVERS = [
@@ -854,6 +963,9 @@ export default function HomePage() {
 
       {/* ── Agent ─────────────────────────────────────────────────────────── */}
       <AgentSection section={t.agentSection} />
+
+      {/* ── Integrations ──────────────────────────────────────────────────── */}
+      <IntegrationsSection section={t.integrationsSection} />
 
       {/* ── Library ───────────────────────────────────────────────────────── */}
       <LibrarySection section={t.librarySection} />
