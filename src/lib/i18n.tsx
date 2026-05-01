@@ -686,6 +686,10 @@ const translations = {
       title: "Preguntas frecuentes",
       items: [
         {
+          q: "¿En qué se diferencia Latzu de los asistentes IA de propósito general?",
+          a: "Los asistentes de IA son poderosos pero empiezan desde cero cada sesión — no conocen tus metas, tu progreso ni lo que ya aprendiste. Latzu construye un modelo persistente de ti: tus brechas de conocimiento, tu estilo de aprendizaje, tus áreas de vida. Y a diferencia de un chatbot, actúa proactivamente — organizando tu workspace, sugiriendo repasos y haciendo seguimiento de tus planes — sin esperar a que preguntes.",
+        },
+        {
           q: "¿Necesito tarjeta de crédito para el periodo de prueba?",
           a: "No. El plan Free de 7 días no requiere tarjeta de crédito. Solo crea tu cuenta y empieza a aprender de inmediato.",
         },
@@ -713,10 +717,10 @@ const translations = {
     },
 
     finalCtaSection: {
-      title1: "Tu mejor versión",
-      title2: "empieza hoy",
+      title1: "Deja de empezar desde cero.",
+      title2: "Construye tu mente.",
       subtitle:
-        "Únete a la primera ola de estudiantes que aprenderán con inteligencia adaptativa. Obtén acceso anticipado antes de que abramos a todos.",
+        "Únete a los primeros estudiantes que tienen una IA que realmente los conoce — que recuerda, organiza y crece con ellos cada día.",
       ctaPrimary: "Únete a la lista de espera",
       ctaSecondary: "Iniciar sesión",
       socialProof: "Acceso anticipado gratuito · Sin tarjeta de crédito · HTTPS cifrado",
