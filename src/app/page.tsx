@@ -21,16 +21,16 @@ import { useLanguage, LangToggle } from "@/lib/i18n";
 // ─── Feature / step icon meta ─────────────────────────────────────────────────
 
 const FEATURE_META = [
-  { icon: MessageSquare, color: "oklch(0.72 0.29 280)", bg: "oklch(0.72 0.29 280 / 0.12)", border: "oklch(0.72 0.29 280 / 0.25)" },
+  { icon: MessageSquare, color: "oklch(0.68 0.24 268)", bg: "oklch(0.68 0.24 268 / 0.12)", border: "oklch(0.68 0.24 268 / 0.25)" },
   { icon: Network,       color: "oklch(0.78 0.27 340)", bg: "oklch(0.78 0.27 340 / 0.12)", border: "oklch(0.78 0.27 340 / 0.25)" },
   { icon: CalendarDays,  color: "oklch(0.75 0.22 200)", bg: "oklch(0.75 0.22 200 / 0.12)", border: "oklch(0.75 0.22 200 / 0.25)" },
-  { icon: Brain,         color: "oklch(0.72 0.29 280)", bg: "oklch(0.72 0.29 280 / 0.12)", border: "oklch(0.72 0.29 280 / 0.25)" },
+  { icon: Brain,         color: "oklch(0.68 0.24 268)", bg: "oklch(0.68 0.24 268 / 0.12)", border: "oklch(0.68 0.24 268 / 0.25)" },
   { icon: BarChart3,     color: "oklch(0.70 0.22 145)", bg: "oklch(0.70 0.22 145 / 0.12)", border: "oklch(0.70 0.22 145 / 0.25)" },
   { icon: Zap,           color: "oklch(0.78 0.22 60)",  bg: "oklch(0.78 0.22 60 / 0.12)",  border: "oklch(0.78 0.22 60 / 0.25)"  },
 ];
 
 const STEP_META = [
-  { icon: Target,        color: "oklch(0.72 0.29 280)", bg: "oklch(0.72 0.29 280 / 0.15)", badge: "oklch(0.52 0.27 280)" },
+  { icon: Target,        color: "oklch(0.68 0.24 268)", bg: "oklch(0.68 0.24 268 / 0.15)", badge: "oklch(0.48 0.22 268)" },
   { icon: MessageSquare, color: "oklch(0.78 0.27 340)", bg: "oklch(0.78 0.27 340 / 0.15)", badge: "oklch(0.62 0.26 340)" },
   { icon: Rocket,        color: "oklch(0.75 0.22 200)", bg: "oklch(0.75 0.22 200 / 0.15)", badge: "oklch(0.55 0.22 200)" },
 ];
@@ -43,7 +43,7 @@ const STAT_COLORS = [
 ];
 
 const MODULE_META = [
-  { icon: FileText,    color: "oklch(0.72 0.29 280)", bg: "oklch(0.72 0.29 280 / 0.12)", border: "oklch(0.72 0.29 280 / 0.25)" },
+  { icon: FileText,    color: "oklch(0.68 0.24 268)", bg: "oklch(0.68 0.24 268 / 0.12)", border: "oklch(0.68 0.24 268 / 0.25)" },
   { icon: ListTodo,    color: "oklch(0.78 0.27 340)", bg: "oklch(0.78 0.27 340 / 0.12)", border: "oklch(0.78 0.27 340 / 0.25)" },
   { icon: BookOpen,    color: "oklch(0.70 0.22 145)", bg: "oklch(0.70 0.22 145 / 0.12)", border: "oklch(0.70 0.22 145 / 0.25)" },
   { icon: GraduationCap, color: "oklch(0.75 0.22 200)", bg: "oklch(0.75 0.22 200 / 0.12)", border: "oklch(0.75 0.22 200 / 0.25)" },
@@ -51,7 +51,7 @@ const MODULE_META = [
 ];
 
 const WHY_META = [
-  { icon: Network,       color: "oklch(0.72 0.29 280)", bg: "oklch(0.72 0.29 280 / 0.12)", border: "oklch(0.72 0.29 280 / 0.25)" },
+  { icon: Network,       color: "oklch(0.68 0.24 268)", bg: "oklch(0.68 0.24 268 / 0.12)", border: "oklch(0.68 0.24 268 / 0.25)" },
   { icon: ListTodo,      color: "oklch(0.78 0.27 340)", bg: "oklch(0.78 0.27 340 / 0.12)", border: "oklch(0.78 0.27 340 / 0.25)" },
   { icon: TrendingUp,    color: "oklch(0.75 0.22 200)", bg: "oklch(0.75 0.22 200 / 0.12)", border: "oklch(0.75 0.22 200 / 0.25)" },
   { icon: Bot,           color: "oklch(0.70 0.22 145)", bg: "oklch(0.70 0.22 145 / 0.12)", border: "oklch(0.70 0.22 145 / 0.25)" },
@@ -225,8 +225,8 @@ function PricingCard({ tier, delay = 0 }: { tier: PricingTier; delay?: number })
         tier.featured ? "border-primary/50 shadow-2xl" : "glass border-border/50"
       )}
       style={tier.featured ? {
-        background: "linear-gradient(160deg, oklch(0.52 0.27 280 / 0.18) 0%, oklch(0.65 0.27 310 / 0.10) 50%, oklch(0.62 0.26 340 / 0.12) 100%)",
-        boxShadow: "0 20px 60px oklch(0.52 0.27 280 / 0.25), 0 0 0 1px oklch(0.72 0.29 280 / 0.25)",
+        background: "linear-gradient(160deg, oklch(0.48 0.22 268 / 0.18) 0%, oklch(0.62 0.22 300 / 0.10) 50%, oklch(0.62 0.26 340 / 0.12) 100%)",
+        boxShadow: "0 20px 60px oklch(0.48 0.22 268 / 0.25), 0 0 0 1px oklch(0.68 0.24 268 / 0.25)",
       } : undefined}
     >
       {tier.badge && (
@@ -344,7 +344,7 @@ function PainSection({ section }: { section: { badge: string; title: string; sub
               <FadeIn key={item.title} delay={i * 0.1}>
                 <div
                   className="rounded-2xl p-6 h-full border relative overflow-hidden"
-                  style={{ background: "oklch(0.13 0.025 265 / 0.4)", borderColor: meta.border }}
+                  style={{ background: "oklch(0.13 0.020 268 / 0.4)", borderColor: meta.border }}
                 >
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: meta.bg, border: `1px solid ${meta.border}` }}>
                     <meta.icon className="w-5 h-5" style={{ color: meta.color }} />
@@ -416,8 +416,8 @@ function ReplacesSection({ section }: {
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold"
                 style={{
-                  background: "linear-gradient(135deg, var(--primary), oklch(0.65 0.28 310), var(--accent))",
-                  boxShadow: "0 8px 30px oklch(0.52 0.27 280 / 0.40)",
+                  background: "linear-gradient(135deg, var(--primary), oklch(0.62 0.22 300), var(--accent))",
+                  boxShadow: "0 8px 30px oklch(0.48 0.22 268 / 0.40)",
                 }}
               >
                 <ArrowRight className="w-6 h-6 text-white" />
@@ -431,9 +431,9 @@ function ReplacesSection({ section }: {
             <div
               className="rounded-2xl p-6 h-full"
               style={{
-                background: "linear-gradient(160deg, oklch(0.52 0.27 280 / 0.18) 0%, oklch(0.65 0.27 310 / 0.10) 50%, oklch(0.62 0.26 340 / 0.12) 100%)",
-                border: "1px solid oklch(0.72 0.29 280 / 0.30)",
-                boxShadow: "0 20px 60px oklch(0.52 0.27 280 / 0.20)",
+                background: "linear-gradient(160deg, oklch(0.48 0.22 268 / 0.18) 0%, oklch(0.62 0.22 300 / 0.10) 50%, oklch(0.62 0.26 340 / 0.12) 100%)",
+                border: "1px solid oklch(0.68 0.24 268 / 0.30)",
+                boxShadow: "0 20px 60px oklch(0.48 0.22 268 / 0.20)",
               }}
             >
               <div className="flex items-center gap-3 mb-5">
@@ -484,7 +484,7 @@ function WhySection({ section }: { section: { badge: string; title: string; subt
                 <div
                   className="rounded-2xl p-6 h-full flex gap-4"
                   style={{
-                    background: "oklch(0.13 0.025 265 / 0.5)",
+                    background: "oklch(0.13 0.020 268 / 0.5)",
                     border: `1px solid ${meta.border}`,
                     backdropFilter: "blur(12px)",
                   }}
@@ -533,7 +533,7 @@ function AgentSection({ section }: {
             </ul>
             <div
               className="rounded-xl px-4 py-3 text-sm text-foreground/70 italic"
-              style={{ background: "oklch(0.72 0.29 280 / 0.08)", border: "1px solid oklch(0.72 0.29 280 / 0.20)" }}
+              style={{ background: "oklch(0.68 0.24 268 / 0.08)", border: "1px solid oklch(0.68 0.24 268 / 0.20)" }}
             >
               {section.insight}
             </div>
@@ -543,9 +543,9 @@ function AgentSection({ section }: {
             <div
               className="rounded-2xl p-6 space-y-3"
               style={{
-                background: "oklch(0.13 0.025 265 / 0.8)",
-                border: "1px solid oklch(0.72 0.29 280 / 0.25)",
-                boxShadow: "0 20px 60px oklch(0.52 0.27 280 / 0.20)",
+                background: "oklch(0.13 0.020 268 / 0.8)",
+                border: "1px solid oklch(0.68 0.24 268 / 0.25)",
+                boxShadow: "0 20px 60px oklch(0.48 0.22 268 / 0.20)",
               }}
             >
               <div className="flex items-center gap-2 mb-5">
@@ -565,7 +565,7 @@ function AgentSection({ section }: {
                 <div
                   key={item.detail}
                   className="flex items-start gap-3 rounded-xl px-3 py-2.5 text-xs"
-                  style={{ background: "oklch(0.72 0.29 280 / 0.06)", border: "1px solid oklch(0.72 0.29 280 / 0.12)" }}
+                  style={{ background: "oklch(0.68 0.24 268 / 0.06)", border: "1px solid oklch(0.68 0.24 268 / 0.12)" }}
                 >
                   <span className="text-primary font-semibold shrink-0 mt-0.5">{item.action}</span>
                   <span className="text-foreground/70 flex-1">{item.detail}</span>
@@ -616,7 +616,7 @@ function LibrarySection({ section }: { section: { badge: string; title: string; 
                 viewport={{ once: true }}
                 transition={{ delay: 0.5 }}
                 className="aspect-[2/3] rounded-xl flex items-center justify-center border-2 border-dashed border-primary/30"
-                style={{ background: "oklch(0.72 0.29 280 / 0.08)" }}
+                style={{ background: "oklch(0.68 0.24 268 / 0.08)" }}
               >
                 <div className="text-center">
                   <p className="text-2xl font-heading font-bold text-primary">78</p>
@@ -700,7 +700,7 @@ export default function HomePage() {
         <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
           <div className="animate-blob absolute top-[-10%] left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full bg-primary/20 blur-[130px]" />
           <div className="animate-blob [animation-delay:2s] absolute bottom-[-5%] left-[-10%] w-[600px] h-[600px] rounded-full bg-accent/18 blur-[110px]" />
-          <div className="animate-blob [animation-delay:4s] absolute top-[20%] right-[-8%] w-[500px] h-[500px] rounded-full" style={{background:"oklch(0.75 0.22 200 / 0.14)", filter:"blur(100px)"}} />
+          <div className="animate-blob [animation-delay:4s] absolute top-[20%] right-[-8%] w-[500px] h-[500px] rounded-full" style={{background:"oklch(0.78 0.18 68 / 0.12)", filter:"blur(100px)"}} />
         </div>
 
         {/* Badge */}
@@ -710,8 +710,8 @@ export default function HomePage() {
           transition={{ delay: 0.1 }}
           className="mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold"
           style={{
-            background: "linear-gradient(135deg, oklch(0.52 0.27 280 / 0.15), oklch(0.62 0.26 340 / 0.12))",
-            border: "1px solid oklch(0.52 0.27 280 / 0.40)",
+            background: "linear-gradient(135deg, oklch(0.48 0.22 268 / 0.15), oklch(0.62 0.26 340 / 0.12))",
+            border: "1px solid oklch(0.48 0.22 268 / 0.40)",
             color: "var(--primary)",
           }}
         >
@@ -731,7 +731,7 @@ export default function HomePage() {
           <span
             className="bg-clip-text text-transparent animate-gradient"
             style={{
-              backgroundImage: "linear-gradient(135deg, var(--primary), oklch(0.72 0.28 320), var(--accent), oklch(0.75 0.22 200))",
+              backgroundImage: "linear-gradient(135deg, var(--primary), oklch(0.65 0.22 300), var(--accent), oklch(0.72 0.18 340))",
               backgroundSize: "300% 300%",
             }}
           >
@@ -760,8 +760,8 @@ export default function HomePage() {
             size="lg"
             className="gap-2 px-8 h-12 text-base animate-pulse-glow"
             style={{
-              background: "linear-gradient(135deg, var(--primary), oklch(0.65 0.28 310))",
-              boxShadow: "0 4px 30px oklch(0.52 0.27 280 / 0.45), 0 0 0 1px oklch(0.52 0.27 280 / 0.3)",
+              background: "linear-gradient(135deg, var(--primary), oklch(0.62 0.22 300))",
+              boxShadow: "0 4px 30px oklch(0.48 0.22 268 / 0.45), 0 0 0 1px oklch(0.48 0.22 268 / 0.3)",
               border: "none",
             }}
             asChild
@@ -795,7 +795,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Stats strip ───────────────────────────────────────────────────── */}
-      <section className="py-12 border-y border-border/30" style={{background:"oklch(0.52 0.27 280 / 0.04)"}}>
+      <section className="py-12 border-y border-border/30" style={{background:"oklch(0.48 0.22 268 / 0.04)"}}>
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0">
             {stats.map((s, i) => (
@@ -834,7 +834,7 @@ export default function HomePage() {
                 <div
                   className="group rounded-2xl p-6 h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
                   style={{
-                    background: "oklch(0.13 0.025 265 / 0.6)",
+                    background: "oklch(0.13 0.020 268 / 0.6)",
                     backdropFilter: "blur(12px)",
                     border: `1px solid ${f.border}`,
                     boxShadow: `0 4px 24px ${f.bg}`,
@@ -870,7 +870,7 @@ export default function HomePage() {
           </FadeIn>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto relative">
-            <div className="hidden md:block absolute top-10 left-1/3 right-1/3 h-px" style={{background:"linear-gradient(90deg, transparent, oklch(0.72 0.29 280 / 0.5), oklch(0.78 0.27 340 / 0.5), transparent)"}} />
+            <div className="hidden md:block absolute top-10 left-1/3 right-1/3 h-px" style={{background:"linear-gradient(90deg, transparent, oklch(0.68 0.24 268 / 0.5), oklch(0.78 0.27 340 / 0.5), transparent)"}} />
             {steps.map((step, i) => (
               <FadeIn key={step.title} delay={i * 0.12} className="text-center">
                 <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-5 mx-auto transition-transform duration-300 hover:scale-105" style={{background: step.bg, border: `1px solid ${step.color.replace(")", " / 0.30)")}`, boxShadow:`0 8px 30px ${step.bg}`}}>
@@ -973,13 +973,13 @@ export default function HomePage() {
             <div
               className="relative rounded-3xl overflow-hidden p-10 md:p-16 text-center max-w-4xl mx-auto"
               style={{
-                background: "linear-gradient(135deg, oklch(0.52 0.27 280 / 0.20) 0%, oklch(0.65 0.27 310 / 0.15) 40%, oklch(0.62 0.26 340 / 0.20) 100%)",
-                border: "1px solid oklch(0.72 0.29 280 / 0.35)",
-                boxShadow: "0 0 80px oklch(0.52 0.27 280 / 0.30), 0 0 160px oklch(0.62 0.26 340 / 0.15)",
+                background: "linear-gradient(135deg, oklch(0.48 0.22 268 / 0.20) 0%, oklch(0.62 0.22 300 / 0.15) 40%, oklch(0.62 0.26 340 / 0.20) 100%)",
+                border: "1px solid oklch(0.68 0.24 268 / 0.35)",
+                boxShadow: "0 0 80px oklch(0.48 0.22 268 / 0.30), 0 0 160px oklch(0.62 0.26 340 / 0.15)",
               }}
             >
               <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                <div className="animate-blob absolute top-[-30%] left-1/2 -translate-x-1/2 w-96 h-96 rounded-full blur-[80px]" style={{background:"oklch(0.52 0.27 280 / 0.35)"}} />
+                <div className="animate-blob absolute top-[-30%] left-1/2 -translate-x-1/2 w-96 h-96 rounded-full blur-[80px]" style={{background:"oklch(0.48 0.22 268 / 0.35)"}} />
                 <div className="animate-blob [animation-delay:3s] absolute bottom-[-20%] right-[-10%] w-64 h-64 rounded-full blur-[60px]" style={{background:"oklch(0.62 0.26 340 / 0.30)"}} />
               </div>
 
@@ -987,8 +987,8 @@ export default function HomePage() {
                 <div
                   className="inline-flex items-center justify-center w-20 h-20 rounded-3xl mb-6 animate-pulse-glow"
                   style={{
-                    background: "linear-gradient(135deg, var(--primary), oklch(0.68 0.28 310), var(--accent))",
-                    boxShadow: "0 8px 40px oklch(0.52 0.27 280 / 0.50)",
+                    background: "linear-gradient(135deg, var(--primary), oklch(0.62 0.22 300), var(--accent))",
+                    boxShadow: "0 8px 40px oklch(0.48 0.22 268 / 0.50)",
                   }}
                 >
                   <Brain className="w-10 h-10 text-white" />
@@ -997,7 +997,7 @@ export default function HomePage() {
                   {t.finalCtaSection.title1}{" "}
                   <span
                     className="bg-clip-text text-transparent animate-gradient"
-                    style={{backgroundImage:"linear-gradient(135deg, var(--primary), oklch(0.72 0.28 320), var(--accent))", backgroundSize:"300% 300%"}}
+                    style={{backgroundImage:"linear-gradient(135deg, var(--primary), oklch(0.65 0.22 300), var(--accent))", backgroundSize:"300% 300%"}}
                   >
                     {t.finalCtaSection.title2}
                   </span>
@@ -1008,8 +1008,8 @@ export default function HomePage() {
                     size="lg"
                     className="gap-2 px-10 h-12 text-base border-none"
                     style={{
-                      background: "linear-gradient(135deg, var(--primary), oklch(0.65 0.28 310), var(--accent))",
-                      boxShadow: "0 4px 30px oklch(0.52 0.27 280 / 0.50), 0 0 0 1px oklch(0.72 0.29 280 / 0.30)",
+                      background: "linear-gradient(135deg, var(--primary), oklch(0.62 0.22 300), var(--accent))",
+                      boxShadow: "0 4px 30px oklch(0.48 0.22 268 / 0.50), 0 0 0 1px oklch(0.68 0.24 268 / 0.30)",
                     }}
                     asChild
                   >
