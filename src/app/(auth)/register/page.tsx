@@ -1,22 +1,24 @@
 "use client";
 
 import { useState, Suspense } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, User, Loader2, CheckCircle2 } from "lucide-react";
+import { Mail, User, Lock, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useLanguage, LangToggle } from "@/lib/i18n";
 
-function WaitlistContent() {
+function RegisterContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
-  const [formData, setFormData] = useState({ name: "", email: "" });
+  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
   const { t } = useLanguage();
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -27,22 +29,46 @@ function WaitlistContent() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.name || !formData.email) {
+    if (!formData.name || !formData.email || !formData.password) {
       setError(t.register.errorRequired);
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError(t.register.passwordTooShort);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      await fetch("/api/waitlist", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: formData.name, email: formData.email }),
+        body: JSON.stringify({ name: formData.name, email: formData.email, password: formData.password }),
       });
-      setSubmitted(true);
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.detail || t.register.genericError);
+        return;
+      }
+
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError(t.register.genericError);
+        return;
+      }
+
+      router.push("/onboarding");
     } catch {
-      setSubmitted(true);
+      setError(t.register.genericError);
     } finally {
       setIsLoading(false);
     }
@@ -80,73 +106,72 @@ function WaitlistContent() {
           <CardDescription>{t.register.cardDescription}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
-          {submitted ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center space-y-4 py-4"
-            >
-              <div className="flex justify-center">
-                <CheckCircle2 className="w-16 h-16 text-primary" />
-              </div>
-              <h3 className="text-xl font-heading font-semibold">{t.register.successTitle}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {t.register.successMessage}
-              </p>
-            </motion.div>
-          ) : (
-            <>
-              {error && (
-                <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm text-center">
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">{t.register.nameLabel}</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="name"
-                      name="name"
-                      type="text"
-                      placeholder={t.register.namePlaceholder}
-                      className="pl-10"
-                      value={formData.name}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">{t.register.emailLabel}</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="tu@email.com"
-                      className="pl-10"
-                      value={formData.email}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    t.register.createButton
-                  )}
-                </Button>
-              </form>
-            </>
+          {error && (
+            <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm text-center">
+              {error}
+            </div>
           )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">{t.register.nameLabel}</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder={t.register.namePlaceholder}
+                  className="pl-10"
+                  value={formData.name}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">{t.register.emailLabel}</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  className="pl-10"
+                  value={formData.email}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">{t.register.passwordLabel}</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder={t.register.passwordPlaceholder}
+                  className="pl-10"
+                  value={formData.password}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                t.register.createButton
+              )}
+            </Button>
+          </form>
         </CardContent>
       </Card>
 
@@ -162,7 +187,7 @@ function WaitlistContent() {
   );
 }
 
-function WaitlistFallback() {
+function RegisterFallback() {
   return (
     <div className="flex items-center justify-center min-h-[400px]">
       <div className="animate-pulse-glow w-16 h-16 rounded-full bg-primary/20" />
@@ -172,8 +197,8 @@ function WaitlistFallback() {
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<WaitlistFallback />}>
-      <WaitlistContent />
+    <Suspense fallback={<RegisterFallback />}>
+      <RegisterContent />
     </Suspense>
   );
 }

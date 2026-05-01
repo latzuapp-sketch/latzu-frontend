@@ -20,11 +20,11 @@ const translations = {
     },
 
     hero: {
-      badge: "Adaptive Intelligence for Learning",
-      headline1: "Learn faster with",
-      headline2: "AI that knows you",
+      badge: "Beyond AI chat — a system that truly knows you",
+      headline1: "The intelligence that",
+      headline2: "never starts from zero",
       subtitle:
-        "Personal AI tutor, knowledge library, smart planning and adaptive memory — all in one platform that evolves with you.",
+        "Every session builds on the last. Your goals, your knowledge, your learning gaps — all remembered, connected, and working for you. Not just answering your questions.",
       ctaPrimary: "Join the waitlist",
       ctaSecondary: "How it works",
       socialProof: "Free early access · No credit card required",
@@ -44,6 +44,95 @@ const translations = {
       { value: "∞", label: "Organized knowledge" },
       { value: "100%", label: "Personalized for you" },
     ],
+
+    painSection: {
+      badge: "The real problem",
+      title: "Your current tools are smart. They just don't know you.",
+      subtitle:
+        "You use several powerful tools every day. But each one forgets you the moment you close it.",
+      items: [
+        {
+          title: "AI that starts from zero",
+          description:
+            "Every new conversation begins with no memory of your goals, your progress, or what you learned last week. You explain yourself every time.",
+        },
+        {
+          title: "Knowledge that never connects",
+          description:
+            "Notes in one place, bookmarks in another, ideas scattered everywhere. Your knowledge exists — but it doesn't think.",
+        },
+        {
+          title: "Learning that doesn't compound",
+          description:
+            "You study hard, feel productive, and three weeks later it's gone. Nothing is reviewing what matters, when it matters.",
+        },
+      ],
+    },
+
+    whySection: {
+      badge: "The Latzu difference",
+      title: "One system that remembers, connects, and grows with you",
+      subtitle:
+        "Latzu isn't one more tool. It's the layer that unifies your learning, your knowledge, and your goals — and actively works to grow them.",
+      items: [
+        {
+          title: "Memory that persists",
+          description:
+            "Latzu knows your goals, your style, what you've mastered and where you struggle — across every session, forever.",
+        },
+        {
+          title: "Knowledge that self-organizes",
+          description:
+            "An AI agent connects your notes, discovers patterns, and reorganizes your workspace — without you asking.",
+        },
+        {
+          title: "Learning that compounds",
+          description:
+            "Spaced repetition and knowledge tracing ensure you retain what you learn. The system gets smarter about you over time.",
+        },
+        {
+          title: "Goals that get tracked",
+          description:
+            "From study plans to life areas, Latzu maps your priorities and proactively signals what needs attention — before you fall behind.",
+        },
+      ],
+    },
+
+    agentSection: {
+      badge: "The Organizer Agent",
+      title: "The intelligence that works when you're not",
+      subtitle:
+        "Most tools wait for you to ask. Latzu's agent observes your patterns, connects ideas in the background, and proactively surfaces what matters.",
+      points: [
+        "Detects themes and patterns across your notes",
+        "Proposes connections between ideas you haven't seen",
+        "Reorganizes stale content automatically",
+        "Maps your life areas: work, learning, projects, goals",
+        "Sends focus signals at the right moment — not at random",
+      ],
+      insight:
+        "The more you use Latzu, the better it understands you — and the less manual organization you need.",
+      activityLog: [
+        { action: "Connected", detail: "\"React Hooks\" → \"State Management\"", time: "2m ago" },
+        { action: "Proposed", detail: "New workspace: \"Frontend Architecture\"", time: "15m ago" },
+        { action: "Signal", detail: "Review \"OSPF\" — 7 days since last seen", time: "1h ago" },
+        { action: "Archived", detail: "3 stale notes from 3 months ago", time: "3h ago" },
+      ],
+    },
+
+    librarySection: {
+      badge: "Book Library",
+      title: "78 books. AI-enriched. Interactive.",
+      subtitle:
+        "Not just summaries you read and forget. Each book comes with chapters, key concepts, exercises, and auto-generated flashcards — and you can ask the AI about any part.",
+      points: [
+        "AI-enriched summaries per chapter",
+        "Key concepts and actionable exercises",
+        "Auto-generated flashcards for retention",
+        "Chat with any book — ask questions, get examples",
+        "Connect book insights to your personal knowledge graph",
+      ],
+    },
 
     featuresSection: {
       badge: "Features",
@@ -201,6 +290,10 @@ const translations = {
       title: "Frequently asked questions",
       items: [
         {
+          q: "How is Latzu different from general-purpose AI assistants?",
+          a: "AI assistants are powerful but start from zero every session — they don't know your goals, your progress, or what you've already learned. Latzu builds a persistent model of you: your knowledge gaps, your learning style, your life areas. And unlike a chatbot, it acts proactively — organizing your workspace, suggesting reviews, tracking your plans — without waiting for you to ask.",
+        },
+        {
           q: "Do I need a credit card for the trial period?",
           a: "No. The 7-day Free plan doesn't require a credit card. Just create your account and start learning immediately.",
         },
@@ -228,10 +321,10 @@ const translations = {
     },
 
     finalCtaSection: {
-      title1: "Your best version",
-      title2: "starts today",
+      title1: "Stop starting over.",
+      title2: "Build your mind.",
       subtitle:
-        "Join the first wave of students who will learn with adaptive intelligence. Get early access before we open to everyone.",
+        "Join the first learners who have an AI that truly knows them — one that remembers, organizes, and grows with them every day.",
       ctaPrimary: "Join the waitlist",
       ctaSecondary: "Log in",
       socialProof: "Free early access · No credit card required · HTTPS encrypted",
@@ -272,16 +365,18 @@ const translations = {
     },
 
     register: {
-      subtitle: "Be the first to experience Latzu",
-      cardTitle: "Join the waitlist",
-      cardDescription: "Get early access when we open registrations",
+      subtitle: "Create your Latzu account",
+      cardTitle: "Create account",
+      cardDescription: "Start your personalized study space in minutes",
       nameLabel: "Name",
       namePlaceholder: "Your name",
       emailLabel: "Email",
-      errorRequired: "Name and email are required",
-      createButton: "Join the waitlist",
-      successTitle: "You're on the list!",
-      successMessage: "We'll notify you as soon as we open registrations. Thank you for your interest in Latzu.",
+      passwordLabel: "Password",
+      passwordPlaceholder: "At least 8 characters",
+      errorRequired: "Name, email and password are required",
+      passwordTooShort: "Password must be at least 8 characters",
+      genericError: "Could not create account. Please try again.",
+      createButton: "Create account",
       alreadyHaveAccount: "Already have an account?",
       loginLink: "Log in",
     },
@@ -320,11 +415,11 @@ const translations = {
     },
 
     hero: {
-      badge: "Inteligencia Adaptativa para el Aprendizaje",
-      headline1: "Aprende más rápido con",
-      headline2: "IA que te conoce",
+      badge: "Más allá del chat IA — un sistema que realmente te conoce",
+      headline1: "La inteligencia que",
+      headline2: "nunca empieza desde cero",
       subtitle:
-        "Tutor IA personal, biblioteca de conocimiento, planificación inteligente y memoria adaptativa — todo en una plataforma que evoluciona contigo.",
+        "Cada sesión construye sobre la anterior. Tus metas, tu conocimiento, tus brechas de aprendizaje — todo recordado, conectado y trabajando para ti. No solo respondiendo tus preguntas.",
       ctaPrimary: "Únete a la lista de espera",
       ctaSecondary: "Cómo funciona",
       socialProof: "Acceso anticipado gratuito · Sin tarjeta de crédito",
@@ -345,6 +440,95 @@ const translations = {
       { value: "∞", label: "Conocimiento organizado" },
       { value: "100%", label: "Personalizado para ti" },
     ],
+
+    painSection: {
+      badge: "El problema real",
+      title: "Tus herramientas actuales son inteligentes. Solo que no te conocen.",
+      subtitle:
+        "Usas varias herramientas poderosas cada día. Pero cada una te olvida en cuanto la cierras.",
+      items: [
+        {
+          title: "IA que empieza desde cero",
+          description:
+            "Cada conversación nueva comienza sin memoria de tus metas, tu progreso ni lo que aprendiste la semana pasada. Te explicas cada vez.",
+        },
+        {
+          title: "Conocimiento que nunca conecta",
+          description:
+            "Notas en un lugar, marcadores en otro, ideas dispersas en todas partes. Tu conocimiento existe — pero no piensa.",
+        },
+        {
+          title: "Aprendizaje que no se acumula",
+          description:
+            "Estudias duro, te sientes productivo, y tres semanas después se fue. Nada repasa lo importante cuando importa.",
+        },
+      ],
+    },
+
+    whySection: {
+      badge: "La diferencia Latzu",
+      title: "Un sistema que recuerda, conecta y crece contigo",
+      subtitle:
+        "Latzu no es una herramienta más. Es la capa que unifica tu aprendizaje, tu conocimiento y tus metas — y trabaja activamente para hacerlos crecer.",
+      items: [
+        {
+          title: "Memoria que persiste",
+          description:
+            "Latzu conoce tus metas, tu estilo, lo que has dominado y dónde te cuesta — a través de cada sesión, para siempre.",
+        },
+        {
+          title: "Conocimiento que se autoorganiza",
+          description:
+            "Un agente IA conecta tus notas, descubre patrones y reorganiza tu workspace — sin que tengas que pedirlo.",
+        },
+        {
+          title: "Aprendizaje que se acumula",
+          description:
+            "La repetición espaciada y el seguimiento de conocimiento aseguran que retengas lo que aprendes. El sistema se vuelve más inteligente sobre ti con el tiempo.",
+        },
+        {
+          title: "Metas que se siguen",
+          description:
+            "Desde planes de estudio hasta áreas de vida, Latzu mapea tus prioridades y señala proactivamente qué necesita atención — antes de que te quedes atrás.",
+        },
+      ],
+    },
+
+    agentSection: {
+      badge: "El Agente Organizador",
+      title: "La inteligencia que trabaja cuando tú no",
+      subtitle:
+        "La mayoría de herramientas esperan que preguntes. El agente de Latzu observa tus patrones, conecta ideas en segundo plano y te muestra proactivamente lo que importa.",
+      points: [
+        "Detecta temas y patrones en tus notas",
+        "Propone conexiones entre ideas que no habías visto",
+        "Reorganiza contenido inactivo automáticamente",
+        "Mapea tus áreas de vida: trabajo, aprendizaje, proyectos, metas",
+        "Envía señales de foco en el momento adecuado — no al azar",
+      ],
+      insight:
+        "Cuanto más usas Latzu, mejor te entiende — y menos organización manual necesitas.",
+      activityLog: [
+        { action: "Conectó", detail: "\"React Hooks\" → \"Gestión de Estado\"", time: "hace 2m" },
+        { action: "Propuso", detail: "Nuevo workspace: \"Arquitectura Frontend\"", time: "hace 15m" },
+        { action: "Señal", detail: "Repasa \"OSPF\" — 7 días sin verlo", time: "hace 1h" },
+        { action: "Archivó", detail: "3 notas inactivas de hace 3 meses", time: "hace 3h" },
+      ],
+    },
+
+    librarySection: {
+      badge: "Biblioteca de Libros",
+      title: "78 libros. Enriquecidos con IA. Interactivos.",
+      subtitle:
+        "No solo resúmenes que lees y olvidas. Cada libro trae capítulos, conceptos clave, ejercicios y flashcards autogeneradas — y puedes preguntarle a la IA sobre cualquier parte.",
+      points: [
+        "Resúmenes enriquecidos por IA por capítulo",
+        "Conceptos clave y ejercicios accionables",
+        "Flashcards autogeneradas para retención",
+        "Chatea con cualquier libro — haz preguntas, obtén ejemplos",
+        "Conecta los aprendizajes a tu grafo de conocimiento personal",
+      ],
+    },
 
     featuresSection: {
       badge: "Funciones",
@@ -573,16 +757,18 @@ const translations = {
     },
 
     register: {
-      subtitle: "Sé de los primeros en experimentar Latzu",
-      cardTitle: "Únete a la lista de espera",
-      cardDescription: "Obtén acceso anticipado cuando abramos los registros",
+      subtitle: "Crea tu cuenta de Latzu",
+      cardTitle: "Crear cuenta",
+      cardDescription: "Empieza tu espacio de estudio personalizado en minutos",
       nameLabel: "Nombre",
       namePlaceholder: "Tu nombre",
       emailLabel: "Email",
-      errorRequired: "Nombre y email son requeridos",
-      createButton: "Únete a la lista de espera",
-      successTitle: "¡Estás en la lista!",
-      successMessage: "Te notificaremos en cuanto abramos los registros. Gracias por tu interés en Latzu.",
+      passwordLabel: "Contraseña",
+      passwordPlaceholder: "Mínimo 8 caracteres",
+      errorRequired: "Nombre, email y contraseña son requeridos",
+      passwordTooShort: "La contraseña debe tener al menos 8 caracteres",
+      genericError: "No pudimos crear la cuenta. Inténtalo de nuevo.",
+      createButton: "Crear cuenta",
       alreadyHaveAccount: "¿Ya tienes cuenta?",
       loginLink: "Inicia sesión",
     },
