@@ -795,6 +795,10 @@ export const GET_FOCUS_SIGNALS = gql`
       relatedNodeIds
       actionPayload
       status
+      responseOptions
+      wasEffective
+      userResponse
+      respondedAt
     }
   }
 `;
@@ -973,6 +977,54 @@ export const GET_AGENT_NETWORK_STATUS = gql`
       graphHealth
       totalIntentsPending
       totalSignalsPending
+    }
+  }
+`;
+
+// ─── Goal Achievement Engine ──────────────────────────────────────────────────
+
+export const GET_USER_GOALS = gql`
+  query GetUserGoals($userId: String!, $status: String) {
+    userGoals(userId: $userId, status: $status) {
+      id
+      userId
+      title
+      rawStatement
+      status
+      why
+      successCriteria
+      deadline
+      timePerWeek
+      currentLevel
+      mainBlocker
+      progressScore
+      planId
+      clarificationStep
+      pendingQuestionSignalId
+      source
+      lastActivity
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const CREATE_GOAL = gql`
+  mutation CreateGoal($title: String!, $rawStatement: String) {
+    createGoal(title: $title, rawStatement: $rawStatement) {
+      id
+      title
+      status
+      createdAt
+    }
+  }
+`;
+
+export const RESPOND_TO_SIGNAL = gql`
+  mutation RespondToSignal($signalId: String!, $responseValue: String!, $responseLabel: String) {
+    respondToSignal(signalId: $signalId, responseValue: $responseValue, responseLabel: $responseLabel) {
+      success
+      message
     }
   }
 `;

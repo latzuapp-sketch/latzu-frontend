@@ -312,8 +312,13 @@ export interface IntentActionResult {
 
 // ─── Smart Organizer types (:8001) ────────────────────────────────────────────
 
-export type FocusSignalType = "reminder" | "insight" | "warning" | "milestone" | "suggestion";
-export type FocusSignalStatus = "pending" | "delivered" | "dismissed" | "snoozed";
+export type FocusSignalType = "reminder" | "insight" | "warning" | "milestone" | "suggestion" | "action" | "nudge" | "celebration" | "redirect";
+export type FocusSignalStatus = "pending" | "delivered" | "dismissed" | "snoozed" | "acted" | "sent";
+
+export interface SignalResponseOption {
+  value: string;
+  label: string;
+}
 
 export interface FocusSignal {
   id: string;
@@ -324,6 +329,34 @@ export interface FocusSignal {
   relatedNodeIds: string[];
   actionPayload: string | null; // JSON string
   status: FocusSignalStatus;
+  responseOptions: string; // JSON array of SignalResponseOption
+  wasEffective: boolean | null;
+  userResponse: string | null;
+  respondedAt: string | null;
+}
+
+export type GoalStatus = "vague" | "clarifying" | "clear" | "active" | "achieved" | "abandoned";
+
+export interface GoalNode {
+  id: string;
+  userId: string;
+  title: string;
+  rawStatement: string;
+  status: GoalStatus;
+  why: string;
+  successCriteria: string;
+  deadline: string;
+  timePerWeek: number;
+  currentLevel: string;
+  mainBlocker: string;
+  progressScore: number;
+  planId: string;
+  clarificationStep: number;
+  pendingQuestionSignalId: string;
+  source: string;
+  lastActivity: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface UserModel {

@@ -17,8 +17,9 @@ import {
 import { useUserStore, useIsGuest } from "@/stores/userStore";
 import { useEventStore } from "@/stores/eventStore";
 import { useFocusSignals, useDismissFocusSignal } from "@/hooks/useOrganizerAgent";
+import { useRespondToSignal } from "@/hooks/useGoals";
 import { getTemplate } from "@/config/templates";
-import type { FocusSignalType } from "@/graphql/types";
+import type { FocusSignalType, SignalResponseOption } from "@/graphql/types";
 import {
   Bell,
   Search,
@@ -34,20 +35,28 @@ import {
   X,
 } from "lucide-react";
 
-const SIGNAL_ICONS: Record<FocusSignalType, React.ElementType> = {
+const SIGNAL_ICONS: Record<string, React.ElementType> = {
   reminder: Bell,
   insight: Sparkles,
   warning: AlertTriangle,
   milestone: Trophy,
   suggestion: Lightbulb,
+  action: Lightbulb,
+  nudge: Bell,
+  celebration: Trophy,
+  redirect: AlertTriangle,
 };
 
-const SIGNAL_COLORS: Record<FocusSignalType, string> = {
+const SIGNAL_COLORS: Record<string, string> = {
   reminder: "text-blue-400",
   insight: "text-violet-400",
   warning: "text-amber-400",
   milestone: "text-emerald-400",
   suggestion: "text-sky-400",
+  action: "text-indigo-400",
+  nudge: "text-blue-400",
+  celebration: "text-emerald-400",
+  redirect: "text-amber-400",
 };
 
 interface HeaderProps {
@@ -69,6 +78,7 @@ export function Header({ title, onMenuClick, onSearchClick }: HeaderProps) {
 
   const { signals: focusSignals } = useFocusSignals("pending");
   const { dismiss: dismissSignal } = useDismissFocusSignal();
+  const { respond: respondToSignal } = useRespondToSignal();
   const now = new Date().toISOString();
   const dueSignals = focusSignals.filter((s) => s.deliverAt <= now);
   const totalUnread = unreadCount + dueSignals.length;
@@ -200,20 +210,43 @@ export function Header({ title, onMenuClick, onSearchClick }: HeaderProps) {
               {/* Focus Signals (agent-generated) */}
               {dueSignals.map((signal) => {
                 const Icon = SIGNAL_ICONS[signal.type] ?? Bell;
+                let options: SignalResponseOption[] = [];
+                try {
+                  options = signal.responseOptions ? JSON.parse(signal.responseOptions) : [];
+                } catch {
+                  options = [];
+                }
+                const hasOptions = options.length > 0;
+
                 return (
                   <DropdownMenuItem
                     key={signal.id}
-                    className="flex items-start gap-3 p-3 bg-primary/5 cursor-default focus:bg-primary/5"
+                    className="flex flex-col gap-2 p-3 bg-primary/5 cursor-default focus:bg-primary/5"
                     onSelect={(e) => e.preventDefault()}
                   >
-                    <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${SIGNAL_COLORS[signal.type]}`} />
-                    <span className="flex-1 text-sm leading-snug">{signal.message}</span>
-                    <button
-                      onClick={() => dismissSignal(signal.id)}
-                      className="flex-shrink-0 text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-start gap-3 w-full">
+                      <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${SIGNAL_COLORS[signal.type] ?? "text-muted-foreground"}`} />
+                      <span className="flex-1 text-sm leading-snug">{signal.message}</span>
+                      <button
+                        onClick={() => dismissSignal(signal.id)}
+                        className="flex-shrink-0 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    {hasOptions && (
+                      <div className="flex flex-col gap-1 ml-7">
+                        {options.map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() => respondToSignal(signal.id, opt.value, opt.label)}
+                            className="text-left text-xs px-2 py-1 rounded border border-border hover:bg-primary/10 hover:border-primary/40 transition-colors"
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </DropdownMenuItem>
                 );
               })}
