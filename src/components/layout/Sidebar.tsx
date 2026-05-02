@@ -21,7 +21,6 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
-import { IntentPanel } from "@/components/ai/IntentPanel";
 import { signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
@@ -310,11 +309,6 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
       >
         <SidebarLogo collapsed={collapsed} />
         <SidebarNav collapsed={collapsed} />
-        {!collapsed && (
-          <div className="px-3 pb-2 flex-shrink-0">
-            <IntentPanel />
-          </div>
-        )}
         <SidebarFooter collapsed={collapsed} showCollapseToggle />
       </motion.aside>
     </TooltipProvider>

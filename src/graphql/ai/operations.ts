@@ -645,28 +645,6 @@ export const RECORD_STUDY_OUTCOME = gql`
   }
 `;
 
-export const MARK_NOTIFICATIONS_READ = gql`
-  mutation MarkNotificationsRead {
-    markNotificationsRead {
-      success
-      message
-    }
-  }
-`;
-
-export const GET_STUDY_NOTIFICATIONS = gql`
-  query GetStudyNotifications($unreadOnly: Boolean, $limit: Int) {
-    studyNotifications(unreadOnly: $unreadOnly, limit: $limit) {
-      id
-      message
-      type
-      action
-      read
-      createdAt
-    }
-  }
-`;
-
 /**
  * Fetch pre-generated task content (quiz questions, flashcard deck, lesson markdown).
  * Returns null if content has not been generated yet for this task.

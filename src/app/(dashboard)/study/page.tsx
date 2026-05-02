@@ -28,7 +28,6 @@ import {
 import { FloatingChat } from "@/components/study/FloatingChat";
 import { TaskMainContent } from "@/components/study/TaskViews";
 import { StudyAgentChat } from "@/components/study/StudyAgentChat";
-import { StudyNotifications } from "@/components/study/StudyNotifications";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 // ── Content meta ──────────────────────────────────────────────────────────────
@@ -1109,7 +1108,6 @@ function StudySpaceInner() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <StudyNotifications />
           <button
             onClick={() => setShowStudyAgent((v) => !v)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"

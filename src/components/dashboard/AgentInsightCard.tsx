@@ -2,10 +2,9 @@
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, AlertTriangle, AlertCircle, Lightbulb, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Sparkles, AlertTriangle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useUserModel, useActionMutations, useAgentActions } from "@/hooks/useOrganizerAgent";
+import { useUserModel } from "@/hooks/useOrganizerAgent";
 import { useAllPlanHealth } from "@/hooks/usePlanHealth";
 import type { PlanHealthStatus } from "@/graphql/types";
 import Link from "next/link";
@@ -28,19 +27,6 @@ interface AgentInsightCardProps {
 export function AgentInsightCard({ className }: AgentInsightCardProps) {
   const { userModel, loading: modelLoading } = useUserModel();
   const { healthByPlanId, loading: healthLoading } = useAllPlanHealth();
-  const { actions, refetch: refetchSignals } = useAgentActions({ status: "pending" });
-  const { dismiss } = useActionMutations();
-
-  const now = new Date().toISOString();
-
-  // Due ambient/inline actions (excludes silent auto-applied ones)
-  const dueSignals = useMemo(
-    () =>
-      actions
-        .filter((a) => a.visibility !== "silent" && a.deliverAt <= now)
-        .slice(0, 2),
-    [actions, now]
-  );
 
   // At-risk and derailing plans
   const alertPlans = useMemo(
@@ -67,7 +53,7 @@ export function AgentInsightCard({ className }: AgentInsightCardProps) {
 
   const loading = modelLoading || healthLoading;
 
-  const hasContent = currentFocus || dueSignals.length > 0 || alertPlans.length > 0;
+  const hasContent = currentFocus || alertPlans.length > 0 || keyObservation;
 
   if (loading && !hasContent) {
     return (
@@ -92,21 +78,11 @@ export function AgentInsightCard({ className }: AgentInsightCardProps) {
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-violet-500/20 flex items-center justify-center">
-            <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-          </div>
-          <span className="text-xs font-semibold text-white/80">Organizador IA</span>
+      <div className="flex items-center gap-2">
+        <div className="w-6 h-6 rounded-lg bg-violet-500/20 flex items-center justify-center">
+          <Sparkles className="w-3.5 h-3.5 text-violet-400" />
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 p-0 text-white/30 hover:text-white/60"
-          onClick={() => refetchSignals()}
-        >
-          <RefreshCw className="w-3 h-3" />
-        </Button>
+        <span className="text-xs font-semibold text-white/80">Organizador IA</span>
       </div>
 
       {/* Current focus */}
@@ -118,25 +94,6 @@ export function AgentInsightCard({ className }: AgentInsightCardProps) {
           <p className="text-sm text-white/80 leading-snug">{currentFocus}</p>
         </div>
       )}
-
-      {/* Due agent actions (inline + ambient) */}
-      {dueSignals.map((action) => (
-        <div
-          key={action.id}
-          className="flex items-start gap-2.5 p-2.5 rounded-lg bg-white/[0.04] border border-white/[0.06]"
-        >
-          <Lightbulb className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-amber-400" />
-          <p className="flex-1 text-xs text-white/75 leading-snug">
-            {action.description || action.title}
-          </p>
-          <button
-            onClick={() => dismiss(action.id)}
-            className="text-white/30 hover:text-white/60 flex-shrink-0"
-          >
-            ×
-          </button>
-        </div>
-      ))}
 
       {/* At-risk plans */}
       {alertPlans.slice(0, 2).map((h) => {
