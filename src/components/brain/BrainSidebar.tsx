@@ -16,7 +16,7 @@ import Link from "next/link";
 import {
   Sparkles, Clock, Flame, Compass, Layers, ChevronRight, Brain,
   StickyNote, BookOpen, Lightbulb, User, Calendar, Globe,
-  Play, FileText, ListTodo,
+  Play, FileText, ListTodo, Target,
 } from "lucide-react";
 import { useUserModel } from "@/hooks/useOrganizerAgent";
 import { useWorkspaces } from "@/hooks/useWorkspace";
@@ -28,7 +28,9 @@ import { cn } from "@/lib/utils";
 export type BrainSelection =
   | { kind: "all" }
   | { kind: "recent" }
-  | { kind: "knowledge" }
+  | { kind: "knowledge" }       // concepts (knowledge nodes excluding books)
+  | { kind: "books" }           // books only (curated + user-uploaded book nodes)
+  | { kind: "plans" }           // active plans the user is working on
   | { kind: "notes" }
   | { kind: "tasks" }
   | { kind: "pages" }
@@ -41,6 +43,8 @@ interface SidebarProps {
   nodes: KnowledgeNode[];
   noteCount: number;
   taskCount: number;
+  bookCount: number;
+  planCount: number;
   selection: BrainSelection;
   onSelect: (s: BrainSelection) => void;
 }
@@ -116,7 +120,7 @@ function TreeRow({
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
-export function BrainSidebar({ nodes, noteCount, taskCount, selection, onSelect }: SidebarProps) {
+export function BrainSidebar({ nodes, noteCount, taskCount, bookCount, planCount, selection, onSelect }: SidebarProps) {
   const { userModel } = useUserModel();
   const { workspaces } = useWorkspaces();
 
@@ -148,7 +152,7 @@ export function BrainSidebar({ nodes, noteCount, taskCount, selection, onSelect 
     if (s.kind === "lifeArea") return selection.kind === "lifeArea" && selection.area === s.area;
     if (s.kind === "workspace") return selection.kind === "workspace" && selection.id === s.id;
     if (s.kind === "type") return selection.kind === "type" && selection.nodeType === s.nodeType;
-    return true;
+    return true;  // all/recent/knowledge/books/plans/notes/tasks/pages — single-instance kinds
   };
 
   return (
@@ -165,20 +169,36 @@ export function BrainSidebar({ nodes, noteCount, taskCount, selection, onSelect 
 
       {/* Tree */}
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-3 text-foreground/80">
-        {/* All / Recent quick links — exclude knowledge nodes from "Todo" */}
+        {/* All / Recent quick links */}
         <div className="space-y-0.5">
-          <TreeRow label="Todo" icon={Brain} count={noteCount + taskCount} isActive={isActive({ kind: "all" })} onClick={() => onSelect({ kind: "all" })} />
+          <TreeRow label="Todo" icon={Brain} count={noteCount + taskCount + planCount} isActive={isActive({ kind: "all" })} onClick={() => onSelect({ kind: "all" })} />
           <TreeRow label="Recientes" icon={Clock} isActive={isActive({ kind: "recent" })} onClick={() => onSelect({ kind: "recent" })} />
         </div>
 
-        {/* Content kinds — what the user creates */}
+        {/* What you're working on with the agent */}
+        <div>
+          <SectionHeader icon={Target} label="En curso" />
+          <div className="space-y-0.5">
+            <TreeRow label="Planes" icon={Target} count={planCount} isActive={isActive({ kind: "plans" })} onClick={() => onSelect({ kind: "plans" })} accent="text-emerald-400" />
+            <TreeRow label="Tareas" icon={ListTodo} count={taskCount} isActive={isActive({ kind: "tasks" })} onClick={() => onSelect({ kind: "tasks" })} accent="text-primary" />
+          </div>
+        </div>
+
+        {/* What you create + capture */}
         <div>
           <SectionHeader icon={Layers} label="Mi contenido" />
           <div className="space-y-0.5">
             <TreeRow label="Notas" icon={StickyNote} count={noteCount} isActive={isActive({ kind: "notes" })} onClick={() => onSelect({ kind: "notes" })} accent="text-yellow-400" />
-            <TreeRow label="Tareas" icon={ListTodo} count={taskCount} isActive={isActive({ kind: "tasks" })} onClick={() => onSelect({ kind: "tasks" })} accent="text-primary" />
             <TreeRow label="Spaces" icon={Layers} isActive={isActive({ kind: "pages" })} onClick={() => onSelect({ kind: "pages" })} accent="text-indigo-400" />
-            <TreeRow label="Conceptos" icon={Lightbulb} count={nodes.length} isActive={isActive({ kind: "knowledge" })} onClick={() => onSelect({ kind: "knowledge" })} accent="text-indigo-300" />
+          </div>
+        </div>
+
+        {/* Knowledge — books separated from raw concepts */}
+        <div>
+          <SectionHeader icon={Lightbulb} label="Conocimiento" />
+          <div className="space-y-0.5">
+            <TreeRow label="Libros" icon={BookOpen} count={bookCount} isActive={isActive({ kind: "books" })} onClick={() => onSelect({ kind: "books" })} accent="text-emerald-300" />
+            <TreeRow label="Conceptos" icon={Lightbulb} count={nodes.length - bookCount} isActive={isActive({ kind: "knowledge" })} onClick={() => onSelect({ kind: "knowledge" })} accent="text-indigo-300" />
           </div>
         </div>
 

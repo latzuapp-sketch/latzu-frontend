@@ -11,11 +11,12 @@
 import { motion } from "framer-motion";
 import {
   StickyNote, ListTodo, FileText, CheckCircle2, Circle, Clock,
-  Pin, Layers,
+  Pin, Layers, Target, Sparkles, AlertTriangle,
 } from "lucide-react";
 import type { Flashcard } from "@/types/flashcards";
-import type { PlanningTask, ABCDEPriority, TaskStatus } from "@/types/planning";
+import type { PlanningTask, ABCDEPriority, TaskStatus, ActionPlan } from "@/types/planning";
 import type { WorkspaceDoc } from "@/types/workspace";
+import type { PlanHealth, PlanHealthStatus } from "@/graphql/types";
 import { NOTE_COLORS } from "@/types/flashcards";
 import { cn } from "@/lib/utils";
 
@@ -217,6 +218,94 @@ export function BrainPageCard({ workspace, onClick }: PageCardProps) {
           <p className="text-xs text-muted-foreground leading-relaxed mt-1 line-clamp-2">
             {workspace.description}
           </p>
+        )}
+      </div>
+    </motion.button>
+  );
+}
+
+// ─── Plan card ───────────────────────────────────────────────────────────────
+
+interface PlanCardProps {
+  plan: ActionPlan;
+  health?: PlanHealth | null;
+  onClick: () => void;
+}
+
+const PLAN_HEALTH_META: Record<PlanHealthStatus, { label: string; color: string; barColor: string; Icon: React.ElementType }> = {
+  on_track:  { label: "Al día",        color: "text-emerald-300 bg-emerald-500/10 border-emerald-500/30", barColor: "bg-emerald-500", Icon: CheckCircle2 },
+  at_risk:   { label: "En riesgo",     color: "text-amber-300 bg-amber-500/10 border-amber-500/30",       barColor: "bg-amber-500",   Icon: AlertTriangle },
+  derailing: { label: "Descarrilando", color: "text-rose-300 bg-rose-500/10 border-rose-500/30",          barColor: "bg-rose-500",    Icon: AlertTriangle },
+  abandoned: { label: "Abandonado",    color: "text-muted-foreground bg-muted/40 border-border/40",       barColor: "bg-muted",       Icon: AlertTriangle },
+};
+
+export function BrainPlanCard({ plan, health, onClick }: PlanCardProps) {
+  const completion = health?.completionPct ?? 0;
+  const healthMeta = health?.status ? PLAN_HEALTH_META[health.status] : null;
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      onClick={onClick}
+      className="group w-full text-left rounded-xl border border-border/40 bg-card/50 hover:bg-card/80 hover:border-emerald-500/40 transition-all overflow-hidden"
+    >
+      {/* Top accent: gradient bar showing it's an active plan */}
+      <div className="h-0.5 w-full bg-gradient-to-r from-emerald-500 to-teal-500" />
+      <div className="p-3.5 space-y-2.5">
+        <div className="flex items-start gap-2">
+          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <Target className="w-3.5 h-3.5 text-emerald-300" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-300">
+                {plan.type === "study" ? "Plan de estudio" : "Plan"}
+              </span>
+              {plan.aiGenerated && (
+                <span className="inline-flex items-center gap-0.5 text-[9px] text-violet-300/80">
+                  <Sparkles className="w-2.5 h-2.5" /> con IA
+                </span>
+              )}
+            </div>
+            <p className="text-sm font-semibold leading-snug line-clamp-2">{plan.title}</p>
+            {plan.goal && (
+              <p className="text-xs text-muted-foreground leading-relaxed mt-1 line-clamp-2">
+                {plan.goal}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Progress + health */}
+        {health && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="text-muted-foreground">
+                {health.doneTasks} / {health.totalTasks} tareas
+              </span>
+              <span className="font-medium text-foreground/80">{Math.round(completion)}%</span>
+            </div>
+            <div className="h-1 rounded-full bg-muted/40 overflow-hidden">
+              <div
+                className={cn("h-full transition-all duration-500", healthMeta?.barColor ?? "bg-primary")}
+                style={{ width: `${Math.max(2, Math.min(100, completion))}%` }}
+              />
+            </div>
+            {healthMeta && (
+              <div className="flex items-center justify-between gap-2">
+                <span className={cn("inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded border", healthMeta.color)}>
+                  <healthMeta.Icon className="w-2.5 h-2.5" />
+                  {healthMeta.label}
+                </span>
+                {plan.dueDate && (
+                  <span className="text-[10px] text-muted-foreground/70">
+                    vence {new Date(plan.dueDate).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </motion.button>

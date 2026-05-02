@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { AdaptiveItemCard, detectVariant } from "@/components/brain/AdaptiveItemCard";
-import { BrainNoteCard, BrainTaskCard, BrainPageCard } from "@/components/brain/BrainItemCards";
+import { BrainNoteCard, BrainTaskCard, BrainPageCard, BrainPlanCard } from "@/components/brain/BrainItemCards";
 import { BrainSidebar, type BrainSelection } from "@/components/brain/BrainSidebar";
 import { BrainAgentPanel, BrainAgentTrigger } from "@/components/brain/BrainAgentPanel";
 import { UniversalViewer, type ViewerItem } from "@/components/brain/UniversalViewer";
@@ -30,13 +30,15 @@ import { useKnowledgeNodes } from "@/hooks/useLibrary";
 import { useUserModel, useAgentActions } from "@/hooks/useOrganizerAgent";
 import { useAllNotes } from "@/hooks/useFlashcards";
 import { useTasks } from "@/hooks/usePlanning";
+import { usePlans } from "@/hooks/usePlans";
+import { useAllPlanHealth } from "@/hooks/usePlanHealth";
 import { useWorkspaces } from "@/hooks/useWorkspace";
 import { useMutation } from "@apollo/client";
 import { aiClient } from "@/lib/apollo";
 import { QUICK_CAPTURE } from "@/graphql/ai/operations";
 import type { KnowledgeNode } from "@/graphql/types";
 import type { Flashcard } from "@/types/flashcards";
-import type { PlanningTask, TaskStatus } from "@/types/planning";
+import type { PlanningTask, TaskStatus, ActionPlan } from "@/types/planning";
 import { cn } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -57,11 +59,18 @@ interface LifeAreaParsed {
   description?: string;
 }
 
+/** A node is a "book" when it's a curated book or its type is 'book'. */
+function isBookNode(n: KnowledgeNode): boolean {
+  return n.type === "book" || (n.sourceRef?.startsWith("curated:") ?? false);
+}
+
 function selectionTitle(s: BrainSelection): string {
   switch (s.kind) {
     case "all":       return "Mi conocimiento";
     case "recent":    return "Recientes";
     case "knowledge": return "Conceptos";
+    case "books":     return "Libros";
+    case "plans":     return "Planes";
     case "notes":     return "Notas";
     case "tasks":     return "Tareas";
     case "pages":     return "Spaces";
@@ -74,9 +83,11 @@ function selectionTitle(s: BrainSelection): string {
 
 function selectionSubtitle(s: BrainSelection): string {
   switch (s.kind) {
-    case "all":       return "Tus notas, tareas y spaces. Para ver conceptos indexados, abrí «Conceptos» en el sidebar.";
+    case "all":       return "Tus planes activos, tareas, notas y spaces. Para ver libros o conceptos, abrí su sección en el sidebar.";
     case "recent":    return "Lo último que creaste o editaste.";
-    case "knowledge": return "Conceptos extraídos: libros, links, archivos, ideas indexadas por el agente.";
+    case "knowledge": return "Conceptos puros: ideas, links, archivos y nodos extraídos. (Libros aparte.)";
+    case "books":     return "Libros que estás estudiando — curados + los que vos sumaste.";
+    case "plans":     return "Planes que estás corriendo con la IA para crecer. Adaptan su carga según tu progreso.";
     case "notes":     return "Tus notas, tipo Google-Keep — siempre tuyas.";
     case "tasks":     return "Cosas por hacer, ordenadas por prioridad ABCDE.";
     case "pages":     return "Spaces estilo Notion para organizar páginas.";
@@ -105,11 +116,13 @@ function filterNodes(
     );
   }
   switch (s.kind) {
-    // "Todo" no longer includes knowledge nodes — concepts only show under
-    // the dedicated "Conceptos" tree row (s.kind === "knowledge").
+    // "Todo" no longer includes knowledge nodes — concepts/books only show
+    // under their own dedicated tree rows.
     case "all":       return [];
     case "recent":    return [];
-    case "knowledge": return out;
+    case "knowledge": return out.filter((n) => !isBookNode(n));   // exclude books
+    case "books":     return out.filter(isBookNode);
+    case "plans":     return [];
     case "notes":     return [];
     case "tasks":     return [];
     case "pages":     return [];
@@ -163,6 +176,27 @@ function filterTasks(tasks: PlanningTask[], s: BrainSelection, search: string): 
     });
   }
   return s.kind === "recent" ? out.slice(0, 10) : out;
+}
+
+function filterPlans(
+  plans: ActionPlan[],
+  s: BrainSelection,
+  search: string,
+): ActionPlan[] {
+  const showHere = s.kind === "all" || s.kind === "plans" || s.kind === "recent";
+  if (!showHere) return [];
+  const q = search.trim().toLowerCase();
+  let out = plans.filter((p) => p.status === "active");  // only active plans by default
+  if (s.kind === "plans") {
+    // In the dedicated view, also show paused/completed for transparency
+    out = plans;
+  }
+  if (q) {
+    out = out.filter(
+      (p) => p.title.toLowerCase().includes(q) || p.goal.toLowerCase().includes(q),
+    );
+  }
+  return s.kind === "recent" ? out.slice(0, 5) : out;
 }
 
 function sortNodesForView(nodes: KnowledgeNode[]): KnowledgeNode[] {
@@ -285,7 +319,12 @@ export default function BrainPage() {
   const { nodes, total, loading } = useKnowledgeNodes({ limit: 300 });
   const { notes, refetch: refetchNotes } = useAllNotes();
   const { tasks, setStatus, refetch: refetchTasks } = useTasks();
+  const { plans } = usePlans();
+  const { healthByPlanId } = useAllPlanHealth();
   const { workspaces } = useWorkspaces();
+
+  const bookCount = useMemo(() => nodes.filter(isBookNode).length, [nodes]);
+  const activePlanCount = useMemo(() => plans.filter((p) => p.status === "active").length, [plans]);
   const { actions: pendingProposals } = useAgentActions({ status: "pending", limit: 20 });
   const visibleProposalsCount = pendingProposals.filter(
     (a) => a.visibility !== "silent" && a.type !== "clarification_question"
@@ -308,10 +347,15 @@ export default function BrainPage() {
     () => filterTasks(tasks, selection, deferredSearch),
     [tasks, selection, deferredSearch]
   );
+  const filteredPlans = useMemo(
+    () => filterPlans(plans, selection, deferredSearch),
+    [plans, selection, deferredSearch]
+  );
   const showWorkspaces = selection.kind === "all" || selection.kind === "pages";
 
   const totalShown =
-    filteredNodes.length + filteredNotes.length + filteredTasks.length + (showWorkspaces ? workspaces.length : 0);
+    filteredNodes.length + filteredNotes.length + filteredTasks.length +
+    filteredPlans.length + (showWorkspaces ? workspaces.length : 0);
 
   const synthesisCount = useMemo(
     () => filteredNodes.filter((n) => detectVariant(n) === "synthesis").length,
@@ -334,6 +378,8 @@ export default function BrainPage() {
         nodes={nodes}
         noteCount={notes.length}
         taskCount={tasks.length}
+        bookCount={bookCount}
+        planCount={activePlanCount}
         selection={selection}
         onSelect={(s) => {
           setSelection(s);
@@ -466,7 +512,16 @@ export default function BrainPage() {
           {totalShown > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               <AnimatePresence mode="popLayout">
-                {/* Tasks first (action items) */}
+                {/* Active plans first — what the user + agent are growing on */}
+                {filteredPlans.map((plan) => (
+                  <BrainPlanCard
+                    key={`plan-${plan.id}`}
+                    plan={plan}
+                    health={healthByPlanId[plan.id] ?? null}
+                    onClick={() => router.push(`/plans/${plan.id}`)}
+                  />
+                ))}
+                {/* Then tasks (action items) */}
                 {filteredTasks.map((task) => (
                   <BrainTaskCard
                     key={`task-${task.id}`}
