@@ -364,7 +364,6 @@ export interface GoalNode {
   mainBlocker: string;
   progressScore: number;
   planId: string;
-  clarificationStep: number;
   pendingQuestionSignalId: string;
   source: string;
   lastActivity: string;

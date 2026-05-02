@@ -977,7 +977,6 @@ export const GET_USER_GOALS = gql`
       mainBlocker
       progressScore
       planId
-      clarificationStep
       pendingQuestionSignalId
       source
       lastActivity
