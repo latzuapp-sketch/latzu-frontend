@@ -4,12 +4,12 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback, type ReactNode } from "react";
 import { motion } from "framer-motion";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { Sidebar, SIDEBAR_COLLAPSED_WIDTH } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { QuickCapture } from "@/components/capture/QuickCapture";
-import { ChatOverlay } from "@/components/chat/ChatOverlay";
+import { ChatOverlay, CHAT_OVERLAY_WIDTH } from "@/components/chat/ChatOverlay";
 import { CommandPalette } from "@/components/search/CommandPalette";
-import { useUserStore, useSidebarCollapsed, useIsGuest } from "@/stores/userStore";
+import { useUserStore, useIsGuest } from "@/stores/userStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { websocket } from "@/lib/websocket";
 
@@ -20,10 +20,10 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const collapsed = useSidebarCollapsed();
   const isMobile = useIsMobile();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const isGuest = useIsGuest();
   const guestId = useUserStore((state) => state.guestId);
   const setProfileType = useUserStore((state) => state.setProfileType);
@@ -118,7 +118,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       <motion.main
         initial={false}
-        animate={{ marginLeft: isMobile ? 0 : (collapsed ? 72 : 256) }}
+        animate={{
+          marginLeft: isMobile ? 0 : SIDEBAR_COLLAPSED_WIDTH,
+          marginRight: !isMobile && chatOpen && !isGuest ? CHAT_OVERLAY_WIDTH : 0,
+        }}
         transition={{ duration: 0.2, ease: "easeInOut" }}
         className="min-h-screen"
       >
@@ -138,7 +141,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {!isGuest && <QuickCapture />}
 
       {/* Invocable chat overlay (Cmd+J) — only for authenticated users */}
-      {!isGuest && <ChatOverlay />}
+      {!isGuest && <ChatOverlay open={chatOpen} onOpenChange={setChatOpen} isMobile={isMobile} />}
 
       {/* Global command palette */}
       <CommandPalette open={paletteOpen} onClose={closePalette} />

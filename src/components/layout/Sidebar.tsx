@@ -3,19 +3,17 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useUserStore, useSidebarCollapsed, useIsGuest } from "@/stores/userStore";
+import { useUserStore, useIsGuest } from "@/stores/userStore";
 import { getTemplate } from "@/config/templates";
 import { useLanguage, LangToggle } from "@/lib/i18n";
 import {
-  ChevronLeft,
-  ChevronRight,
   Settings,
   LogOut,
   Moon,
@@ -24,6 +22,9 @@ import {
 import { signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
+
+export const SIDEBAR_COLLAPSED_WIDTH = 72;
+export const SIDEBAR_EXPANDED_WIDTH = 256;
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -136,17 +137,14 @@ function SidebarNav({
 
 function SidebarFooter({
   collapsed,
-  showCollapseToggle = false,
   onItemClick,
 }: {
   collapsed: boolean;
-  showCollapseToggle?: boolean;
   onItemClick?: () => void;
 }) {
   const router = useRouter();
   const isGuest = useIsGuest();
   const disableGuestMode = useUserStore((state) => state.disableGuestMode);
-  const toggleSidebar = useUserStore((state) => state.toggleSidebar);
   const { theme, setTheme } = useTheme();
   const { t } = useLanguage();
 
@@ -256,23 +254,6 @@ function SidebarFooter({
         </Button>
       )}
 
-      {showCollapseToggle && (
-        <>
-          <Separator className="my-2" />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleSidebar}
-            className="w-full justify-center"
-          >
-            {collapsed ? (
-              <ChevronRight className="w-5 h-5" />
-            ) : (
-              <ChevronLeft className="w-5 h-5" />
-            )}
-          </Button>
-        </>
-      )}
     </div>
   );
 }
@@ -280,7 +261,8 @@ function SidebarFooter({
 // ─── Sidebar ───────────────────────────────────────────────────────────────────
 
 export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
-  const collapsed = useSidebarCollapsed();
+  const [hovered, setHovered] = useState(false);
+  const collapsed = !hovered;
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -296,20 +278,23 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         </SheetContent>
       </Sheet>
 
-      {/* Desktop: Fixed sidebar */}
+      {/* Desktop: Fixed mini sidebar that expands on hover (overlay) */}
       <motion.aside
         initial={false}
-        animate={{ width: collapsed ? 72 : 256 }}
+        animate={{ width: collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH }}
         transition={{ duration: 0.2, ease: "easeInOut" }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         className={cn(
           "fixed left-0 top-0 z-40 h-screen",
           "bg-sidebar border-r border-sidebar-border",
-          "hidden md:flex flex-col"
+          "hidden md:flex flex-col",
+          !collapsed && "shadow-xl"
         )}
       >
         <SidebarLogo collapsed={collapsed} />
         <SidebarNav collapsed={collapsed} />
-        <SidebarFooter collapsed={collapsed} showCollapseToggle />
+        <SidebarFooter collapsed={collapsed} />
       </motion.aside>
     </TooltipProvider>
   );
