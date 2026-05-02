@@ -17,9 +17,10 @@ import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bot, Sparkles, X, Flame, Compass, ArrowRight, MessageSquare,
-  CheckCircle2, AlertTriangle, Lightbulb, ChevronRight,
+  CheckCircle2, AlertTriangle, Lightbulb, ChevronRight, CalendarClock, Clock,
 } from "lucide-react";
 import { useUserModel, useAgentActions, useActionMutations } from "@/hooks/useOrganizerAgent";
+import { useUpcomingEvents } from "@/hooks/useScheduler";
 import type { AgentAction, AgentActionType } from "@/graphql/types";
 import type { BrainSelection } from "@/components/brain/BrainSidebar";
 import { cn } from "@/lib/utils";
@@ -58,10 +59,22 @@ interface PanelProps {
   onJumpArea: (area: string) => void;
 }
 
+function timeUntil(iso: string): string {
+  const diffMs = new Date(iso).getTime() - Date.now();
+  const absMin = Math.round(Math.abs(diffMs) / 60000);
+  const past = diffMs < 0;
+  if (absMin < 60) return past ? `hace ${absMin}m` : `en ${absMin}m`;
+  const absHr = Math.round(absMin / 60);
+  if (absHr < 24) return past ? `hace ${absHr}h` : `en ${absHr}h`;
+  const absD = Math.round(absHr / 24);
+  return past ? `hace ${absD}d` : `en ${absD}d`;
+}
+
 export function BrainAgentPanel({ open, onClose, selection, onJumpTopic, onJumpArea }: PanelProps) {
   const { userModel } = useUserModel();
   const { actions, refetch } = useAgentActions({ status: "pending", limit: 10 });
   const { apply, dismiss, loading: mutating } = useActionMutations();
+  const { events: upcoming } = useUpcomingEvents({ daysAhead: 3, limit: 5 });
 
   const proposals = useMemo(
     () =>
@@ -135,6 +148,34 @@ export function BrainAgentPanel({ open, onClose, selection, onJumpTopic, onJumpA
                 </p>
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
                   <p className="text-xs leading-snug text-foreground/90">{userModel.currentFocus}</p>
+                </div>
+              </section>
+            )}
+
+            {/* Upcoming events scheduled by the agent */}
+            {upcoming.filter((e) => e.status !== "cancelled").length > 0 && (
+              <section>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-2 flex items-center gap-1.5">
+                  <CalendarClock className="w-3 h-3 text-emerald-400" />
+                  Próximamente
+                </p>
+                <div className="space-y-1.5">
+                  {upcoming
+                    .filter((e) => e.status !== "cancelled")
+                    .slice(0, 3)
+                    .map((event) => (
+                      <div
+                        key={event.id}
+                        className="rounded-lg border border-border/40 bg-card/60 px-2.5 py-2 text-xs"
+                      >
+                        <p className="font-medium leading-snug truncate">{event.title}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5" />
+                          {timeUntil(event.scheduledAt)}
+                          {event.durationMinutes && ` · ${event.durationMinutes}min`}
+                        </p>
+                      </div>
+                    ))}
                 </div>
               </section>
             )}

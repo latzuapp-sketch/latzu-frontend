@@ -75,8 +75,9 @@ export function Header({ title, onMenuClick, onSearchClick }: HeaderProps) {
   const unreadCount = useEventStore((state) => state.unreadCount);
   const markNotificationRead = useEventStore((state) => state.markNotificationRead);
 
-  // Pull all non-silent agent actions (the unified inbox surface for the bell)
-  const { actions: agentActions } = useAgentActions({ status: "pending" });
+  // Pull all non-silent agent actions (the unified inbox surface for the bell).
+  // No `status` filter — the resolver returns pending + delivered-needing-response.
+  const { actions: agentActions } = useAgentActions({});
   const { dismiss: dismissSignal } = useActionMutations();
   const { respond: respondToSignal } = useRespondToAction();
   const now = new Date().toISOString();

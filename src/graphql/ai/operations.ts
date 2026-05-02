@@ -975,3 +975,79 @@ export const CREATE_GOAL = gql`
   }
 `;
 
+
+// ─── Scheduled events ────────────────────────────────────────────────────────
+
+const SCHEDULED_EVENT_FIELDS = gql`
+  fragment ScheduledEventFields on ScheduledEventGQL {
+    id
+    userId
+    kind
+    title
+    description
+    scheduledAt
+    durationMinutes
+    reminderMinutesBefore
+    status
+    createdBy
+    relatedTargetId
+    snoozedCount
+    channels
+    deliveredVia
+    createdAt
+    updatedAt
+    deliveredAt
+  }
+`;
+
+export const GET_UPCOMING_EVENTS = gql`
+  ${SCHEDULED_EVENT_FIELDS}
+  query GetUpcomingEvents($userId: String!, $daysAhead: Int, $includePastUnfired: Boolean, $limit: Int) {
+    upcomingEvents(userId: $userId, daysAhead: $daysAhead, includePastUnfired: $includePastUnfired, limit: $limit) {
+      ...ScheduledEventFields
+    }
+  }
+`;
+
+export const SCHEDULE_EVENT = gql`
+  ${SCHEDULED_EVENT_FIELDS}
+  mutation ScheduleEvent(
+    $kind: String!
+    $title: String!
+    $whenIso: String!
+    $description: String
+    $durationMinutes: Int
+    $reminderMinutesBefore: Int
+    $relatedTargetId: String
+  ) {
+    scheduleEvent(
+      kind: $kind
+      title: $title
+      whenIso: $whenIso
+      description: $description
+      durationMinutes: $durationMinutes
+      reminderMinutesBefore: $reminderMinutesBefore
+      relatedTargetId: $relatedTargetId
+    ) {
+      ...ScheduledEventFields
+    }
+  }
+`;
+
+export const CANCEL_SCHEDULED_EVENT = gql`
+  mutation CancelScheduledEvent($eventId: String!) {
+    cancelScheduledEvent(eventId: $eventId) {
+      success
+      deletedId
+    }
+  }
+`;
+
+export const SNOOZE_SCHEDULED_EVENT = gql`
+  ${SCHEDULED_EVENT_FIELDS}
+  mutation SnoozeScheduledEvent($eventId: String!, $minutes: Int) {
+    snoozeScheduledEvent(eventId: $eventId, minutes: $minutes) {
+      ...ScheduledEventFields
+    }
+  }
+`;

@@ -10,7 +10,7 @@
 
 import { motion } from "framer-motion";
 import {
-  StickyNote, ListTodo, FileText, CheckCircle2, Circle, Clock, Flag,
+  StickyNote, ListTodo, FileText, CheckCircle2, Circle, Clock,
   Pin, Layers,
 } from "lucide-react";
 import type { Flashcard } from "@/types/flashcards";
@@ -102,14 +102,12 @@ const STATUS_ICON: Record<TaskStatus, React.ElementType> = {
   todo: Circle,
   in_progress: Clock,
   done: CheckCircle2,
-  blocked: Flag,
 };
 
 const STATUS_COLOR: Record<TaskStatus, string> = {
   todo: "text-muted-foreground/60",
   in_progress: "text-amber-400",
   done: "text-emerald-400",
-  blocked: "text-rose-400",
 };
 
 function formatDate(iso: string | null): string | null {

@@ -25,6 +25,7 @@ import { useUserModel, useAgentActions } from "@/hooks/useOrganizerAgent";
 import { Button } from "@/components/ui/button";
 import { EatTheFrog } from "@/components/dashboard/EatTheFrog";
 import { Serendipity } from "@/components/dashboard/Serendipity";
+import { UpcomingEventsWidget } from "@/components/dashboard/UpcomingEventsWidget";
 import { cn } from "@/lib/utils";
 import type { ABCDEPriority } from "@/types/planning";
 import type { AgentAction, AgentActionType } from "@/graphql/types";
@@ -406,11 +407,13 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* ── Zone 4: Serendipity strip ────────────────────────────────── */}
+          {/* ── Zone 4: Próximamente + Serendipity ───────────────────────── */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0, transition: { delay: 0.2 } }}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-5"
           >
+            <UpcomingEventsWidget />
             <Serendipity />
           </motion.div>
         </>

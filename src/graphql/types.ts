@@ -428,3 +428,53 @@ export interface PlanHealth {
   recommendation: string;
   updatedAt: string | null;
 }
+
+// ─── Scheduled events ────────────────────────────────────────────────────────
+
+export type ScheduledEventKind =
+  | "study_session"
+  | "review_session"
+  | "focus_block"
+  | "reminder"
+  | "check_in";
+
+export type ScheduledEventStatus = "pending" | "delivered" | "responded" | "cancelled";
+
+export type DeliveryChannel = "push" | "whatsapp" | "email";
+
+export interface DeliveryRecord {
+  ok: boolean;
+  sent_at: string;
+  error?: string;
+  message_id?: string;
+}
+
+export interface ScheduledEvent {
+  id: string;
+  userId: string;
+  kind: ScheduledEventKind;
+  title: string;
+  description: string;
+  scheduledAt: string;            // ISO datetime
+  durationMinutes: number | null;
+  reminderMinutesBefore: number | null;
+  status: ScheduledEventStatus;
+  createdBy: "agent" | "user";
+  relatedTargetId: string | null;
+  snoozedCount: number;
+  channels: DeliveryChannel[];                            // what the agent picked
+  deliveredVia: string;                                   // JSON: { channel: DeliveryRecord }
+  createdAt: string | null;
+  updatedAt: string | null;
+  deliveredAt: string | null;
+}
+
+export function parseDeliveredVia(json: string | null | undefined): Record<string, DeliveryRecord> {
+  if (!json) return {};
+  try {
+    const v = JSON.parse(json);
+    return typeof v === "object" && v !== null ? v as Record<string, DeliveryRecord> : {};
+  } catch {
+    return {};
+  }
+}
