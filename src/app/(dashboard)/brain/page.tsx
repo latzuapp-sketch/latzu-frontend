@@ -30,7 +30,19 @@ import { GroupedConcepts } from "@/components/brain/GroupedConcepts";
 import {
   AutoFilterChips,
   facetsFromNodes,
+  facetsFromTasks,
+  facetsFromPlans,
+  facetsFromGoals,
+  facetsFromFiles,
+  facetsFromBooks,
+  facetsFromAllContent,
   matchesChip,
+  matchesChipTask,
+  matchesChipPlan,
+  matchesChipGoal,
+  matchesChipFile,
+  matchesChipBook,
+  matchesChipContentKind,
   type ChipValue,
 } from "@/components/brain/AutoFilterChips";
 import { useKnowledgeNodes, useLibraryBooks } from "@/hooks/useLibrary";
@@ -503,21 +515,92 @@ export default function BrainPage() {
   );
   const showWorkspaces = selection.kind === "all" || selection.kind === "pages";
 
-  // Auto-filter chips: facets come from the section's nodes (pre-chip) so they
-  // don't disappear once selected; chip selection further narrows what renders.
-  const chipFacets = useMemo(() => facetsFromNodes(filteredNodes), [filteredNodes]);
+  // ── Chip facets: computed from the right source per tab (pre-chip, so
+  //    available options don't disappear when one is selected).
+  const chipFacets = useMemo(() => {
+    switch (selection.kind) {
+      case "knowledge": return facetsFromNodes(filteredNodes);
+      case "tasks":     return facetsFromTasks(filteredTasks);
+      case "plans":     return facetsFromPlans(filteredPlans);
+      case "goals":     return facetsFromGoals(filteredGoals);
+      case "files":     return facetsFromFiles(filteredFiles);
+      case "books":
+      case "readings":  return facetsFromBooks(filteredBooks);
+      case "all":       return facetsFromAllContent({
+        goals:      filteredGoals.length,
+        plans:      filteredPlans.length,
+        tasks:      filteredTasks.length,
+        notes:      filteredNotes.length,
+        files:      filteredFiles.length,
+        books:      filteredBooks.length,
+        workspaces: showWorkspaces ? workspaces.length : 0,
+      });
+      default: return [];
+    }
+  }, [
+    selection.kind,
+    filteredNodes, filteredTasks, filteredPlans, filteredGoals,
+    filteredFiles, filteredBooks, filteredNotes, workspaces.length, showWorkspaces,
+  ]);
+
+  // ── Post-chip display arrays — each type filtered by the active chip.
   const displayNodes = useMemo(
     () => filteredNodes.filter((n) => matchesChip(n, activeChip)),
     [filteredNodes, activeChip],
   );
+  const displayTasks = useMemo(
+    () => filteredTasks.filter((t) =>
+      matchesChipContentKind("tasks", activeChip) && matchesChipTask(t, activeChip)
+    ),
+    [filteredTasks, activeChip],
+  );
+  const displayPlans = useMemo(
+    () => filteredPlans.filter((p) =>
+      matchesChipContentKind("plans", activeChip) && matchesChipPlan(p, activeChip)
+    ),
+    [filteredPlans, activeChip],
+  );
+  const displayGoals = useMemo(
+    () => filteredGoals.filter((g) =>
+      matchesChipContentKind("goals", activeChip) && matchesChipGoal(g, activeChip)
+    ),
+    [filteredGoals, activeChip],
+  );
+  const displayFiles = useMemo(
+    () => filteredFiles.filter((f) =>
+      matchesChipContentKind("files", activeChip) && matchesChipFile(f, activeChip)
+    ),
+    [filteredFiles, activeChip],
+  );
+  const displayBooks = useMemo(
+    () => filteredBooks.filter((b) =>
+      matchesChipContentKind("books", activeChip) && matchesChipBook(b, activeChip)
+    ),
+    [filteredBooks, activeChip],
+  );
+  const displayNotes = useMemo(
+    () => filteredNotes.filter(() => matchesChipContentKind("notes", activeChip)),
+    [filteredNotes, activeChip],
+  );
+  const displayDecks = useMemo(
+    () => filteredDecks,
+    [filteredDecks],
+  );
+  const displayQuizTasks = useMemo(
+    () => filteredQuizTasks,
+    [filteredQuizTasks],
+  );
+  const displayWorkspaces = showWorkspaces && matchesChipContentKind("workspaces", activeChip)
+    ? workspaces : [];
+
   const chipsHaveAny = chipFacets.some((f) => f.values.length > 0);
 
   const totalShown =
-    displayNodes.length + filteredNotes.length + filteredTasks.length +
-    filteredPlans.length + filteredBooks.length +
-    filteredGoals.length + filteredFiles.length +
-    filteredDecks.length + filteredQuizTasks.length +
-    (showWorkspaces ? workspaces.length : 0);
+    displayNodes.length + displayNotes.length + displayTasks.length +
+    displayPlans.length + displayBooks.length +
+    displayGoals.length + displayFiles.length +
+    displayDecks.length + displayQuizTasks.length +
+    displayWorkspaces.length;
 
   const synthesisCount = useMemo(
     () => displayNodes.filter((n) => detectVariant(n) === "synthesis").length,
@@ -677,7 +760,7 @@ export default function BrainPage() {
           )}
 
           {!loading && totalShown === 0 && (
-            <EmptyState selection={selection} hasAny={nodes.length + notes.length + tasks.length > 0} hasSearch={!!search} onCreateNote={() => setQuickKind("note")} onCreateTask={() => setQuickKind("task")} />
+            <EmptyState selection={selection} hasAny={nodes.length + notes.length + tasks.length > 0} hasSearch={!!search || !!activeChip} onCreateNote={() => setQuickKind("note")} onCreateTask={() => setQuickKind("task")} />
           )}
 
           {/* Conceptos view — grouped by autoCategory when present, falling back
@@ -694,7 +777,7 @@ export default function BrainPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               <AnimatePresence mode="popLayout">
                 {/* Goals first — the north star */}
-                {filteredGoals.map((goal) => (
+                {displayGoals.map((goal) => (
                   <BrainGoalCard
                     key={`goal-${goal.id}`}
                     goal={goal}
@@ -702,7 +785,7 @@ export default function BrainPage() {
                   />
                 ))}
                 {/* Active plans — what the user + agent are growing on */}
-                {filteredPlans.map((plan) => (
+                {displayPlans.map((plan) => (
                   <BrainPlanCard
                     key={`plan-${plan.id}`}
                     plan={plan}
@@ -711,7 +794,7 @@ export default function BrainPage() {
                   />
                 ))}
                 {/* Decks (Estudio → Flashcards) */}
-                {filteredDecks.map((deck) => (
+                {displayDecks.map((deck) => (
                   <BrainDeckCard
                     key={`deck-${deck.id}`}
                     deck={deck}
@@ -719,7 +802,7 @@ export default function BrainPage() {
                   />
                 ))}
                 {/* Quiz tasks (Estudio → Quizzes) */}
-                {filteredQuizTasks.map((task) => (
+                {displayQuizTasks.map((task) => (
                   <BrainQuizCard
                     key={`quiz-${task.id}`}
                     task={task}
@@ -727,7 +810,7 @@ export default function BrainPage() {
                   />
                 ))}
                 {/* Books from the library catalog */}
-                {filteredBooks.map((book, i) => (
+                {displayBooks.map((book, i) => (
                   <BookCard
                     key={`book-${book.id}`}
                     book={book}
@@ -736,7 +819,7 @@ export default function BrainPage() {
                   />
                 ))}
                 {/* Tasks (action items) */}
-                {filteredTasks.map((task) => (
+                {displayTasks.map((task) => (
                   <BrainTaskCard
                     key={`task-${task.id}`}
                     task={task}
@@ -745,7 +828,7 @@ export default function BrainPage() {
                   />
                 ))}
                 {/* Notes */}
-                {filteredNotes.map((note) => (
+                {displayNotes.map((note) => (
                   <BrainNoteCard
                     key={`note-${note.id}`}
                     note={note}
@@ -753,7 +836,7 @@ export default function BrainPage() {
                   />
                 ))}
                 {/* Files */}
-                {filteredFiles.map((file) => (
+                {displayFiles.map((file) => (
                   <BrainFileCard
                     key={`file-${file.id}`}
                     file={file}
@@ -769,7 +852,7 @@ export default function BrainPage() {
                   />
                 ))}
                 {/* Workspaces (when relevant) */}
-                {showWorkspaces && workspaces.map((w) => (
+                {displayWorkspaces.map((w) => (
                   <BrainPageCard
                     key={`ws-${w.id}`}
                     workspace={w}
