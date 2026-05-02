@@ -1,180 +1,156 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useMutation } from "@apollo/client";
+/**
+ * QuickCapture — universal drop zone.
+ *
+ * One floating button (FAB) bottom-right, opens a modal with a single
+ * unified surface to drop files, paste URLs (incl. YouTube) and type text.
+ * Each input becomes a queue item. "Procesar todo" runs them through the
+ * right backend pipeline and shows per-item status as they're indexed.
+ *
+ * Shortcut: Cmd+U / Ctrl+U opens the modal from anywhere in the dashboard.
+ */
+
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { aiClient } from "@/lib/apollo";
-import { QUICK_CAPTURE } from "@/graphql/ai/operations";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
-  Plus, X, Loader2, CheckCircle2, Brain, ListTodo,
-  Send, Link2, FileText, Video, Globe,
+  Plus, X, Loader2, CheckCircle2, AlertCircle, Sparkles,
+  FileText, Link2, Youtube, FileType, Send, UploadCloud,
 } from "lucide-react";
-import Link from "next/link";
+import { useIngest, looksLikeUrl, type IngestItem, type IngestKind } from "@/hooks/useIngest";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// ─── Item icon ────────────────────────────────────────────────────────────────
 
-interface CaptureAttachment {
-  id: string;
-  type: "image" | "pdf" | "link" | "video" | "document";
-  name: string;
-  data: string;
-  preview?: string;
-  mimeType?: string;
+const KIND_ICON: Record<IngestKind, React.ElementType> = {
+  text: FileText,
+  url: Link2,
+  youtube: Youtube,
+  file: FileType,
+};
+
+const KIND_COLOR: Record<IngestKind, string> = {
+  text: "text-violet-400 bg-violet-500/10 border-violet-500/30",
+  url: "text-sky-400 bg-sky-500/10 border-sky-500/30",
+  youtube: "text-rose-400 bg-rose-500/10 border-rose-500/30",
+  file: "text-amber-400 bg-amber-500/10 border-amber-500/30",
+};
+
+// ─── Queue item row ──────────────────────────────────────────────────────────
+
+function QueueRow({ item, onRemove }: { item: IngestItem; onRemove: (id: string) => void }) {
+  const Icon = KIND_ICON[item.kind];
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      className="flex items-start gap-2.5 px-3 py-2 rounded-lg border border-border/40 bg-card/50"
+    >
+      <div className={cn("w-7 h-7 rounded-lg border flex items-center justify-center shrink-0", KIND_COLOR[item.kind])}>
+        <Icon className="w-3.5 h-3.5" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium truncate">{item.label}</p>
+        {item.status === "done" && item.summary && (
+          <p className="text-[10px] text-emerald-400 mt-0.5 truncate">
+            {item.summary} · {item.nodesCreated ?? 0} ideas
+          </p>
+        )}
+        {item.status === "error" && (
+          <p className="text-[10px] text-destructive mt-0.5 truncate">{item.error}</p>
+        )}
+        {item.status === "processing" && (
+          <p className="text-[10px] text-muted-foreground mt-0.5">Indexando…</p>
+        )}
+        {item.status === "pending" && (
+          <p className="text-[10px] text-muted-foreground/60 mt-0.5">Listo para procesar</p>
+        )}
+      </div>
+      <div className="shrink-0 mt-0.5">
+        {item.status === "processing" ? (
+          <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+        ) : item.status === "done" ? (
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+        ) : item.status === "error" ? (
+          <AlertCircle className="w-3.5 h-3.5 text-destructive" />
+        ) : (
+          <button
+            onClick={() => onRemove(item.id)}
+            className="text-muted-foreground/40 hover:text-foreground transition-colors"
+            title="Quitar"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+    </motion.div>
+  );
 }
 
-interface CaptureResult {
-  type: string;
-  saved: boolean;
-  summary: string;
-  rawTitle: string | null;
-  rawContent: string | null;
-  priority: string | null;
-  dueHint: string | null;
-}
+// ─── Modal ───────────────────────────────────────────────────────────────────
 
-// ── Speed dial actions ────────────────────────────────────────────────────────
-
-type ActionId = "capture" | "video" | "document" | "link";
-
-const ACTIONS: {
-  id: ActionId;
-  icon: typeof Brain;
-  label: string;
-  description: string;
-  gradient: string;
-  ring: string;
-}[] = [
-  {
-    id: "capture",
-    icon: Brain,
-    label: "Captura rápida",
-    description: "Nota, tarea o idea",
-    gradient: "from-primary to-accent",
-    ring: "ring-primary/30",
-  },
-  {
-    id: "video",
-    icon: Video,
-    label: "Subir video",
-    description: "MP4, MOV, WebM",
-    gradient: "from-rose-500 to-red-600",
-    ring: "ring-rose-500/30",
-  },
-  {
-    id: "document",
-    icon: FileText,
-    label: "Subir documento",
-    description: "PDF, Word, texto",
-    gradient: "from-blue-500 to-indigo-600",
-    ring: "ring-blue-500/30",
-  },
-  {
-    id: "link",
-    icon: Globe,
-    label: "Agregar enlace",
-    description: "Web, YouTube, artículo",
-    gradient: "from-teal-500 to-cyan-600",
-    ring: "ring-teal-500/30",
-  },
-];
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-async function fileToAtt(file: File): Promise<CaptureAttachment | null> {
-  const isImage = file.type.startsWith("image/");
-  const isPdf = file.type === "application/pdf";
-  const isVideo = file.type.startsWith("video/");
-  const isDoc = !isImage && !isPdf && !isVideo;
-  if (!isImage && !isPdf && !isVideo && !isDoc) return null;
-  const type: CaptureAttachment["type"] = isImage ? "image" : isPdf ? "pdf" : isVideo ? "video" : "document";
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUri = reader.result as string;
-      resolve({ id: crypto.randomUUID(), type, name: file.name, data: dataUri, preview: isImage ? dataUri : undefined, mimeType: file.type });
-    };
-    reader.onerror = () => resolve(null);
-    reader.readAsDataURL(file);
-  });
-}
-
-const typeIcon = (type: string) => ({
-  note: <Brain className="w-3.5 h-3.5" />,
-  task: <ListTodo className="w-3.5 h-3.5" />,
-}[type] ?? <Brain className="w-3.5 h-3.5" />);
-
-const typeLabel = (type: string) => ({
-  note: "Nota guardada",
-  task: "Tarea detectada",
-}[type] ?? "Capturado");
-
-const typeLink = (type: string) => ({
-  note: "/library",
-  task: "/planning",
-}[type] ?? "/dashboard");
-
-// ── Capture Modal ─────────────────────────────────────────────────────────────
-
-interface CaptureModalProps {
-  initialAction?: ActionId;
+interface DropModalProps {
   onClose: () => void;
-  userId: string;
 }
 
-function CaptureModal({ initialAction = "capture", onClose, userId }: CaptureModalProps) {
-  const [text, setText] = useState("");
-  const [result, setResult] = useState<CaptureResult | null>(null);
-  const [attachments, setAttachments] = useState<CaptureAttachment[]>([]);
-  const [linkInput, setLinkInput] = useState("");
-  const [showLink, setShowLink] = useState(initialAction === "link");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+function DropModal({ onClose }: DropModalProps) {
+  const {
+    queue, isProcessing,
+    addText, addFiles, addSmart,
+    removeItem, clearDone, processQueue,
+  } = useIngest();
+
+  const [draft, setDraft] = useState("");
+  const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
-  const docInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const [capture, { loading }] = useMutation(QUICK_CAPTURE, { client: aiClient });
+  const pendingCount = queue.filter((i) => i.status === "pending").length;
+  const doneCount = queue.filter((i) => i.status === "done").length;
+  const errorCount = queue.filter((i) => i.status === "error").length;
 
+  // Focus textarea on mount
   useEffect(() => {
-    if (initialAction === "video") { videoInputRef.current?.click(); }
-    else if (initialAction === "document") { docInputRef.current?.click(); }
-    else { setTimeout(() => textareaRef.current?.focus(), 80); }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    setTimeout(() => textareaRef.current?.focus(), 60);
+  }, []);
 
+  // Esc closes
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        commitDraft();
+        if (queue.some((i) => i.status === "pending")) processQueue();
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, queue]);
 
-  const addLink = () => {
-    const url = linkInput.trim();
-    if (!url) return;
-    const fullUrl = url.startsWith("http") ? url : `https://${url}`;
-    const isYt = fullUrl.includes("youtube.com") || fullUrl.includes("youtu.be");
-    setAttachments((p) => [...p, { id: crypto.randomUUID(), type: "link", name: isYt ? "YouTube" : new URL(fullUrl).hostname, data: fullUrl }]);
-    setLinkInput(""); setShowLink(false);
-  };
-
-  const handleFiles = async (files: File[]) => {
-    const results = await Promise.all(files.map(fileToAtt));
-    setAttachments((p) => [...p, ...results.filter(Boolean) as CaptureAttachment[]]);
-  };
-
-  const handleSubmit = async () => {
-    if (!text.trim() && !attachments.length) return;
-    if (!userId || loading) return;
-    try {
-      const res = await capture({ variables: { text: text.trim() || "Analiza el archivo adjunto." } });
-      setResult(res.data?.quickCapture ?? null);
-      setText(""); setAttachments([]);
-    } catch {
-      setResult({ type: "note", saved: false, summary: "Error al guardar. Inténtalo de nuevo.", rawTitle: null, rawContent: null, priority: null, dueHint: null });
+  const commitDraft = () => {
+    const t = draft.trim();
+    if (!t) return;
+    // Split lines: each non-empty line that looks like a URL becomes its own item
+    const lines = t.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+    if (lines.length > 1 && lines.every(looksLikeUrl)) {
+      lines.forEach((l) => addSmart(l));
+    } else {
+      addSmart(t);
     }
+    setDraft("");
   };
 
-  const actionMeta = ACTIONS.find((a) => a.id === initialAction) ?? ACTIONS[0];
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+    const text = e.dataTransfer.getData("text/plain");
+    if (text) addSmart(text);
+  };
 
   return (
     <motion.div
@@ -188,259 +164,196 @@ function CaptureModal({ initialAction = "capture", onClose, userId }: CaptureMod
         initial={{ y: 60, opacity: 0, scale: 0.96 }}
         animate={{ y: 0, opacity: 1, scale: 1 }}
         exit={{ y: 40, opacity: 0, scale: 0.96 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="w-full max-w-lg glass rounded-2xl border border-border/50 overflow-hidden"
+        transition={{ type: "spring", stiffness: 320, damping: 28 }}
+        className="w-full max-w-xl glass rounded-2xl border border-border/50 overflow-hidden flex flex-col max-h-[85vh]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 shrink-0">
           <div className="flex items-center gap-2">
-            <div className={cn("w-6 h-6 rounded-lg bg-gradient-to-br flex items-center justify-center", actionMeta.gradient)}>
-              <actionMeta.icon className="w-3.5 h-3.5 text-white" />
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <Sparkles className="w-3.5 h-3.5 text-white" />
             </div>
-            <p className="text-sm font-semibold">{actionMeta.label}</p>
-            <span className="text-[10px] text-muted-foreground/50 border border-border/40 rounded px-1.5 py-0.5 font-mono">
-              Ctrl+Enter
-            </span>
+            <div>
+              <p className="text-sm font-semibold leading-none">Tirar a tu enciclopedia</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Texto, URLs, YouTube, PDFs, imágenes — todo va al grafo
+              </p>
+            </div>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Hidden file inputs */}
-        <input ref={fileInputRef} type="file" accept="image/*,.pdf" multiple className="hidden"
-          onChange={async (e) => { await handleFiles(Array.from(e.target.files ?? [])); e.target.value = ""; }} />
-        <input ref={videoInputRef} type="file" accept="video/*" multiple className="hidden"
-          onChange={async (e) => { await handleFiles(Array.from(e.target.files ?? [])); e.target.value = ""; textareaRef.current?.focus(); }} />
-        <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.md" multiple className="hidden"
-          onChange={async (e) => { await handleFiles(Array.from(e.target.files ?? [])); e.target.value = ""; textareaRef.current?.focus(); }} />
-
-        {/* Content */}
-        <AnimatePresence mode="wait">
-          {!result ? (
-            <motion.div key="input" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-4 space-y-3">
-              {/* Attachment chips */}
-              {attachments.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pb-1">
-                  {attachments.map((att) => (
-                    <div key={att.id} className="flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md bg-muted/40 border border-border/40 text-xs">
-                      {att.type === "image" && att.preview
-                        ? <img src={att.preview} alt={att.name} className="w-4 h-4 rounded object-cover" />
-                        : att.type === "pdf" ? <FileText className="w-3 h-3 text-red-400" />
-                        : att.type === "video" ? <Video className="w-3 h-3 text-rose-400" />
-                        : att.type === "link" ? <Link2 className="w-3 h-3 text-blue-400" />
-                        : <FileText className="w-3 h-3 text-blue-400" />}
-                      <span className="truncate max-w-[100px] text-muted-foreground">{att.name}</span>
-                      <button onClick={() => setAttachments((p) => p.filter((a) => a.id !== att.id))} className="text-muted-foreground/40 hover:text-foreground">
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Link input */}
-              {showLink && (
-                <div className="flex gap-2 pb-1">
-                  <input
-                    autoFocus
-                    value={linkInput}
-                    onChange={(e) => setLinkInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addLink(); } if (e.key === "Escape") setShowLink(false); }}
-                    placeholder="https://... o youtube.com/..."
-                    className="flex-1 rounded-lg border border-border/50 bg-muted/30 px-3 py-1.5 text-sm outline-none focus:border-primary/40"
-                  />
-                  <button onClick={addLink} className="px-2 py-1.5 rounded-lg bg-primary/10 text-primary text-xs hover:bg-primary/20 transition-colors">OK</button>
-                </div>
-              )}
-
-              <textarea
-                ref={textareaRef}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); handleSubmit(); } }}
-                rows={4}
-                placeholder={
-                  initialAction === "video" ? "Describe de qué trata el video (opcional)…"
-                  : initialAction === "document" ? "Agrega contexto sobre el documento (opcional)…"
-                  : initialAction === "link" ? "Pega el enlace y/o describe el contenido…"
-                  : "Escribe cualquier cosa… una idea, tarea, recordatorio, concepto."
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Drop area + composer */}
+          <div
+            onDragEnter={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragOver={(e) => e.preventDefault()}
+            onDragLeave={(e) => {
+              if (e.currentTarget === e.target) setDragging(false);
+            }}
+            onDrop={handleDrop}
+            className={cn(
+              "p-4 m-3 rounded-xl border-2 border-dashed transition-colors space-y-2",
+              dragging
+                ? "border-primary bg-primary/5"
+                : "border-border/40 bg-card/20"
+            )}
+          >
+            <textarea
+              ref={textareaRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onPaste={(e) => {
+                // If user pastes a URL by itself, push directly to queue
+                const txt = e.clipboardData.getData("text/plain").trim();
+                if (txt && !draft && looksLikeUrl(txt) && !/\s/.test(txt)) {
+                  e.preventDefault();
+                  addSmart(txt);
                 }
-                className="w-full bg-transparent text-sm leading-relaxed outline-none resize-none placeholder:text-muted-foreground/40"
-              />
+              }}
+              placeholder="Pegá un link, escribí una idea, arrastrá un archivo aquí..."
+              rows={3}
+              className="w-full bg-transparent text-sm leading-relaxed outline-none resize-none placeholder:text-muted-foreground/50"
+            />
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-muted/30 transition-colors" title="Imagen o PDF">
-                    <FileText className="w-3.5 h-3.5" />
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <UploadCloud className="w-3.5 h-3.5" />
+                Subir archivo
+              </button>
+              <button
+                type="button"
+                disabled={!draft.trim()}
+                onClick={commitDraft}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                  draft.trim()
+                    ? "bg-primary/10 text-primary hover:bg-primary/20"
+                    : "text-muted-foreground/40 cursor-not-allowed"
+                )}
+              >
+                <Plus className="w-3 h-3" />
+                Agregar a cola
+              </button>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".txt,.md,.pdf,.csv,image/*"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) addFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+          </div>
+
+          {/* Queue */}
+          {queue.length > 0 && (
+            <div className="px-3 pb-3 space-y-1.5">
+              <div className="flex items-center justify-between px-1 pb-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Cola ({queue.length})
+                </p>
+                {doneCount > 0 && (
+                  <button
+                    onClick={clearDone}
+                    className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Limpiar listos
                   </button>
-                  <button type="button" onClick={() => videoInputRef.current?.click()} className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-muted/30 transition-colors" title="Video">
-                    <Video className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" onClick={() => setShowLink((v) => !v)} className={cn("p-1.5 rounded-lg transition-colors", showLink ? "text-primary bg-primary/10" : "text-muted-foreground/40 hover:text-foreground hover:bg-muted/30")} title="Enlace">
-                    <Link2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <button
-                  onClick={handleSubmit}
-                  disabled={(!text.trim() && !attachments.length) || loading}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
-                    (text.trim() || attachments.length) && !loading
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                      : "bg-muted/30 text-muted-foreground cursor-not-allowed"
-                  )}
-                >
-                  {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                  {loading ? "Procesando…" : "Capturar"}
-                </button>
+                )}
               </div>
-            </motion.div>
-          ) : (
-            <motion.div key="result" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="p-5 space-y-4">
-              <div className="flex items-start gap-3">
-                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", result.saved ? "bg-emerald-500/15 text-emerald-400" : "bg-primary/15 text-primary")}>
-                  {result.saved ? <CheckCircle2 className="w-5 h-5" /> : typeIcon(result.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold">{typeLabel(result.type)}</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">{result.summary}</p>
-                </div>
-              </div>
-              {(result.rawTitle || result.priority || result.dueHint) && (
-                <div className="bg-muted/20 rounded-xl p-3 text-xs space-y-1 text-muted-foreground">
-                  {result.rawTitle && <p><span className="font-medium">Título:</span> {result.rawTitle}</p>}
-                  {result.priority && result.priority !== "medium" && <p><span className="font-medium">Prioridad:</span> {result.priority}</p>}
-                  {result.dueHint && result.dueHint !== "null" && <p><span className="font-medium">Tiempo:</span> {result.dueHint}</p>}
-                </div>
-              )}
-              <div className="flex gap-2">
-                <button onClick={() => { setResult(null); setTimeout(() => textareaRef.current?.focus(), 50); }} className="flex-1 text-xs py-2 rounded-xl border border-border/40 hover:bg-muted/20 transition-colors">
-                  Capturar otra
-                </button>
-                <Link href={typeLink(result.type)} onClick={onClose} className="flex-1 text-xs py-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-center">
-                  {result.type === "note" ? "Ver biblioteca" : "Ver planificación"}
-                </Link>
-              </div>
-            </motion.div>
+              <AnimatePresence>
+                {queue.map((item) => (
+                  <QueueRow key={item.id} item={item} onRemove={removeItem} />
+                ))}
+              </AnimatePresence>
+            </div>
           )}
-        </AnimatePresence>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-border/30 px-4 py-3 flex items-center justify-between shrink-0 bg-card/30">
+          <p className="text-[10px] text-muted-foreground">
+            {queue.length === 0
+              ? "Cmd+U para abrir · Esc para cerrar"
+              : `${pendingCount} pendiente${pendingCount === 1 ? "" : "s"} · ${doneCount} indexado${doneCount === 1 ? "" : "s"}${errorCount ? ` · ${errorCount} con error` : ""}`}
+          </p>
+          <button
+            onClick={() => {
+              if (draft.trim()) commitDraft();
+              processQueue();
+            }}
+            disabled={isProcessing || (pendingCount === 0 && !draft.trim())}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
+              isProcessing
+                ? "bg-muted text-muted-foreground cursor-wait"
+                : (pendingCount > 0 || draft.trim())
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "bg-muted/30 text-muted-foreground/50 cursor-not-allowed"
+            )}
+          >
+            {isProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            {isProcessing ? "Indexando…" : "Procesar todo"}
+          </button>
+        </div>
       </motion.div>
     </motion.div>
   );
 }
 
-// ── QuickCapture (speed dial) ─────────────────────────────────────────────────
+// ─── FAB + global shortcut ────────────────────────────────────────────────────
 
 export function QuickCapture() {
   const { data: session } = useSession();
   const userId = (session?.user as { id?: string })?.id ?? null;
-  const [dialOpen, setDialOpen] = useState(false);
-  const [activeAction, setActiveAction] = useState<ActionId | null>(null);
+  const [open, setOpen] = useState(false);
 
-  // Close dial on outside click
-  const dialRef = useRef<HTMLDivElement>(null);
+  // Cmd+U / Ctrl+U opens the drop zone from anywhere
   useEffect(() => {
-    if (!dialOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (dialRef.current && !dialRef.current.contains(e.target as Node)) {
-        setDialOpen(false);
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "u") {
+        e.preventDefault();
+        setOpen(true);
       }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [dialOpen]);
-
-  const handleAction = (id: ActionId) => {
-    setDialOpen(false);
-    setActiveAction(id);
-  };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   if (!userId) return null;
 
   return (
     <>
-      {/* Speed dial */}
-      <div ref={dialRef} className="fixed bottom-6 right-6 z-40 md:bottom-8 md:right-8 flex flex-col items-end gap-3">
-        {/* Action items */}
-        <AnimatePresence>
-          {dialOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-end gap-2.5"
-            >
-              {[...ACTIONS].reverse().map((action, i) => {
-                const Icon = action.icon;
-                return (
-                  <motion.div
-                    key={action.id}
-                    initial={{ opacity: 0, x: 20, scale: 0.85 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 16, scale: 0.85 }}
-                    transition={{ delay: i * 0.06, type: "spring", stiffness: 400, damping: 28 }}
-                    className="flex items-center gap-3"
-                  >
-                    {/* Label chip */}
-                    <motion.div
-                      initial={{ opacity: 0, x: 8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 8 }}
-                      transition={{ delay: i * 0.06 + 0.05 }}
-                      className="bg-card border border-border/60 rounded-xl px-3 py-1.5 shadow-lg"
-                    >
-                      <p className="text-xs font-semibold whitespace-nowrap">{action.label}</p>
-                      <p className="text-[10px] text-muted-foreground whitespace-nowrap">{action.description}</p>
-                    </motion.div>
-                    {/* Icon button */}
-                    <button
-                      onClick={() => handleAction(action.id)}
-                      className={cn(
-                        "w-11 h-11 rounded-full bg-gradient-to-br flex items-center justify-center text-white shadow-lg",
-                        "hover:scale-110 active:scale-95 transition-transform ring-2",
-                        action.gradient, action.ring
-                      )}
-                    >
-                      <Icon className="w-5 h-5" />
-                    </button>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Main FAB */}
-        <motion.button
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
-          onClick={() => setDialOpen((v) => !v)}
-          className={cn(
-            "w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/30",
-            "hover:scale-110 active:scale-95 transition-all",
-            dialOpen
-              ? "bg-muted border-2 border-border text-foreground rotate-45"
-              : "bg-gradient-to-br from-primary to-accent"
-          )}
-          title="Acciones rápidas"
-        >
-          <motion.div animate={{ rotate: dialOpen ? 45 : 0 }} transition={{ duration: 0.2 }}>
-            <Plus className={cn("w-6 h-6", dialOpen ? "text-foreground" : "text-white")} />
-          </motion.div>
-        </motion.button>
-      </div>
-
-      {/* Modal */}
-      <AnimatePresence>
-        {activeAction && userId && (
-          <CaptureModal
-            initialAction={activeAction}
-            userId={userId}
-            onClose={() => setActiveAction(null)}
-          />
+      <motion.button
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+        onClick={() => setOpen(true)}
+        className={cn(
+          "fixed bottom-6 right-6 z-40 md:bottom-8 md:right-8",
+          "w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/30",
+          "hover:scale-110 active:scale-95 transition-all",
+          "bg-gradient-to-br from-primary to-accent"
         )}
+        title="Tirar contenido a tu enciclopedia (Cmd+U)"
+      >
+        <Plus className="w-6 h-6" />
+      </motion.button>
+
+      <AnimatePresence>
+        {open && <DropModal onClose={() => setOpen(false)} />}
       </AnimatePresence>
     </>
   );

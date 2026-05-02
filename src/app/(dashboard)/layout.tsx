@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { QuickCapture } from "@/components/capture/QuickCapture";
+import { ChatOverlay } from "@/components/chat/ChatOverlay";
 import { CommandPalette } from "@/components/search/CommandPalette";
 import { useUserStore, useSidebarCollapsed, useIsGuest } from "@/stores/userStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -135,6 +136,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Floating quick capture — only for authenticated users */}
       {!isGuest && <QuickCapture />}
+
+      {/* Invocable chat overlay (Cmd+J) — only for authenticated users */}
+      {!isGuest && <ChatOverlay />}
 
       {/* Global command palette */}
       <CommandPalette open={paletteOpen} onClose={closePalette} />

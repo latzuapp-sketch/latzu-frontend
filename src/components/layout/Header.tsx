@@ -24,7 +24,6 @@ import {
   Bell,
   Search,
   Sparkles,
-  Wifi,
   WifiOff,
   User,
   LogIn,
@@ -139,21 +138,13 @@ export function Header({ title, onMenuClick, onSearchClick }: HeaderProps) {
             {displayTitle}
           </motion.h1>
 
-          {/* Connection Status */}
-          <div
-            className={`flex items-center gap-1.5 text-xs ${
-              isConnected ? "text-emerald-500" : "text-muted-foreground"
-            }`}
-          >
-            {isConnected ? (
-              <Wifi className="w-3.5 h-3.5" />
-            ) : (
+          {/* Connection Status — only render when offline */}
+          {!isConnected && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <WifiOff className="w-3.5 h-3.5" />
-            )}
-            <span className="hidden sm:inline">
-              {isConnected ? "Conectado" : "Desconectado"}
-            </span>
-          </div>
+              <span className="hidden sm:inline">Desconectado</span>
+            </div>
+          )}
 
           {/* Guest Mode Badge */}
           {isGuest && (
@@ -176,18 +167,6 @@ export function Header({ title, onMenuClick, onSearchClick }: HeaderProps) {
           >
             <Search className="w-5 h-5" />
           </Button>
-
-          {/* Proactive AI Indicator */}
-          {template.proactivePrompts && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2 text-primary hidden md:flex"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span className="text-sm">IA Activa</span>
-            </Button>
-          )}
 
           {/* Notifications */}
           <DropdownMenu>

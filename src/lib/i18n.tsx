@@ -20,11 +20,11 @@ const translations = {
     },
 
     hero: {
-      badge: "Your personal encyclopedia",
-      headline1: "Drop everything you know.",
-      headline2: "Ask anything.",
+      badge: "The encyclopedia of you",
+      headline1: "Everything you've ever learned.",
+      headline2: "In one mind that remembers.",
       subtitle:
-        "Throw in your notes, books, links, PDFs and screenshots. The AI reads it all, connects the ideas and turns it into your personal encyclopedia. Then you just ask.",
+        "The smartest version of you, always available. Stop losing what you know in folders and tabs — drop it in once, ask anything forever.",
       ctaPrimary: "Start my encyclopedia",
       ctaSecondary: "See how it works",
       socialProof: "Free early access · No credit card required",
@@ -55,25 +55,25 @@ const translations = {
     ],
 
     painSection: {
-      badge: "Why this matters",
-      title: "You already know a lot. You just can't find it.",
+      badge: "The idea",
+      title: "What if you never lost a single idea again?",
       subtitle:
-        "Notes scattered across apps. Books you read once. PDFs you'll never open again. The knowledge is yours — but no system actually understands it.",
+        "Imagine all the books, articles, conversations and notes you've ever consumed — alive, connected, ready to answer when you need them. Not stored in folders. Thinking with you.",
       items: [
         {
-          title: "Your knowledge is everywhere and nowhere",
+          title: "A mind that never forgets",
           description:
-            "Highlights in one place, notes in another, that one PDF you saved six months ago somewhere you don't remember. Searching it by hand never works.",
+            "Every idea you've encountered, every chapter you've read, every conversation that mattered — held by something that remembers it all, exactly when you need it.",
         },
         {
-          title: "Generic AI doesn't know you",
+          title: "An answer to every question",
           description:
-            "A chat that starts from zero every time can't connect what you read last week with what you're thinking today. It only sees the message in front of it.",
+            "No more digging through twelve apps to find that one paragraph. Ask in your own words. Get answers grounded in what you already know.",
         },
         {
-          title: "Organizing it manually is a second job",
+          title: "A smarter version of you",
           description:
-            "Tagging, linking, structuring — most people give up after a month. Your knowledge ends up frozen instead of compounding.",
+            "Your reading, your thinking, your patterns — turned into a partner that knows how you think and gets sharper with every question you ask.",
         },
       ],
     },
@@ -94,30 +94,30 @@ const translations = {
     },
 
     whySection: {
-      badge: "The loop that compounds",
-      title: "It gets smarter every time you use it",
+      badge: "What changes for you",
+      title: "You stop being your own librarian",
       subtitle:
-        "You don't have to organize anything. Each interaction teaches Latzu more about how you think — and the next answer is better than the last.",
+        "The work of organizing, tagging and remembering disappears. What's left is the part you actually like — thinking, asking, deciding.",
       items: [
         {
-          title: "You drop something in",
+          title: "You stop forgetting",
           description:
-            "A note, a PDF, a YouTube link, a photo of your whiteboard. Anything. Latzu reads it, summarizes it and figures out where it fits.",
+            "That book you loved three years ago? Latzu remembers the chapters that moved you and brings them back exactly when they're useful again.",
         },
         {
-          title: "It connects ideas across your knowledge",
+          title: "You stop searching",
           description:
-            "Every new piece links to what you already had. Concepts from different sources start talking to each other — even ones you saved months apart.",
+            "You know that thing you read somewhere? Just ask. The answer comes back with the source — from your own knowledge, not from the internet.",
         },
         {
-          title: "You ask in plain language",
+          title: "You stop organizing",
           description:
-            "Search your own knowledge like you'd ask a friend. The answer comes from your encyclopedia — not from the internet, not from someone else's data.",
+            "No folders. No tags. No second-brain methodology to learn. Drop things in, the system figures out where they belong and how they connect.",
         },
         {
-          title: "The encyclopedia learns from your questions",
+          title: "You start thinking better",
           description:
-            "What you ask, what you ignore, what you act on — all of it shapes what Latzu surfaces next. The more you use it, the more it sounds like you.",
+            "A partner that's read everything you've read, that knows what you're chasing, that connects ideas you missed. Your thinking compounds.",
         },
       ],
     },
@@ -439,14 +439,11 @@ const translations = {
 
     sidebar: {
       nav: {
-        home: "Home",
-        study: "Study Zone",
-        chat: "AI Tutor",
-        library: "Library",
-        plans: "Plans",
-        notes: "Notes",
-        planning: "Planning",
-        workspace: "Workspace",
+        home: "Today",
+        brain: "Encyclopedia",
+        planning: "Plans",
+        chat: "Chat",
+        agent: "Agent",
       },
       lightMode: "Light mode",
       darkMode: "Dark mode",
@@ -471,11 +468,11 @@ const translations = {
     },
 
     hero: {
-      badge: "Tu enciclopedia personal",
-      headline1: "Tirá todo lo que sabés.",
-      headline2: "Preguntá lo que quieras.",
+      badge: "La enciclopedia de vos",
+      headline1: "Todo lo que aprendiste.",
+      headline2: "En una mente que recuerda.",
       subtitle:
-        "Tirá tus notas, libros, links, PDFs y capturas. La IA lee todo, conecta las ideas y lo convierte en tu enciclopedia personal. Después solo preguntás.",
+        "La versión más inteligente de vos, siempre disponible. Dejá de perder lo que sabés entre carpetas y pestañas — tiralo adentro una vez, preguntá lo que quieras para siempre.",
       ctaPrimary: "Empezar mi enciclopedia",
       ctaSecondary: "Ver cómo funciona",
       socialProof: "Acceso anticipado gratuito · Sin tarjeta de crédito",
@@ -506,25 +503,25 @@ const translations = {
     ],
 
     painSection: {
-      badge: "Por qué importa",
-      title: "Sabés mucho. Pero no lo encontrás.",
+      badge: "La idea",
+      title: "¿Y si no perdieras nunca más una idea?",
       subtitle:
-        "Notas dispersas en apps. Libros que leíste una vez. PDFs que no vas a abrir más. El conocimiento es tuyo — pero ningún sistema lo entiende de verdad.",
+        "Imaginá todos los libros, artículos, conversaciones y notas que consumiste — vivos, conectados, listos para responder cuando los necesites. No guardados en carpetas. Pensando con vos.",
       items: [
         {
-          title: "Tu conocimiento está en todos lados y en ninguno",
+          title: "Una mente que nunca olvida",
           description:
-            "Subrayados acá, notas allá, ese PDF que guardaste hace seis meses en algún lugar que no recordás. Buscar a mano nunca funciona.",
+            "Cada idea con la que te cruzaste, cada capítulo que leíste, cada conversación que importó — sostenida por algo que recuerda todo, exactamente cuando lo necesitás.",
         },
         {
-          title: "Una IA genérica no te conoce",
+          title: "Una respuesta para cada pregunta",
           description:
-            "Un chat que arranca de cero cada vez no puede conectar lo que leíste la semana pasada con lo que estás pensando hoy. Solo ve el mensaje que tiene enfrente.",
+            "Se acabó buscar en doce apps ese párrafo que sabés que leíste. Preguntá en tus palabras. Las respuestas vienen de lo que ya sabés.",
         },
         {
-          title: "Organizarlo a mano es un segundo trabajo",
+          title: "La versión más inteligente de vos",
           description:
-            "Etiquetar, vincular, estructurar — la mayoría se rinde al mes. Tu conocimiento queda congelado en vez de acumularse.",
+            "Tus lecturas, tu pensamiento, tus patrones — convertidos en un compañero que sabe cómo pensás y se vuelve más afilado con cada pregunta que le hacés.",
         },
       ],
     },
@@ -545,30 +542,30 @@ const translations = {
     },
 
     whySection: {
-      badge: "El loop que se acumula",
-      title: "Mejora cada vez que la usás",
+      badge: "Lo que cambia para vos",
+      title: "Dejás de ser tu propio bibliotecario",
       subtitle:
-        "No tenés que organizar nada. Cada interacción le enseña a Latzu más sobre cómo pensás — y la próxima respuesta es mejor que la anterior.",
+        "El trabajo de organizar, etiquetar y recordar desaparece. Lo que queda es la parte que te gusta — pensar, preguntar, decidir.",
       items: [
         {
-          title: "Tirás algo adentro",
+          title: "Dejás de olvidar",
           description:
-            "Una nota, un PDF, un link de YouTube, una foto de tu pizarra. Lo que sea. Latzu lo lee, lo resume y descubre dónde encaja.",
+            "¿Ese libro que te marcó hace tres años? Latzu recuerda los capítulos que te movieron y te los trae justo cuando vuelven a ser útiles.",
         },
         {
-          title: "Conecta ideas en todo tu conocimiento",
+          title: "Dejás de buscar",
           description:
-            "Cada pieza nueva se vincula con lo que ya tenías. Conceptos de distintas fuentes empiezan a hablarse — incluso los que guardaste con meses de diferencia.",
+            "¿Esa cosa que sabés que leíste en algún lado? Solo preguntá. La respuesta vuelve con la fuente — desde tu propio conocimiento, no desde internet.",
         },
         {
-          title: "Preguntás en lenguaje natural",
+          title: "Dejás de organizar",
           description:
-            "Buscá en tu propio conocimiento como si hablaras con un amigo. La respuesta sale de tu enciclopedia — no de internet, no de los datos de otro.",
+            "Sin carpetas. Sin etiquetas. Sin segunda-mente-metodología que aprender. Tirás cosas adentro, el sistema descubre dónde van y cómo se conectan.",
         },
         {
-          title: "La enciclopedia aprende de tus preguntas",
+          title: "Empezás a pensar mejor",
           description:
-            "Lo que preguntás, lo que ignorás, lo que ejecutás — todo eso moldea lo que Latzu te muestra después. Cuanto más la usás, más se parece a vos.",
+            "Un compañero que leyó todo lo que leíste, que sabe qué venís persiguiendo, que conecta ideas que se te escaparon. Tu pensamiento se acumula.",
         },
       ],
     },
@@ -890,14 +887,11 @@ const translations = {
 
     sidebar: {
       nav: {
-        home: "Inicio",
-        study: "Zona de Estudio",
-        chat: "Tutor IA",
-        library: "Biblioteca",
-        plans: "Planes",
-        notes: "Notas",
-        planning: "Planificación",
-        workspace: "Workspace",
+        home: "Hoy",
+        brain: "Enciclopedia",
+        planning: "Planes",
+        chat: "Chat",
+        agent: "Agente",
       },
       lightMode: "Modo claro",
       darkMode: "Modo oscuro",
