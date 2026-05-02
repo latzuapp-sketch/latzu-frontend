@@ -1,230 +1,227 @@
 "use client";
 
 /**
- * /brain — your unified personal encyclopedia.
+ * /brain — Notion-like adaptive encyclopedia.
  *
- * Single timeline of every KnowledgeNode + Note + Synthesis the user has,
- * with quick filters by source. Clicking a card opens it via /library/[id]
- * (existing detail page works for any KnowledgeNode).
+ * 3-col layout:
+ *   - Left:   BrainSidebar — agent-driven tree (Recientes, Caliente, Áreas, Spaces, Tipos)
+ *   - Center: AdaptiveItemCard grid — type-aware visual rendering
+ *   - Right:  NodeDetail — full content of selected item
+ *
+ * The agent's signals (UserModel.lifeAreas, momentumTopics, staleAreas) drive
+ * the tree structure. The user never has to organize anything manually.
  */
 
 import { useMemo, useState, useDeferredValue } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Brain, Search, Sparkles, Library, FileText, Youtube, Globe, Link2,
-  Layers, X, Loader2, BookOpen,
+  Search, Sparkles, X, Loader2, Brain, Plus, Filter,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { NodeCard } from "@/components/biblioteca/NodeCard";
 import { NodeDetail } from "@/components/biblioteca/NodeDetail";
-import { useKnowledgeNodes, useKnowledgeStats, useLibraryBooks } from "@/hooks/useLibrary";
+import { AdaptiveItemCard, detectVariant } from "@/components/brain/AdaptiveItemCard";
+import { BrainSidebar, type BrainSelection } from "@/components/brain/BrainSidebar";
+import { useKnowledgeNodes } from "@/hooks/useLibrary";
+import { useUserModel } from "@/hooks/useOrganizerAgent";
 import type { KnowledgeNode } from "@/graphql/types";
 import { cn } from "@/lib/utils";
 
-// ─── Source filters ───────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-type SourceFilter = "all" | "mine" | "files" | "youtube" | "web" | "synthesis" | "books";
+function safeJsonArray<T = unknown>(raw: string | null | undefined): T[] {
+  if (!raw) return [];
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
 
-const FILTERS: Array<{
-  id: SourceFilter;
-  label: string;
-  Icon: React.ElementType;
-  match: (n: KnowledgeNode) => boolean;
-}> = [
-  { id: "all", label: "Todo", Icon: Brain, match: () => true },
-  {
-    id: "mine",
-    label: "Mis ideas",
-    Icon: Sparkles,
-    match: (n) => !n.sourceRef || n.sourceRef.startsWith("quick-capture") || n.sourceRef === "manual",
-  },
-  {
-    id: "files",
-    label: "Archivos",
-    Icon: FileText,
-    match: (n) => !!n.sourceRef && n.sourceRef.startsWith("file:"),
-  },
-  {
-    id: "youtube",
-    label: "YouTube",
-    Icon: Youtube,
-    match: (n) => !!n.sourceRef && n.sourceRef.startsWith("youtube:"),
-  },
-  {
-    id: "web",
-    label: "Web",
-    Icon: Globe,
-    match: (n) => !!n.sourceRef && /^https?:\/\//.test(n.sourceRef),
-  },
-  {
-    id: "synthesis",
-    label: "Síntesis del agente",
-    Icon: Sparkles,
-    match: (n) => !!n.sourceRef && n.sourceRef.startsWith("synthesis"),
-  },
-  {
-    id: "books",
-    label: "Libros curados",
-    Icon: BookOpen,
-    match: (n) => !!n.sourceRef && n.sourceRef.startsWith("curated:"),
-  },
-];
+interface LifeAreaParsed {
+  name: string;
+  node_ids?: string[];
+  description?: string;
+}
 
-// ─── Stats strip ──────────────────────────────────────────────────────────────
+function selectionTitle(s: BrainSelection): string {
+  switch (s.kind) {
+    case "all":       return "Todo lo que sabés";
+    case "recent":    return "Recientes";
+    case "topic":     return s.topic;
+    case "lifeArea":  return s.area;
+    case "workspace": return s.title;
+    case "type":      return `Tipo: ${s.nodeType}`;
+  }
+}
 
-function StatsStrip() {
-  const { stats, loading } = useKnowledgeStats();
-  const { books } = useLibraryBooks();
+function selectionSubtitle(s: BrainSelection): string {
+  switch (s.kind) {
+    case "all":       return "Tu enciclopedia completa, ordenada por tu agente.";
+    case "recent":    return "Lo último que tiraste a tu enciclopedia.";
+    case "topic":     return "Tema marcado como caliente por tu agente.";
+    case "lifeArea":  return "Área de vida detectada por tu agente.";
+    case "workspace": return "Tu space personalizado.";
+    case "type":      return "Filtrado por tipo de contenido.";
+  }
+}
 
-  if (loading && !stats) {
-    return <div className="h-16 rounded-xl border border-border/40 bg-card/40 animate-pulse" />;
+// ─── Apply selection filter ───────────────────────────────────────────────────
+
+function applySelection(
+  nodes: KnowledgeNode[],
+  s: BrainSelection,
+  lifeAreas: LifeAreaParsed[],
+  search: string
+): KnowledgeNode[] {
+  let out = nodes;
+
+  // Search first (cross-cutting)
+  const q = search.trim().toLowerCase();
+  if (q) {
+    out = out.filter(
+      (n) =>
+        n.name.toLowerCase().includes(q) ||
+        (n.content?.toLowerCase().includes(q) ?? false)
+    );
   }
 
-  const items = [
-    { label: "Ideas", value: stats?.totalNodes ?? 0, Icon: Brain },
-    { label: "Conexiones", value: stats?.totalRelationships ?? 0, Icon: Link2 },
-    { label: "Tipos", value: stats?.nodeTypes?.length ?? 0, Icon: Layers },
-    { label: "Libros", value: books.length, Icon: BookOpen },
-  ];
+  switch (s.kind) {
+    case "all":
+      return out;
+    case "recent":
+      // KnowledgeNode lacks timestamp in current query — fall back to id-based proxy
+      return out.slice(0, 30);
+    case "topic": {
+      const topic = s.topic.toLowerCase();
+      return out.filter(
+        (n) => n.name.toLowerCase().includes(topic) || (n.content?.toLowerCase().includes(topic) ?? false)
+      );
+    }
+    case "lifeArea": {
+      const area = lifeAreas.find((a) => a.name === s.area);
+      const ids = new Set(area?.node_ids ?? []);
+      if (ids.size === 0) {
+        // Fallback: name match
+        const lower = s.area.toLowerCase();
+        return out.filter((n) => n.name.toLowerCase().includes(lower));
+      }
+      return out.filter((n) => ids.has(n.id));
+    }
+    case "workspace": {
+      // Workspaces stored as Entity, not directly tied to KnowledgeNode in this query.
+      // Use sourceRef heuristic: nodes whose source includes the workspace id or title.
+      const lower = s.title.toLowerCase();
+      return out.filter(
+        (n) => n.sourceRef?.toLowerCase().includes(lower) || n.name.toLowerCase().includes(lower)
+      );
+    }
+    case "type":
+      return out.filter((n) => n.type === s.nodeType);
+  }
+}
 
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-      {items.map(({ label, value, Icon }) => (
-        <div
-          key={label}
-          className="rounded-xl border border-border/40 bg-card/40 p-3 flex items-center gap-3"
-        >
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <Icon className="w-3.5 h-3.5 text-primary" />
-          </div>
-          <div>
-            <p className="text-base font-bold leading-none">{value}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">{label}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+// ─── Sort helper — agent-influenced ordering ──────────────────────────────────
+
+function sortForView(nodes: KnowledgeNode[], s: BrainSelection): KnowledgeNode[] {
+  // Synthesis nodes always pinned to the top of any view
+  const out = [...nodes];
+  out.sort((a, b) => {
+    const aSyn = detectVariant(a) === "synthesis" ? 0 : 1;
+    const bSyn = detectVariant(b) === "synthesis" ? 0 : 1;
+    if (aSyn !== bSyn) return aSyn - bSyn;
+    // Otherwise stable
+    return 0;
+  });
+  if (s.kind === "recent") {
+    // No-op (already sliced)
+  }
+  return out;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BrainPage() {
   const router = useRouter();
+  const { userModel } = useUserModel();
+  const [selection, setSelection] = useState<BrainSelection>({ kind: "all" });
+  const [selectedNode, setSelectedNode] = useState<KnowledgeNode | null>(null);
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
-  const [activeFilter, setActiveFilter] = useState<SourceFilter>("all");
-  const [selectedNode, setSelectedNode] = useState<KnowledgeNode | null>(null);
 
-  const { nodes, total, loading } = useKnowledgeNodes({
-    search: deferredSearch || undefined,
-    limit: 200,
-  });
+  const { nodes, total, loading } = useKnowledgeNodes({ limit: 300 });
 
-  const filtered = useMemo(() => {
-    const matcher = FILTERS.find((f) => f.id === activeFilter)?.match ?? (() => true);
-    return nodes.filter(matcher);
-  }, [nodes, activeFilter]);
+  const lifeAreas = useMemo(
+    () => safeJsonArray<LifeAreaParsed>(userModel?.lifeAreas),
+    [userModel?.lifeAreas]
+  );
 
-  // Counts per filter for the chip badges
-  const counts = useMemo(() => {
-    const m: Record<SourceFilter, number> = {
-      all: nodes.length,
-      mine: 0, files: 0, youtube: 0, web: 0, synthesis: 0, books: 0,
-    };
-    for (const n of nodes) {
-      for (const f of FILTERS) {
-        if (f.id !== "all" && f.match(n)) m[f.id]++;
-      }
-    }
-    return m;
-  }, [nodes]);
+  const filtered = useMemo(
+    () => sortForView(applySelection(nodes, selection, lifeAreas, deferredSearch), selection),
+    [nodes, selection, lifeAreas, deferredSearch]
+  );
+
+  const synthesisCount = useMemo(
+    () => filtered.filter((n) => detectVariant(n) === "synthesis").length,
+    [filtered]
+  );
 
   return (
-    <div className="space-y-5 max-w-7xl">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-start justify-between gap-4 flex-wrap"
-      >
-        <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Brain className="w-4 h-4 text-white" />
+    <div className="flex h-[calc(100vh-5rem)] -m-3 md:-m-6 overflow-hidden bg-background">
+      {/* Left: Tree sidebar */}
+      <BrainSidebar
+        nodes={nodes}
+        selection={selection}
+        onSelect={(s) => {
+          setSelection(s);
+          setSelectedNode(null);
+        }}
+      />
+
+      {/* Center: Items list */}
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="px-6 py-4 border-b border-border/30 shrink-0 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-xl font-heading font-bold capitalize truncate">{selectionTitle(selection)}</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">{selectionSubtitle(selection)}</p>
             </div>
-            <h1 className="text-2xl font-heading font-bold">Tu enciclopedia</h1>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Todo lo que sabés y lo que tu agente conectó por vos.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild className="gap-1.5">
-            <Link href="/library">
-              <Library className="w-3.5 h-3.5" />
-              Lecturas curadas
-            </Link>
-          </Button>
-        </div>
-      </motion.div>
-
-      {/* Stats */}
-      <StatsStrip />
-
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar en toda tu enciclopedia…"
-          className="pl-9 h-10"
-        />
-        {search && (
-          <button
-            onClick={() => setSearch("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      {/* Filter chips */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-        {FILTERS.map((f) => {
-          const isActive = activeFilter === f.id;
-          const count = counts[f.id];
-          if (f.id !== "all" && count === 0) return null;
-          return (
-            <button
-              key={f.id}
-              onClick={() => setActiveFilter(f.id)}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all whitespace-nowrap shrink-0",
-                isActive
-                  ? "border-primary/50 bg-primary/10 text-primary"
-                  : "border-border/40 bg-card/40 text-muted-foreground hover:text-foreground hover:border-border/60"
+            <div className="flex items-center gap-2 shrink-0">
+              {synthesisCount > 0 && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-md bg-violet-500/10 text-violet-300 border border-violet-500/30">
+                  <Sparkles className="w-3 h-3" />
+                  {synthesisCount} síntesis del agente
+                </span>
               )}
-            >
-              <f.Icon className="w-3 h-3" />
-              {f.label}
-              <span className={cn("text-[10px]", isActive ? "text-primary/70" : "text-muted-foreground/50")}>
-                {count}
+              <span className="text-[10px] text-muted-foreground">
+                {filtered.length} {filtered.length === 1 ? "item" : "items"}
               </span>
-            </button>
-          );
-        })}
-      </div>
+            </div>
+          </div>
 
-      {/* Body: grid + side panel for detail */}
-      <div className="flex gap-4">
-        <div className={cn("min-w-0 transition-all duration-300", selectedNode ? "flex-[0_0_60%]" : "flex-1")}>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar en esta vista…"
+              className="pl-8 h-8 text-xs"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </header>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
           {loading && filtered.length === 0 && (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -232,80 +229,109 @@ export default function BrainPage() {
           )}
 
           {!loading && filtered.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-border/50 p-12 text-center space-y-3">
-              <Brain className="w-10 h-10 mx-auto text-muted-foreground/30" />
-              <p className="font-heading font-bold">
-                {search || activeFilter !== "all"
-                  ? "Nada coincide con ese filtro"
-                  : "Tu enciclopedia está vacía"}
-              </p>
-              {!search && activeFilter === "all" && (
-                <>
-                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                    Tirá tu primera nota, link, PDF o video. La IA lo lee, lo conecta y lo agrega acá.
-                  </p>
-                  <p className="text-xs text-muted-foreground/70">
-                    Tip: pulsá <kbd className="px-1.5 py-0.5 rounded border border-border/50 bg-muted/40 font-mono text-[10px]">Cmd+U</kbd> en cualquier lugar para abrir el drop zone.
-                  </p>
-                </>
-              )}
-            </div>
+            <EmptyState selection={selection} hasNodes={nodes.length > 0} hasSearch={!!search} />
           )}
 
           {filtered.length > 0 && (
-            <>
-              <div className="flex items-center justify-between mb-3 px-1">
-                <p className="text-xs text-muted-foreground">
-                  {filtered.length} de {total} ideas
-                </p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                <AnimatePresence mode="popLayout">
-                  {filtered.map((node, i) => (
-                    <NodeCard
-                      key={node.id}
-                      node={node}
-                      isSelected={selectedNode?.id === node.id}
-                      onClick={() => setSelectedNode(node)}
-                      index={i}
-                    />
-                  ))}
-                </AnimatePresence>
-              </div>
-            </>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              <AnimatePresence mode="popLayout">
+                {filtered.map((node) => (
+                  <AdaptiveItemCard
+                    key={node.id}
+                    node={node}
+                    isSelected={selectedNode?.id === node.id}
+                    onClick={() => setSelectedNode(node)}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {filtered.length > 0 && total > nodes.length && (
+            <p className="text-[10px] text-muted-foreground text-center mt-6">
+              Mostrando {nodes.length} de {total}. Tirá más cosas con <kbd className="px-1 py-0.5 rounded border border-border/40 bg-muted/40 font-mono">⌘U</kbd>.
+            </p>
           )}
         </div>
-
-        {/* Detail side panel */}
-        <AnimatePresence initial={false}>
-          {selectedNode && (
-            <motion.aside
-              key="detail"
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: "40%", opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="hidden lg:block flex-shrink-0 overflow-hidden border-l border-border/40 pl-4"
-            >
-              <div className="sticky top-4 max-h-[calc(100vh-4rem)] overflow-y-auto">
-                <div className="flex items-center justify-end mb-2">
-                  <button
-                    onClick={() => setSelectedNode(null)}
-                    className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                <NodeDetail
-                  nodeId={selectedNode.id}
-                  onClose={() => setSelectedNode(null)}
-                  onNavigate={(id) => router.push(`/library/${id}`)}
-                />
-              </div>
-            </motion.aside>
-          )}
-        </AnimatePresence>
       </div>
+
+      {/* Right: Detail panel */}
+      <AnimatePresence initial={false}>
+        {selectedNode && (
+          <motion.aside
+            key="detail"
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 420, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="hidden lg:flex flex-col shrink-0 border-l border-border/40 bg-card/20 overflow-hidden"
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 shrink-0">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Detalle</span>
+              <button
+                onClick={() => setSelectedNode(null)}
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <NodeDetail
+                nodeId={selectedNode.id}
+                onClose={() => setSelectedNode(null)}
+                onNavigate={(id) => router.push(`/library/${id}`)}
+              />
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Empty state ─────────────────────────────────────────────────────────────
+
+function EmptyState({
+  selection, hasNodes, hasSearch,
+}: { selection: BrainSelection; hasNodes: boolean; hasSearch: boolean }) {
+  if (hasSearch) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border/50 p-10 text-center space-y-2">
+        <Filter className="w-8 h-8 mx-auto text-muted-foreground/30" />
+        <p className="text-sm font-medium">Nada coincide con esa búsqueda.</p>
+      </div>
+    );
+  }
+
+  if (!hasNodes) {
+    return (
+      <div className="rounded-2xl border border-dashed border-primary/30 p-12 text-center space-y-3 bg-gradient-to-br from-primary/5 to-transparent">
+        <div className="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto">
+          <Brain className="w-6 h-6 text-primary" />
+        </div>
+        <p className="font-heading font-bold">Tu enciclopedia está vacía</p>
+        <p className="text-sm text-muted-foreground max-w-md mx-auto">
+          Tirá tu primera nota, link, PDF o video. La IA lo lee, lo conecta y arma tu enciclopedia.
+        </p>
+        <p className="text-xs text-muted-foreground/70">
+          <kbd className="px-1.5 py-0.5 rounded border border-border/50 bg-muted/40 font-mono text-[10px]">⌘U</kbd> en cualquier lugar para abrir el drop zone.
+        </p>
+      </div>
+    );
+  }
+
+  // Has nodes but this view is empty
+  return (
+    <div className="rounded-2xl border border-dashed border-border/50 p-10 text-center space-y-2">
+      <Sparkles className="w-8 h-8 mx-auto text-muted-foreground/30" />
+      <p className="text-sm font-medium">
+        {selection.kind === "lifeArea" || selection.kind === "topic"
+          ? "Tu agente todavía no agrupó nada acá."
+          : "Sin items en esta vista."}
+      </p>
+      <p className="text-xs text-muted-foreground max-w-md mx-auto">
+        A medida que agregues más contenido, el agente va a empezar a llenar este espacio.
+      </p>
     </div>
   );
 }
