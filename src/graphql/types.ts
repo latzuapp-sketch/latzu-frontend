@@ -440,7 +440,7 @@ export type ScheduledEventKind =
 
 export type ScheduledEventStatus = "pending" | "delivered" | "responded" | "cancelled";
 
-export type DeliveryChannel = "push" | "whatsapp" | "email";
+export type DeliveryChannel = "whatsapp" | "email";
 
 export interface DeliveryRecord {
   ok: boolean;

@@ -3,11 +3,12 @@
 /**
  * /brain — Notion-like adaptive encyclopedia.
  *
- * 3-col layout:
+ * 2-col layout:
  *   - Left:   BrainSidebar    — agent-driven tree (kinds + lifeAreas + topics)
- *   - Center: Adaptive grid   — renders nodes / notes / tasks / pages with
- *                                 type-aware visuals; "+" creates inline.
- *   - Right:  Detail panel    — full content of selected item
+ *   - Center: Either the adaptive grid OR the universal viewer for the
+ *             selected item. Click an item → the viewer takes over the center
+ *             pane and shows it natively (note editor / task editor / node
+ *             detail / workspace preview). Back to the grid via "← Volver".
  *
  *   - Floating: BrainAgentPanel — slide-out helper (proposals, hot jumps, ask)
  */
@@ -16,15 +17,15 @@ import { useMemo, useState, useDeferredValue, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
-  Search, Sparkles, X, Loader2, Brain, Plus, Filter,
+  Search, Sparkles, X, Loader2, Brain, Filter,
   StickyNote, ListTodo, Layers, Loader, Send,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { NodeDetail } from "@/components/biblioteca/NodeDetail";
 import { AdaptiveItemCard, detectVariant } from "@/components/brain/AdaptiveItemCard";
 import { BrainNoteCard, BrainTaskCard, BrainPageCard } from "@/components/brain/BrainItemCards";
 import { BrainSidebar, type BrainSelection } from "@/components/brain/BrainSidebar";
 import { BrainAgentPanel, BrainAgentTrigger } from "@/components/brain/BrainAgentPanel";
+import { UniversalViewer, type ViewerItem } from "@/components/brain/UniversalViewer";
 import { useKnowledgeNodes } from "@/hooks/useLibrary";
 import { useUserModel, useAgentActions } from "@/hooks/useOrganizerAgent";
 import { useAllNotes } from "@/hooks/useFlashcards";
@@ -273,7 +274,7 @@ export default function BrainPage() {
   const router = useRouter();
   const { userModel } = useUserModel();
   const [selection, setSelection] = useState<BrainSelection>({ kind: "all" });
-  const [selectedNode, setSelectedNode] = useState<KnowledgeNode | null>(null);
+  const [viewing, setViewing] = useState<ViewerItem | null>(null);
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [quickKind, setQuickKind] = useState<QuickKind | null>(null);
@@ -317,11 +318,11 @@ export default function BrainPage() {
 
   const onJumpTopic = (topic: string) => {
     setSelection({ kind: "topic", topic });
-    setSelectedNode(null);
+    setViewing(null);
   };
   const onJumpArea = (area: string) => {
     setSelection({ kind: "lifeArea", area });
-    setSelectedNode(null);
+    setViewing(null);
   };
 
   return (
@@ -334,12 +335,29 @@ export default function BrainPage() {
         selection={selection}
         onSelect={(s) => {
           setSelection(s);
-          setSelectedNode(null);
+          setViewing(null);
         }}
       />
 
-      {/* Center: Items */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+      {/* Center: viewer when an item is open, otherwise the grid */}
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden relative">
+        <AnimatePresence mode="wait">
+          {viewing && (
+            <UniversalViewer
+              key={`view-${viewing.kind}-${
+                viewing.kind === "node" ? viewing.node.id :
+                viewing.kind === "note" ? viewing.note.id :
+                viewing.kind === "task" ? viewing.task.id :
+                viewing.workspace.id
+              }`}
+              item={viewing}
+              onClose={() => setViewing(null)}
+            />
+          )}
+        </AnimatePresence>
+
+        {viewing ? null : (
+        <>
         <header className="px-6 py-4 border-b border-border/30 shrink-0 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -452,7 +470,7 @@ export default function BrainPage() {
                     key={`task-${task.id}`}
                     task={task}
                     onToggle={(id, next) => setStatus(id, next)}
-                    onClick={() => router.push("/planning")}
+                    onClick={() => setViewing({ kind: "task", task })}
                   />
                 ))}
                 {/* Then notes */}
@@ -460,7 +478,7 @@ export default function BrainPage() {
                   <BrainNoteCard
                     key={`note-${note.id}`}
                     note={note}
-                    onClick={() => router.push(`/notes/${note.id}`)}
+                    onClick={() => setViewing({ kind: "note", note })}
                   />
                 ))}
                 {/* Then knowledge nodes */}
@@ -468,8 +486,7 @@ export default function BrainPage() {
                   <AdaptiveItemCard
                     key={`node-${node.id}`}
                     node={node}
-                    isSelected={selectedNode?.id === node.id}
-                    onClick={() => setSelectedNode(node)}
+                    onClick={() => setViewing({ kind: "node", node })}
                   />
                 ))}
                 {/* Then workspaces (when relevant) */}
@@ -477,7 +494,7 @@ export default function BrainPage() {
                   <BrainPageCard
                     key={`ws-${w.id}`}
                     workspace={w}
-                    onClick={() => router.push(`/workspace/${w.id}`)}
+                    onClick={() => setViewing({ kind: "workspace", workspace: w })}
                   />
                 ))}
               </AnimatePresence>
@@ -490,38 +507,9 @@ export default function BrainPage() {
             </p>
           )}
         </div>
-      </div>
-
-      {/* Right: Detail panel */}
-      <AnimatePresence initial={false}>
-        {selectedNode && (
-          <motion.aside
-            key="detail"
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 420, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="hidden lg:flex flex-col shrink-0 border-l border-border/40 bg-card/20 overflow-hidden"
-          >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 shrink-0">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Detalle</span>
-              <button
-                onClick={() => setSelectedNode(null)}
-                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              <NodeDetail
-                nodeId={selectedNode.id}
-                onClose={() => setSelectedNode(null)}
-                onNavigate={(id) => router.push(`/library/${id}`)}
-              />
-            </div>
-          </motion.aside>
+        </>
         )}
-      </AnimatePresence>
+      </div>
 
       {/* Agent slide-out panel */}
       <BrainAgentPanel

@@ -10,7 +10,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   CalendarClock, X, Clock, BookOpen, Zap, Bell, RefreshCw,
-  MessageCircle, Mail, Wifi,
+  MessageCircle, Mail,
 } from "lucide-react";
 import { useUpcomingEvents, useSchedulerMutations } from "@/hooks/useScheduler";
 import type { ScheduledEvent, ScheduledEventKind, DeliveryChannel } from "@/graphql/types";
@@ -42,7 +42,6 @@ const KIND_LABEL: Record<ScheduledEventKind, string> = {
 };
 
 const CHANNEL_META: Record<DeliveryChannel, { Icon: React.ElementType; label: string; color: string }> = {
-  push:     { Icon: Wifi,          label: "Push",     color: "text-sky-300 bg-sky-500/10 border-sky-500/30" },
   whatsapp: { Icon: MessageCircle, label: "WhatsApp", color: "text-emerald-300 bg-emerald-500/10 border-emerald-500/30" },
   email:    { Icon: Mail,          label: "Email",    color: "text-violet-300 bg-violet-500/10 border-violet-500/30" },
 };
@@ -149,7 +148,7 @@ function UpcomingRow({
   const color = KIND_COLOR[event.kind];
   const isPast = new Date(event.scheduledAt).getTime() < Date.now();
   const deliveredVia = parseDeliveredVia(event.deliveredVia);
-  const channels = event.channels && event.channels.length > 0 ? event.channels : (["push"] as DeliveryChannel[]);
+  const channels: DeliveryChannel[] = event.channels ?? [];
 
   return (
     <motion.li
