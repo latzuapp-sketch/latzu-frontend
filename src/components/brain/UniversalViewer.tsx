@@ -4,10 +4,15 @@
  * UniversalViewer — opens any item type in the center pane of /brain.
  *
  * Dispatches to a type-specific viewer:
- *   - "node"      → KnowledgeNodeViewer (wraps existing NodeDetail with full edit)
- *   - "note"      → NoteViewer            (title + body editor, color, labels)
- *   - "task"      → TaskViewer            (status toggle, due, priority, edit)
- *   - "workspace" → WorkspaceViewer       (lists pages + opens external editor)
+ *   - "node"      → KnowledgeNodeViewer
+ *   - "note"      → NoteViewer
+ *   - "task"      → TaskViewer
+ *   - "workspace" → WorkspaceViewer
+ *   - "book"      → BookDetail
+ *   - "goal"      → GoalViewer
+ *   - "file"      → FileViewer
+ *   - "deck"      → DeckViewer (lists cards, link to /study)
+ *   - "quiz"      → QuizViewer (renders generated questions)
  *
  * Notion-style: the viewer takes over the middle pane. The grid is hidden
  * while a viewer is open. Top breadcrumb returns to the grid.
@@ -23,12 +28,16 @@ import { BookDetail } from "@/components/biblioteca/BookDetail";
 import { NoteViewer } from "@/components/brain/viewers/NoteViewer";
 import { TaskViewer } from "@/components/brain/viewers/TaskViewer";
 import { WorkspaceViewer } from "@/components/brain/viewers/WorkspaceViewer";
+import { GoalViewer } from "@/components/brain/viewers/GoalViewer";
+import { FileViewer } from "@/components/brain/viewers/FileViewer";
+import { DeckViewer } from "@/components/brain/viewers/DeckViewer";
+import { QuizViewer } from "@/components/brain/viewers/QuizViewer";
 
-import type { KnowledgeNode } from "@/graphql/types";
-import type { Flashcard } from "@/types/flashcards";
+import type { KnowledgeNode, GoalNode } from "@/graphql/types";
+import type { Flashcard, Deck } from "@/types/flashcards";
 import type { PlanningTask } from "@/types/planning";
 import type { WorkspaceDoc } from "@/types/workspace";
-import type { LibraryBook } from "@/types/library";
+import type { LibraryBook, LibraryFile } from "@/types/library";
 
 // ─── Tagged union of viewable items ──────────────────────────────────────────
 
@@ -37,7 +46,11 @@ export type ViewerItem =
   | { kind: "note"; note: Flashcard }
   | { kind: "task"; task: PlanningTask }
   | { kind: "workspace"; workspace: WorkspaceDoc }
-  | { kind: "book"; book: LibraryBook };
+  | { kind: "book"; book: LibraryBook }
+  | { kind: "goal"; goal: GoalNode }
+  | { kind: "file"; file: LibraryFile }
+  | { kind: "deck"; deck: Deck }
+  | { kind: "quiz"; task: PlanningTask };
 
 interface UniversalViewerProps {
   item: ViewerItem;
@@ -148,6 +161,74 @@ export function UniversalViewer({ item, onClose }: UniversalViewerProps) {
       >
         <ViewerHeader kindLabel="Libro" onClose={onClose} />
         <BookDetail book={item.book} onClose={onClose} />
+      </motion.div>
+    );
+  }
+
+  if (item.kind === "goal") {
+    return (
+      <motion.div
+        key={`viewer-goal-${item.goal.id}`}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="h-full overflow-y-auto"
+      >
+        <ViewerHeader kindLabel="Meta" onClose={onClose} />
+        <div className="px-6 py-5 max-w-3xl mx-auto">
+          <GoalViewer goal={item.goal} />
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (item.kind === "file") {
+    return (
+      <motion.div
+        key={`viewer-file-${item.file.id}`}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="h-full overflow-y-auto"
+      >
+        <ViewerHeader kindLabel="Archivo" onClose={onClose} />
+        <div className="px-6 py-5 max-w-3xl mx-auto">
+          <FileViewer file={item.file} />
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (item.kind === "deck") {
+    return (
+      <motion.div
+        key={`viewer-deck-${item.deck.id}`}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="h-full overflow-y-auto"
+      >
+        <ViewerHeader
+          kindLabel="Mazo"
+          onClose={onClose}
+          externalHref={`/study?deck=${item.deck.id}`}
+        />
+        <div className="px-6 py-5 max-w-3xl mx-auto">
+          <DeckViewer deck={item.deck} />
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (item.kind === "quiz") {
+    return (
+      <motion.div
+        key={`viewer-quiz-${item.task.id}`}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="h-full overflow-y-auto"
+      >
+        <ViewerHeader kindLabel="Quiz" onClose={onClose} />
+        <div className="px-6 py-5 max-w-3xl mx-auto">
+          <QuizViewer task={item.task} />
+        </div>
       </motion.div>
     );
   }

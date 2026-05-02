@@ -1,22 +1,33 @@
 "use client";
 
 /**
- * BrainSidebar — Notion-like tree, organized by the agent's signals.
+ * BrainSidebar — Notion-like tree.
  *
- * Sections, in order of importance for daily use:
- *   1. Recientes        — last 10 nodes (recency signal)
- *   2. Caliente ahora   — momentumTopics from UserModel
- *   3. Áreas de vida    — auto-detected LifeAreas (agent clustering)
- *   4. Mis spaces       — user-created workspaces
- *   5. Por tipo         — type breakdown
+ * Two layout modes:
+ *   1. Static default — sections below, used when the agent hasn't produced a
+ *      custom layout yet.
+ *   2. Dynamic agent layout — when `userModel.brainTreeLayout` is non-empty,
+ *      the agent's sections override the defaults (Phase 3 / "B" — agent
+ *      reorganizes the tree based on the user).
+ *
+ * Default sections (in order of importance for daily use):
+ *   - Todo / Recientes
+ *   - Mi contenido      → Planes, Metas, Tareas, Notas, Archivos, Spaces
+ *   - Estudio           → Flashcards, Quizzes, Lecturas
+ *   - Conocimiento      → Conceptos
+ *   - Áreas de vida     → auto-detected by agent
+ *   - Mis spaces        → user-created workspaces (direct links)
+ *   - Por tipo          → type breakdown of knowledge nodes
+ *   - Para revisitar    → agent-detected stale areas
  */
 
 import { useMemo } from "react";
 import Link from "next/link";
 import {
-  Sparkles, Clock, Flame, Compass, Layers, ChevronRight, Brain,
+  Sparkles, Clock, Compass, Layers, ChevronRight, Brain,
   StickyNote, BookOpen, Lightbulb, User, Calendar, Globe,
-  Play, FileText, ListTodo, Target,
+  Play, FileText, ListTodo, Target, Folder, GraduationCap,
+  ClipboardCheck, Layers3,
 } from "lucide-react";
 import { useUserModel } from "@/hooks/useOrganizerAgent";
 import { useWorkspaces } from "@/hooks/useWorkspace";
@@ -26,14 +37,24 @@ import { cn } from "@/lib/utils";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type BrainSelection =
+  // Top-level
   | { kind: "all" }
   | { kind: "recent" }
-  | { kind: "knowledge" }       // concepts (knowledge nodes excluding books)
-  | { kind: "books" }           // books only (curated + user-uploaded book nodes)
-  | { kind: "plans" }           // active plans the user is working on
-  | { kind: "notes" }
+  // Mi contenido
+  | { kind: "plans" }
+  | { kind: "goals" }
   | { kind: "tasks" }
+  | { kind: "notes" }
+  | { kind: "files" }
   | { kind: "pages" }
+  // Estudio
+  | { kind: "flashcards" }
+  | { kind: "quizzes" }
+  | { kind: "readings" }
+  // Conocimiento
+  | { kind: "knowledge" }       // concepts (knowledge nodes excluding books)
+  | { kind: "books" }           // alias used by /library — kept for grid filters
+  // Agent-driven
   | { kind: "topic"; topic: string }
   | { kind: "lifeArea"; area: string }
   | { kind: "workspace"; id: string; title: string }
@@ -45,6 +66,10 @@ interface SidebarProps {
   taskCount: number;
   bookCount: number;
   planCount: number;
+  goalCount: number;
+  fileCount: number;
+  deckCount: number;
+  quizCount: number;
   selection: BrainSelection;
   onSelect: (s: BrainSelection) => void;
 }
@@ -65,6 +90,62 @@ const TYPE_ICON: Record<string, React.ElementType> = {
   note: StickyNote, book: BookOpen, concept: Lightbulb, entity: Lightbulb,
   person: User, event: Calendar, web: Globe, video: Play, file: FileText,
 };
+
+/** Schema for a section the agent dynamically produced. */
+interface AgentSection {
+  name: string;
+  icon?: string;        // semantic icon name (mapped client-side)
+  description?: string;
+  items: Array<{ kind: string; label?: string; topic?: string; area?: string; nodeType?: string; workspaceId?: string }>;
+}
+
+/** Map an icon name from the agent to a lucide component. */
+function iconFor(name: string | undefined): React.ElementType {
+  switch ((name ?? "").toLowerCase()) {
+    case "target":     return Target;
+    case "tasks":      return ListTodo;
+    case "notes":      return StickyNote;
+    case "files":      return Folder;
+    case "spaces":
+    case "pages":      return Layers;
+    case "study":
+    case "graduation": return GraduationCap;
+    case "flashcards": return Layers3;
+    case "quiz":
+    case "quizzes":    return ClipboardCheck;
+    case "books":
+    case "readings":   return BookOpen;
+    case "knowledge":
+    case "concept":    return Lightbulb;
+    case "compass":
+    case "lifearea":   return Compass;
+    case "sparkles":   return Sparkles;
+    case "clock":      return Clock;
+    default:           return Brain;
+  }
+}
+
+/** Map an agent item kind to a BrainSelection. */
+function selectionForAgentItem(item: AgentSection["items"][number]): BrainSelection | null {
+  switch (item.kind) {
+    case "plans":      return { kind: "plans" };
+    case "goals":      return { kind: "goals" };
+    case "tasks":      return { kind: "tasks" };
+    case "notes":      return { kind: "notes" };
+    case "files":      return { kind: "files" };
+    case "pages":      return { kind: "pages" };
+    case "flashcards": return { kind: "flashcards" };
+    case "quizzes":    return { kind: "quizzes" };
+    case "readings":
+    case "books":      return { kind: "readings" };
+    case "knowledge":  return { kind: "knowledge" };
+    case "topic":      return item.topic ? { kind: "topic", topic: item.topic } : null;
+    case "lifeArea":   return item.area ? { kind: "lifeArea", area: item.area } : null;
+    case "workspace":  return item.workspaceId ? { kind: "workspace", id: item.workspaceId, title: item.label ?? "Space" } : null;
+    case "type":       return item.nodeType ? { kind: "type", nodeType: item.nodeType } : null;
+    default:           return null;
+  }
+}
 
 // ─── Section header ───────────────────────────────────────────────────────────
 
@@ -120,7 +201,10 @@ function TreeRow({
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
-export function BrainSidebar({ nodes, noteCount, taskCount, bookCount, planCount, selection, onSelect }: SidebarProps) {
+export function BrainSidebar({
+  nodes, noteCount, taskCount, bookCount, planCount, goalCount, fileCount,
+  deckCount, quizCount, selection, onSelect,
+}: SidebarProps) {
   const { userModel } = useUserModel();
   const { workspaces } = useWorkspaces();
 
@@ -128,13 +212,13 @@ export function BrainSidebar({ nodes, noteCount, taskCount, bookCount, planCount
     () => safeJsonArray<{ name: string; node_ids?: string[] }>(userModel?.lifeAreas),
     [userModel?.lifeAreas]
   );
-  const momentumTopics = useMemo(
-    () => safeJsonArray<string>(userModel?.momentumTopics).slice(0, 6),
-    [userModel?.momentumTopics]
-  );
   const staleAreas = useMemo(
     () => safeJsonArray<string>(userModel?.staleAreas).slice(0, 4),
     [userModel?.staleAreas]
+  );
+  const agentLayout = useMemo(
+    () => safeJsonArray<AgentSection>(userModel?.brainTreeLayout),
+    [userModel?.brainTreeLayout]
   );
 
   // Type breakdown
@@ -152,8 +236,11 @@ export function BrainSidebar({ nodes, noteCount, taskCount, bookCount, planCount
     if (s.kind === "lifeArea") return selection.kind === "lifeArea" && selection.area === s.area;
     if (s.kind === "workspace") return selection.kind === "workspace" && selection.id === s.id;
     if (s.kind === "type") return selection.kind === "type" && selection.nodeType === s.nodeType;
-    return true;  // all/recent/knowledge/books/plans/notes/tasks/pages — single-instance kinds
+    return true;  // single-instance kinds
   };
+
+  const conceptsCount = nodes.length - bookCount;
+  const useAgentLayout = agentLayout.length > 0;
 
   return (
     <aside className="w-64 shrink-0 border-r border-border/40 bg-card/20 flex flex-col h-full overflow-hidden">
@@ -164,64 +251,85 @@ export function BrainSidebar({ nodes, noteCount, taskCount, bookCount, planCount
             <Brain className="w-3 h-3 text-white" />
           </div>
           <span className="text-sm font-heading font-bold">Mi conocimiento</span>
+          {useAgentLayout && (
+            <span
+              className="ml-auto inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded border border-violet-500/30 bg-violet-500/10 text-violet-300"
+              title="Tu agente reorganizó este árbol según cómo trabajás"
+            >
+              <Sparkles className="w-2.5 h-2.5" />
+              IA
+            </span>
+          )}
         </div>
       </div>
 
       {/* Tree */}
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-3 text-foreground/80">
-        {/* All / Recent quick links */}
+        {/* Always-visible quick links */}
         <div className="space-y-0.5">
-          <TreeRow label="Todo" icon={Brain} count={noteCount + taskCount + planCount} isActive={isActive({ kind: "all" })} onClick={() => onSelect({ kind: "all" })} />
+          <TreeRow label="Todo" icon={Brain} count={planCount + goalCount + taskCount + noteCount} isActive={isActive({ kind: "all" })} onClick={() => onSelect({ kind: "all" })} />
           <TreeRow label="Recientes" icon={Clock} isActive={isActive({ kind: "recent" })} onClick={() => onSelect({ kind: "recent" })} />
         </div>
 
-        {/* What you're working on with the agent */}
-        <div>
-          <SectionHeader icon={Target} label="En curso" />
-          <div className="space-y-0.5">
-            <TreeRow label="Planes" icon={Target} count={planCount} isActive={isActive({ kind: "plans" })} onClick={() => onSelect({ kind: "plans" })} accent="text-emerald-400" />
-            <TreeRow label="Tareas" icon={ListTodo} count={taskCount} isActive={isActive({ kind: "tasks" })} onClick={() => onSelect({ kind: "tasks" })} accent="text-primary" />
-          </div>
-        </div>
-
-        {/* What you create + capture */}
-        <div>
-          <SectionHeader icon={Layers} label="Mi contenido" />
-          <div className="space-y-0.5">
-            <TreeRow label="Notas" icon={StickyNote} count={noteCount} isActive={isActive({ kind: "notes" })} onClick={() => onSelect({ kind: "notes" })} accent="text-yellow-400" />
-            <TreeRow label="Spaces" icon={Layers} isActive={isActive({ kind: "pages" })} onClick={() => onSelect({ kind: "pages" })} accent="text-indigo-400" />
-          </div>
-        </div>
-
-        {/* Knowledge — books separated from raw concepts */}
-        <div>
-          <SectionHeader icon={Lightbulb} label="Conocimiento" />
-          <div className="space-y-0.5">
-            <TreeRow label="Libros" icon={BookOpen} count={bookCount} isActive={isActive({ kind: "books" })} onClick={() => onSelect({ kind: "books" })} accent="text-emerald-300" />
-            <TreeRow label="Conceptos" icon={Lightbulb} count={nodes.length - bookCount} isActive={isActive({ kind: "knowledge" })} onClick={() => onSelect({ kind: "knowledge" })} accent="text-indigo-300" />
-          </div>
-        </div>
-
-        {/* Hot topics from agent's UserModel */}
-        {momentumTopics.length > 0 && (
-          <div>
-            <SectionHeader icon={Flame} label="Caliente ahora" count={momentumTopics.length} />
-            <div className="space-y-0.5">
-              {momentumTopics.map((topic) => (
-                <TreeRow
-                  key={topic}
-                  label={topic}
-                  icon={Flame}
-                  isActive={isActive({ kind: "topic", topic })}
-                  onClick={() => onSelect({ kind: "topic", topic })}
-                  accent="text-amber-400"
-                />
-              ))}
+        {useAgentLayout ? (
+          // ── Agent-driven layout ─────────────────────────────────────────────
+          agentLayout.map((section) => (
+            <div key={section.name}>
+              <SectionHeader icon={iconFor(section.icon)} label={section.name} />
+              <div className="space-y-0.5">
+                {section.items.map((it, idx) => {
+                  const sel = selectionForAgentItem(it);
+                  if (!sel) return null;
+                  return (
+                    <TreeRow
+                      key={`${section.name}-${idx}`}
+                      label={it.label ?? it.kind}
+                      icon={iconFor(it.kind)}
+                      isActive={isActive(sel)}
+                      onClick={() => onSelect(sel)}
+                    />
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ))
+        ) : (
+          // ── Default static layout ──────────────────────────────────────────
+          <>
+            {/* Mi contenido — what the user is growing with the agent */}
+            <div>
+              <SectionHeader icon={Layers} label="Mi contenido" />
+              <div className="space-y-0.5">
+                <TreeRow label="Planes"   icon={Target}      count={planCount}  isActive={isActive({ kind: "plans"  })} onClick={() => onSelect({ kind: "plans"  })} accent="text-emerald-400" />
+                <TreeRow label="Metas"    icon={Target}      count={goalCount}  isActive={isActive({ kind: "goals"  })} onClick={() => onSelect({ kind: "goals"  })} accent="text-rose-400" />
+                <TreeRow label="Tareas"   icon={ListTodo}    count={taskCount}  isActive={isActive({ kind: "tasks"  })} onClick={() => onSelect({ kind: "tasks"  })} accent="text-primary" />
+                <TreeRow label="Notas"    icon={StickyNote}  count={noteCount}  isActive={isActive({ kind: "notes"  })} onClick={() => onSelect({ kind: "notes"  })} accent="text-yellow-400" />
+                <TreeRow label="Archivos" icon={Folder}      count={fileCount}  isActive={isActive({ kind: "files"  })} onClick={() => onSelect({ kind: "files"  })} accent="text-cyan-400" />
+                <TreeRow label="Spaces"   icon={Layers}      isActive={isActive({ kind: "pages"  })} onClick={() => onSelect({ kind: "pages"  })} accent="text-indigo-400" />
+              </div>
+            </div>
+
+            {/* Estudio — flashcards / quizzes / readings */}
+            <div>
+              <SectionHeader icon={GraduationCap} label="Estudio" />
+              <div className="space-y-0.5">
+                <TreeRow label="Flashcards" icon={Layers3}         count={deckCount}  isActive={isActive({ kind: "flashcards" })} onClick={() => onSelect({ kind: "flashcards" })} accent="text-teal-400" />
+                <TreeRow label="Quizzes"    icon={ClipboardCheck}  count={quizCount}  isActive={isActive({ kind: "quizzes"    })} onClick={() => onSelect({ kind: "quizzes"    })} accent="text-amber-400" />
+                <TreeRow label="Lecturas"   icon={BookOpen}        count={bookCount}  isActive={isActive({ kind: "readings"   })} onClick={() => onSelect({ kind: "readings"   })} accent="text-emerald-300" />
+              </div>
+            </div>
+
+            {/* Conocimiento — raw concepts, separate from study material */}
+            <div>
+              <SectionHeader icon={Lightbulb} label="Conocimiento" />
+              <div className="space-y-0.5">
+                <TreeRow label="Conceptos" icon={Lightbulb} count={conceptsCount} isActive={isActive({ kind: "knowledge" })} onClick={() => onSelect({ kind: "knowledge" })} accent="text-indigo-300" />
+              </div>
+            </div>
+          </>
         )}
 
-        {/* Auto-detected life areas */}
+        {/* Auto-detected life areas — always shown when agent has produced them */}
         {lifeAreas.length > 0 && (
           <div>
             <SectionHeader icon={Compass} label="Áreas de vida" count={lifeAreas.length} />
@@ -241,7 +349,7 @@ export function BrainSidebar({ nodes, noteCount, taskCount, bookCount, planCount
           </div>
         )}
 
-        {/* User workspaces */}
+        {/* User workspaces — direct shortcuts */}
         {workspaces.length > 0 && (
           <div>
             <SectionHeader icon={Layers} label="Mis spaces" count={workspaces.length} />
@@ -258,8 +366,8 @@ export function BrainSidebar({ nodes, noteCount, taskCount, bookCount, planCount
           </div>
         )}
 
-        {/* Type breakdown */}
-        {typeCounts.length > 0 && (
+        {/* Type breakdown — only on default layout */}
+        {!useAgentLayout && typeCounts.length > 0 && (
           <div>
             <SectionHeader icon={Layers} label="Por tipo" count={typeCounts.length} />
             <div className="space-y-0.5">
@@ -280,7 +388,7 @@ export function BrainSidebar({ nodes, noteCount, taskCount, bookCount, planCount
           </div>
         )}
 
-        {/* Stale (agent suggests revisit) */}
+        {/* Stale areas (agent suggests revisit) */}
         {staleAreas.length > 0 && (
           <div>
             <SectionHeader icon={Sparkles} label="Para revisitar" count={staleAreas.length} />

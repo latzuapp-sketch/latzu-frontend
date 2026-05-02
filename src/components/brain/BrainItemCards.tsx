@@ -11,13 +11,15 @@
 import { motion } from "framer-motion";
 import {
   StickyNote, ListTodo, FileText, CheckCircle2, Circle, Clock,
-  Pin, Layers, Target, Sparkles, AlertTriangle,
+  Pin, Layers, Target, Sparkles, AlertTriangle, Layers3,
+  ClipboardCheck, Folder,
 } from "lucide-react";
-import type { Flashcard } from "@/types/flashcards";
+import type { Flashcard, Deck } from "@/types/flashcards";
 import type { PlanningTask, ABCDEPriority, TaskStatus, ActionPlan } from "@/types/planning";
 import type { WorkspaceDoc } from "@/types/workspace";
-import type { PlanHealth, PlanHealthStatus } from "@/graphql/types";
-import { NOTE_COLORS } from "@/types/flashcards";
+import type { PlanHealth, PlanHealthStatus, GoalNode } from "@/graphql/types";
+import type { LibraryFile } from "@/types/library";
+import { NOTE_COLORS, deckColorCls } from "@/types/flashcards";
 import { cn } from "@/lib/utils";
 
 // ─── Note card ───────────────────────────────────────────────────────────────
@@ -307,6 +309,198 @@ export function BrainPlanCard({ plan, health, onClick }: PlanCardProps) {
             )}
           </div>
         )}
+      </div>
+    </motion.button>
+  );
+}
+
+// ─── Goal card ───────────────────────────────────────────────────────────────
+
+const GOAL_STATUS_META: Record<string, { label: string; color: string }> = {
+  vague:      { label: "Por aclarar",  color: "text-zinc-300 bg-zinc-500/10 border-zinc-500/30" },
+  clarifying: { label: "Aclarando",    color: "text-amber-300 bg-amber-500/10 border-amber-500/30" },
+  clear:      { label: "Definida",     color: "text-sky-300 bg-sky-500/10 border-sky-500/30" },
+  active:     { label: "Activa",       color: "text-rose-300 bg-rose-500/10 border-rose-500/30" },
+  achieved:   { label: "Lograda",      color: "text-emerald-300 bg-emerald-500/10 border-emerald-500/30" },
+  abandoned:  { label: "Abandonada",   color: "text-muted-foreground bg-muted/30 border-border/40" },
+};
+
+export function BrainGoalCard({ goal, onClick }: { goal: GoalNode; onClick: () => void }) {
+  const meta = GOAL_STATUS_META[goal.status] ?? GOAL_STATUS_META.vague;
+  const pct = Math.round((goal.progressScore ?? 0) * 100);
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      onClick={onClick}
+      className="group w-full text-left rounded-xl border border-rose-500/20 bg-card/50 hover:bg-card/80 hover:border-rose-500/40 transition-all overflow-hidden"
+    >
+      <div className="h-0.5 w-full bg-gradient-to-r from-rose-500 to-pink-500" />
+      <div className="p-3.5 space-y-2.5">
+        <div className="flex items-start gap-2">
+          <div className="w-7 h-7 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-center shrink-0">
+            <Target className="w-3.5 h-3.5 text-rose-300" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-rose-300">
+                Meta
+              </span>
+              <span className={cn("text-[9px] font-medium px-1.5 py-0 rounded border", meta.color)}>
+                {meta.label}
+              </span>
+            </div>
+            <p className="text-sm font-semibold leading-snug line-clamp-2">{goal.title}</p>
+            {goal.successCriteria && (
+              <p className="text-xs text-muted-foreground leading-relaxed mt-1 line-clamp-2">
+                {goal.successCriteria}
+              </p>
+            )}
+          </div>
+        </div>
+        {pct > 0 && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="text-muted-foreground">Progreso</span>
+              <span className="font-medium text-foreground/80">{pct}%</span>
+            </div>
+            <div className="h-1 rounded-full bg-muted/40 overflow-hidden">
+              <div className="h-full bg-rose-500 transition-all" style={{ width: `${Math.max(2, Math.min(100, pct))}%` }} />
+            </div>
+          </div>
+        )}
+      </div>
+    </motion.button>
+  );
+}
+
+// ─── File card ───────────────────────────────────────────────────────────────
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export function BrainFileCard({ file, onClick }: { file: LibraryFile; onClick: () => void }) {
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      onClick={onClick}
+      className="group w-full text-left rounded-xl border border-cyan-500/20 bg-card/50 hover:bg-card/80 hover:border-cyan-500/40 transition-all p-3 flex items-start gap-3"
+    >
+      <div className="w-10 h-12 rounded border border-cyan-500/30 bg-cyan-500/10 flex items-center justify-center shrink-0">
+        <FileText className="w-4 h-4 text-cyan-300" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Folder className="w-3 h-3 text-cyan-300" />
+          <span className="text-[9px] font-bold uppercase tracking-wider text-cyan-300">
+            {file.ext || "Archivo"}
+          </span>
+          {file.truncated && (
+            <span className="text-[9px] text-amber-300/80">truncado</span>
+          )}
+        </div>
+        <p className="text-sm font-semibold leading-snug line-clamp-2">{file.name}</p>
+        <p className="text-[10px] text-muted-foreground/70 mt-1">
+          {formatBytes(file.size)} · {file.chars.toLocaleString()} chars
+        </p>
+        {file.extractedText && (
+          <p className="text-xs text-muted-foreground leading-relaxed mt-1.5 line-clamp-2">
+            {file.extractedText.slice(0, 140)}…
+          </p>
+        )}
+      </div>
+    </motion.button>
+  );
+}
+
+// ─── Deck card (Estudio → Flashcards) ────────────────────────────────────────
+
+export function BrainDeckCard({ deck, onClick }: { deck: Deck; onClick: () => void }) {
+  const colorCls = deckColorCls(deck.color);
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      onClick={onClick}
+      className="group w-full text-left rounded-xl border border-teal-500/20 bg-card/50 hover:bg-card/80 hover:border-teal-500/40 transition-all overflow-hidden"
+    >
+      <div className="h-0.5 w-full bg-gradient-to-r from-teal-500 to-cyan-500" />
+      <div className="p-3.5 space-y-2.5">
+        <div className="flex items-start gap-2">
+          <div className={cn("w-7 h-7 rounded-lg border flex items-center justify-center shrink-0", colorCls)}>
+            <Layers3 className="w-3.5 h-3.5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-teal-300">
+                Mazo
+              </span>
+              {deck.dueCount > 0 && (
+                <span className="text-[9px] font-medium px-1.5 py-0 rounded border text-amber-300 bg-amber-500/10 border-amber-500/30">
+                  {deck.dueCount} para repasar
+                </span>
+              )}
+            </div>
+            <p className="text-sm font-semibold leading-snug line-clamp-2">{deck.name}</p>
+            {deck.description && (
+              <p className="text-xs text-muted-foreground leading-relaxed mt-1 line-clamp-2">
+                {deck.description}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground/70">
+          <span>{deck.cardCount} {deck.cardCount === 1 ? "tarjeta" : "tarjetas"}</span>
+          {deck.newCount > 0 && <span>{deck.newCount} nuevas</span>}
+        </div>
+      </div>
+    </motion.button>
+  );
+}
+
+// ─── Quiz task card (Estudio → Quizzes) ──────────────────────────────────────
+
+export function BrainQuizCard({ task, onClick }: { task: PlanningTask; onClick: () => void }) {
+  const StatusIcon = task.status === "done" ? CheckCircle2 : task.status === "in_progress" ? Clock : Circle;
+  const statusColor = task.status === "done"
+    ? "text-emerald-400"
+    : task.status === "in_progress"
+      ? "text-amber-400"
+      : "text-muted-foreground/60";
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      onClick={onClick}
+      className="group w-full text-left rounded-xl border border-amber-500/20 bg-card/50 hover:bg-card/80 hover:border-amber-500/40 transition-all p-3.5 space-y-2"
+    >
+      <div className="flex items-start gap-2">
+        <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
+          <ClipboardCheck className="w-3.5 h-3.5 text-amber-300" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-amber-300">
+              Quiz
+            </span>
+            <StatusIcon className={cn("w-3 h-3", statusColor)} />
+          </div>
+          <p className={cn(
+            "text-sm font-semibold leading-snug line-clamp-2",
+            task.status === "done" && "line-through text-muted-foreground/60",
+          )}>
+            {task.title}
+          </p>
+          {task.description && (
+            <p className="text-xs text-muted-foreground leading-relaxed mt-1 line-clamp-2">
+              {task.description}
+            </p>
+          )}
+        </div>
       </div>
     </motion.button>
   );

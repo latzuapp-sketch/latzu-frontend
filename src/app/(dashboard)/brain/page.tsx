@@ -28,13 +28,20 @@ import { BrainAgentPanel, BrainAgentTrigger } from "@/components/brain/BrainAgen
 import { UniversalViewer, type ViewerItem } from "@/components/brain/UniversalViewer";
 import { useKnowledgeNodes, useLibraryBooks } from "@/hooks/useLibrary";
 import { BookCard } from "@/components/biblioteca/BookCard";
-import type { LibraryBook } from "@/types/library";
+import type { LibraryBook, LibraryFile } from "@/types/library";
 import { useUserModel, useAgentActions } from "@/hooks/useOrganizerAgent";
-import { useAllNotes } from "@/hooks/useFlashcards";
+import { useAllNotes, useDecks } from "@/hooks/useFlashcards";
 import { useTasks } from "@/hooks/usePlanning";
 import { usePlans } from "@/hooks/usePlans";
 import { useAllPlanHealth } from "@/hooks/usePlanHealth";
 import { useWorkspaces } from "@/hooks/useWorkspace";
+import { useUserGoals } from "@/hooks/useGoals";
+import { useLibraryFiles } from "@/hooks/useLibraryFiles";
+import {
+  BrainGoalCard, BrainFileCard, BrainDeckCard, BrainQuizCard,
+} from "@/components/brain/BrainItemCards";
+import type { Deck } from "@/types/flashcards";
+import type { GoalNode } from "@/graphql/types";
 import { useMutation } from "@apollo/client";
 import { aiClient } from "@/lib/apollo";
 import { QUICK_CAPTURE } from "@/graphql/ai/operations";
@@ -55,6 +62,20 @@ function safeJsonArray<T = unknown>(raw: string | null | undefined): T[] {
   }
 }
 
+function viewerItemId(item: ViewerItem): string {
+  switch (item.kind) {
+    case "node":      return item.node.id;
+    case "note":      return item.note.id;
+    case "task":      return item.task.id;
+    case "book":      return item.book.id;
+    case "goal":      return item.goal.id;
+    case "file":      return item.file.id;
+    case "deck":      return item.deck.id;
+    case "quiz":      return item.task.id;
+    case "workspace": return item.workspace.id;
+  }
+}
+
 interface LifeAreaParsed {
   name: string;
   node_ids?: string[];
@@ -71,9 +92,9 @@ function isBookNode(n: KnowledgeNode): boolean {
   return n.type === "book";
 }
 
-/** Library-book filter for the brain. Books only appear in the Books view. */
+/** Library-book filter for the brain. Books appear in Books and Lecturas views. */
 function filterBooks(books: LibraryBook[], s: BrainSelection, search: string): LibraryBook[] {
-  if (s.kind !== "books") return [];
+  if (s.kind !== "books" && s.kind !== "readings") return [];
   const q = search.trim().toLowerCase();
   if (!q) return books;
   return books.filter(
@@ -84,37 +105,96 @@ function filterBooks(books: LibraryBook[], s: BrainSelection, search: string): L
   );
 }
 
+/** Goals visible in: all, goals. */
+function filterGoals(goals: GoalNode[], s: BrainSelection, search: string): GoalNode[] {
+  const showHere = s.kind === "all" || s.kind === "goals" || s.kind === "recent";
+  if (!showHere) return [];
+  const q = search.trim().toLowerCase();
+  let out = goals;
+  if (s.kind === "all") {
+    out = out.filter((g) => g.status === "active" || g.status === "clear");
+  }
+  if (q) {
+    out = out.filter(
+      (g) => g.title.toLowerCase().includes(q) || g.rawStatement.toLowerCase().includes(q),
+    );
+  }
+  return s.kind === "recent" ? out.slice(0, 5) : out;
+}
+
+/** Files visible in: all, files. */
+function filterFiles(files: LibraryFile[], s: BrainSelection, search: string): LibraryFile[] {
+  const showHere = s.kind === "all" || s.kind === "files" || s.kind === "recent";
+  if (!showHere) return [];
+  const q = search.trim().toLowerCase();
+  if (!q) return s.kind === "recent" ? files.slice(0, 5) : files;
+  return files.filter(
+    (f) => f.name.toLowerCase().includes(q) || f.extractedText.toLowerCase().includes(q),
+  );
+}
+
+/** Decks visible in: flashcards. */
+function filterDecks(decks: Deck[], s: BrainSelection, search: string): Deck[] {
+  if (s.kind !== "flashcards") return [];
+  const q = search.trim().toLowerCase();
+  if (!q) return decks;
+  return decks.filter(
+    (d) => d.name.toLowerCase().includes(q) || d.description.toLowerCase().includes(q),
+  );
+}
+
+/** Quiz tasks visible in: quizzes. */
+function filterQuizTasks(tasks: PlanningTask[], s: BrainSelection, search: string): PlanningTask[] {
+  if (s.kind !== "quizzes") return [];
+  const q = search.trim().toLowerCase();
+  let out = tasks.filter((t) => t.category === "quiz" || t.contentType === "quiz");
+  if (q) {
+    out = out.filter((t) => t.title.toLowerCase().includes(q) || t.description.toLowerCase().includes(q));
+  }
+  return out;
+}
+
 function selectionTitle(s: BrainSelection): string {
   switch (s.kind) {
-    case "all":       return "Mi conocimiento";
-    case "recent":    return "Recientes";
-    case "knowledge": return "Conceptos";
-    case "books":     return "Libros";
-    case "plans":     return "Planes";
-    case "notes":     return "Notas";
-    case "tasks":     return "Tareas";
-    case "pages":     return "Spaces";
-    case "topic":     return s.topic;
-    case "lifeArea":  return s.area;
-    case "workspace": return s.title;
-    case "type":      return `Tipo: ${s.nodeType}`;
+    case "all":        return "Mi conocimiento";
+    case "recent":     return "Recientes";
+    case "knowledge":  return "Conceptos";
+    case "books":      return "Libros";
+    case "plans":      return "Planes";
+    case "goals":      return "Metas";
+    case "notes":      return "Notas";
+    case "tasks":      return "Tareas";
+    case "files":      return "Archivos";
+    case "pages":      return "Spaces";
+    case "flashcards": return "Flashcards";
+    case "quizzes":    return "Quizzes";
+    case "readings":   return "Lecturas";
+    case "topic":      return s.topic;
+    case "lifeArea":   return s.area;
+    case "workspace":  return s.title;
+    case "type":       return `Tipo: ${s.nodeType}`;
   }
 }
 
 function selectionSubtitle(s: BrainSelection): string {
   switch (s.kind) {
-    case "all":       return "Tus planes activos, tareas, notas y spaces. Para ver libros o conceptos, abrí su sección en el sidebar.";
-    case "recent":    return "Lo último que creaste o editaste.";
-    case "knowledge": return "Conceptos puros: ideas, links, archivos y nodos extraídos. (Libros aparte.)";
-    case "books":     return "Libros que estás estudiando — curados + los que vos sumaste.";
-    case "plans":     return "Planes que estás corriendo con la IA para crecer. Adaptan su carga según tu progreso.";
-    case "notes":     return "Tus notas, tipo Google-Keep — siempre tuyas.";
-    case "tasks":     return "Cosas por hacer, ordenadas por prioridad ABCDE.";
-    case "pages":     return "Spaces estilo Notion para organizar páginas.";
-    case "topic":     return "Tema marcado como caliente por tu agente.";
-    case "lifeArea":  return "Área de vida detectada por tu agente.";
-    case "workspace": return "Tu space personalizado.";
-    case "type":      return "Filtrado por tipo de contenido.";
+    case "all":        return "Todo tu mundo: planes, metas, tareas, notas, archivos y spaces.";
+    case "recent":     return "Lo último que creaste o editaste.";
+    case "knowledge":  return "Conceptos puros: ideas, nodos extraídos. (Lecturas aparte en Estudio.)";
+    case "books":      return "Libros disponibles — curados + los que vos sumaste.";
+    case "plans":      return "Planes que estás corriendo con la IA. Adaptan su carga según tu progreso.";
+    case "goals":      return "Tus metas — la IA detecta cuáles avanzás y cuáles se enfrían.";
+    case "notes":      return "Tus notas, tipo Google-Keep — siempre tuyas.";
+    case "tasks":      return "Cosas por hacer, ordenadas por prioridad ABCDE.";
+    case "files":      return "Archivos que subiste — PDFs, docs, transcripts.";
+    case "pages":      return "Spaces estilo Notion para organizar páginas.";
+    case "flashcards": return "Tus mazos de tarjetas SRS — abrir para ver tarjetas y repasar.";
+    case "quizzes":    return "Tareas con quiz generado — listas para repasar.";
+    case "readings":   return "Lecturas para estudio — libros + material que estás absorbiendo.";
+    case "topic":      return "Tema agrupado por tu agente.";
+    case "lifeArea":   return "Área de vida detectada por tu agente.";
+    case "workspace":  return "Tu space personalizado.";
+    case "type":       return "Filtrado por tipo de contenido.";
   }
 }
 
@@ -138,14 +218,19 @@ function filterNodes(
   switch (s.kind) {
     // "Todo" no longer includes knowledge nodes — concepts/books only show
     // under their own dedicated tree rows.
-    case "all":       return [];
-    case "recent":    return [];
-    case "knowledge": return out.filter((n) => !isBookNode(n));   // exclude type='book' nodes
-    case "books":     return [];                                   // books come from useLibraryBooks
-    case "plans":     return [];
-    case "notes":     return [];
-    case "tasks":     return [];
-    case "pages":     return [];
+    case "all":        return [];
+    case "recent":     return [];
+    case "knowledge":  return out.filter((n) => !isBookNode(n));   // exclude type='book' nodes
+    case "books":      return [];                                   // books come from useLibraryBooks
+    case "plans":      return [];
+    case "goals":      return [];
+    case "notes":      return [];
+    case "tasks":      return [];
+    case "files":      return [];
+    case "pages":      return [];
+    case "flashcards": return [];
+    case "quizzes":    return [];
+    case "readings":   return [];
     case "topic": {
       const topic = s.topic.toLowerCase();
       return out.filter((n) => n.name.toLowerCase().includes(topic) || (n.content?.toLowerCase().includes(topic) ?? false));
@@ -343,9 +428,20 @@ export default function BrainPage() {
   const { healthByPlanId } = useAllPlanHealth();
   const { workspaces } = useWorkspaces();
   const { books } = useLibraryBooks();   // same source as /library → Lecturas
+  const { goals } = useUserGoals();
+  const { files } = useLibraryFiles();
+  const { decks } = useDecks();
 
   const bookCount = books.length;
   const activePlanCount = useMemo(() => plans.filter((p) => p.status === "active").length, [plans]);
+  const activeGoalCount = useMemo(
+    () => goals.filter((g) => g.status === "active" || g.status === "clear").length,
+    [goals],
+  );
+  const quizTaskCount = useMemo(
+    () => tasks.filter((t) => t.category === "quiz" || t.contentType === "quiz").length,
+    [tasks],
+  );
   const { actions: pendingProposals } = useAgentActions({ status: "pending", limit: 20 });
   const visibleProposalsCount = pendingProposals.filter(
     (a) => a.visibility !== "silent" && a.type !== "clarification_question"
@@ -376,11 +472,29 @@ export default function BrainPage() {
     () => filterBooks(books, selection, deferredSearch),
     [books, selection, deferredSearch]
   );
+  const filteredGoals = useMemo(
+    () => filterGoals(goals, selection, deferredSearch),
+    [goals, selection, deferredSearch],
+  );
+  const filteredFiles = useMemo(
+    () => filterFiles(files, selection, deferredSearch),
+    [files, selection, deferredSearch],
+  );
+  const filteredDecks = useMemo(
+    () => filterDecks(decks, selection, deferredSearch),
+    [decks, selection, deferredSearch],
+  );
+  const filteredQuizTasks = useMemo(
+    () => filterQuizTasks(tasks, selection, deferredSearch),
+    [tasks, selection, deferredSearch],
+  );
   const showWorkspaces = selection.kind === "all" || selection.kind === "pages";
 
   const totalShown =
     filteredNodes.length + filteredNotes.length + filteredTasks.length +
     filteredPlans.length + filteredBooks.length +
+    filteredGoals.length + filteredFiles.length +
+    filteredDecks.length + filteredQuizTasks.length +
     (showWorkspaces ? workspaces.length : 0);
 
   const synthesisCount = useMemo(
@@ -406,6 +520,10 @@ export default function BrainPage() {
         taskCount={tasks.length}
         bookCount={bookCount}
         planCount={activePlanCount}
+        goalCount={activeGoalCount}
+        fileCount={files.length}
+        deckCount={decks.length}
+        quizCount={quizTaskCount}
         selection={selection}
         onSelect={(s) => {
           setSelection(s);
@@ -418,13 +536,7 @@ export default function BrainPage() {
         <AnimatePresence mode="wait">
           {viewing && (
             <UniversalViewer
-              key={`view-${viewing.kind}-${
-                viewing.kind === "node" ? viewing.node.id :
-                viewing.kind === "note" ? viewing.note.id :
-                viewing.kind === "task" ? viewing.task.id :
-                viewing.kind === "book" ? viewing.book.id :
-                viewing.workspace.id
-              }`}
+              key={`view-${viewing.kind}-${viewerItemId(viewing)}`}
               item={viewing}
               onClose={() => setViewing(null)}
             />
@@ -539,7 +651,15 @@ export default function BrainPage() {
           {totalShown > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               <AnimatePresence mode="popLayout">
-                {/* Active plans first — what the user + agent are growing on */}
+                {/* Goals first — the north star */}
+                {filteredGoals.map((goal) => (
+                  <BrainGoalCard
+                    key={`goal-${goal.id}`}
+                    goal={goal}
+                    onClick={() => setViewing({ kind: "goal", goal })}
+                  />
+                ))}
+                {/* Active plans — what the user + agent are growing on */}
                 {filteredPlans.map((plan) => (
                   <BrainPlanCard
                     key={`plan-${plan.id}`}
@@ -548,7 +668,23 @@ export default function BrainPage() {
                     onClick={() => router.push(`/plans/${plan.id}`)}
                   />
                 ))}
-                {/* Books from the library catalog (only shown in Libros view) */}
+                {/* Decks (Estudio → Flashcards) */}
+                {filteredDecks.map((deck) => (
+                  <BrainDeckCard
+                    key={`deck-${deck.id}`}
+                    deck={deck}
+                    onClick={() => setViewing({ kind: "deck", deck })}
+                  />
+                ))}
+                {/* Quiz tasks (Estudio → Quizzes) */}
+                {filteredQuizTasks.map((task) => (
+                  <BrainQuizCard
+                    key={`quiz-${task.id}`}
+                    task={task}
+                    onClick={() => setViewing({ kind: "quiz", task })}
+                  />
+                ))}
+                {/* Books from the library catalog */}
                 {filteredBooks.map((book, i) => (
                   <BookCard
                     key={`book-${book.id}`}
@@ -557,7 +693,7 @@ export default function BrainPage() {
                     onClick={() => setViewing({ kind: "book", book })}
                   />
                 ))}
-                {/* Then tasks (action items) */}
+                {/* Tasks (action items) */}
                 {filteredTasks.map((task) => (
                   <BrainTaskCard
                     key={`task-${task.id}`}
@@ -566,7 +702,7 @@ export default function BrainPage() {
                     onClick={() => setViewing({ kind: "task", task })}
                   />
                 ))}
-                {/* Then notes */}
+                {/* Notes */}
                 {filteredNotes.map((note) => (
                   <BrainNoteCard
                     key={`note-${note.id}`}
@@ -574,7 +710,15 @@ export default function BrainPage() {
                     onClick={() => setViewing({ kind: "note", note })}
                   />
                 ))}
-                {/* Then knowledge nodes */}
+                {/* Files */}
+                {filteredFiles.map((file) => (
+                  <BrainFileCard
+                    key={`file-${file.id}`}
+                    file={file}
+                    onClick={() => setViewing({ kind: "file", file })}
+                  />
+                ))}
+                {/* Knowledge nodes */}
                 {filteredNodes.map((node) => (
                   <AdaptiveItemCard
                     key={`node-${node.id}`}
@@ -582,7 +726,7 @@ export default function BrainPage() {
                     onClick={() => setViewing({ kind: "node", node })}
                   />
                 ))}
-                {/* Then workspaces (when relevant) */}
+                {/* Workspaces (when relevant) */}
                 {showWorkspaces && workspaces.map((w) => (
                   <BrainPageCard
                     key={`ws-${w.id}`}

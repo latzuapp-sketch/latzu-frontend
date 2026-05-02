@@ -815,6 +815,7 @@ export const GET_USER_MODEL = gql`
       modelVersion
       lastDeepReflection
       updatedAt
+      brainTreeLayout
     }
   }
 `;

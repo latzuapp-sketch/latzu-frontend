@@ -385,6 +385,8 @@ export interface UserModel {
   modelVersion: number;
   lastDeepReflection: string | null;
   updatedAt: string | null;
+  /** JSON: [{name, icon, description, items: [{kind, label, ...}]}] — agent-driven /brain sidebar */
+  brainTreeLayout: string | null;
 }
 
 export interface LifeArea {
