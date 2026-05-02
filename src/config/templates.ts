@@ -57,7 +57,7 @@ export const profileTemplates: Record<ProfileType, TemplateConfig> = {
     sidebarItems: [
       { id: "home",         label: "Hoy",          href: "/dashboard", icon: Home },
       { id: "brain",        label: "Mi conocimiento", href: "/brain",  icon: Brain },
-      { id: "planning",     label: "Planes",       href: "/planning",  icon: CalendarDays },
+      { id: "planning",     label: "Calendario",   href: "/planning",  icon: CalendarDays },
       { id: "chat",         label: "Chat",         href: "/chat",      icon: MessageSquare },
       { id: "agent",        label: "Agente",       href: "/agent",     icon: Bot },
     ],
@@ -78,7 +78,7 @@ export const profileTemplates: Record<ProfileType, TemplateConfig> = {
     sidebarItems: [
       { id: "home",         label: "Hoy",          href: "/dashboard", icon: Home },
       { id: "brain",        label: "Mi conocimiento", href: "/brain",  icon: Brain },
-      { id: "planning",     label: "Planes",       href: "/planning",  icon: CalendarDays },
+      { id: "planning",     label: "Calendario",   href: "/planning",  icon: CalendarDays },
       { id: "chat",         label: "Chat",         href: "/chat",      icon: MessageSquare },
       { id: "agent",        label: "Agente",       href: "/agent",     icon: Bot },
     ],

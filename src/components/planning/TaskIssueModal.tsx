@@ -169,6 +169,41 @@ export function TaskIssueModal({
   );
 }
 
+// ── Panel mode ────────────────────────────────────────────────────────────────
+// Same Jira-style content as the modal, but rendered inline instead of inside
+// a Dialog. Use this when embedding in a side panel / viewer (e.g. /brain
+// UniversalViewer) so the user gets the full ticket interface in-place.
+
+interface TaskIssuePanelProps {
+  task: PlanningTask;
+  onUpdate: TaskIssueModalProps["onUpdate"];
+  onDelete: TaskIssueModalProps["onDelete"];
+  onClose: () => void;
+  onCreateTask?: TaskIssueModalProps["onCreateTask"];
+  allTasks?: PlanningTask[];
+}
+
+export function TaskIssuePanel({
+  task,
+  onUpdate,
+  onDelete,
+  onClose,
+  onCreateTask,
+  allTasks = [],
+}: TaskIssuePanelProps) {
+  return (
+    <IssueContent
+      key={task.id}
+      task={task}
+      onUpdate={onUpdate}
+      onDelete={onDelete}
+      onCreateTask={onCreateTask}
+      onClose={onClose}
+      allTasks={allTasks}
+    />
+  );
+}
+
 // ── Issue content ──────────────────────────────────────────────────────────────
 
 function IssueContent({

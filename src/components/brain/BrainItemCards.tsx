@@ -107,6 +107,18 @@ const STATUS_ICON: Record<TaskStatus, React.ElementType> = {
   done: CheckCircle2,
 };
 
+const STATUS_PILL: Record<TaskStatus, { label: string; classes: string }> = {
+  todo:        { label: "To Do",       classes: "bg-muted/60 text-muted-foreground border-border/60" },
+  in_progress: { label: "In Progress", classes: "bg-amber-500/15 text-amber-300 border-amber-500/30" },
+  done:        { label: "Done",        classes: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" },
+};
+
+function initialsFrom(name?: string): string {
+  if (!name) return "";
+  const parts = name.trim().split(/\s+/).slice(0, 2);
+  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("");
+}
+
 const STATUS_COLOR: Record<TaskStatus, string> = {
   todo: "text-muted-foreground/60",
   in_progress: "text-amber-400",
@@ -135,6 +147,8 @@ export function BrainTaskCard({ task, isSelected, onClick, onToggle }: TaskCardP
   const StatusIcon = STATUS_ICON[task.status];
   const due = formatDate(task.dueDate);
   const isOverdue = task.dueDate && task.status !== "done" && new Date(task.dueDate + "T00:00:00") < new Date();
+  const statusPill = STATUS_PILL[task.status];
+  const initials = initialsFrom(task.assigneeName);
 
   return (
     <motion.div
@@ -158,11 +172,28 @@ export function BrainTaskCard({ task, isSelected, onClick, onToggle }: TaskCardP
           <StatusIcon className="w-4 h-4" />
         </button>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-1">
-            <ListTodo className="w-3 h-3 text-primary/70" />
-            <span className="text-[9px] font-bold uppercase tracking-wider text-primary/70">Tarea</span>
+          {/* Top row: issue key + status pill (Jira-style) */}
+          <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+            {task.issueKey ? (
+              <span className="font-mono text-[10px] font-semibold text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded border border-border/40">
+                {task.issueKey}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-primary/70">
+                <ListTodo className="w-3 h-3" /> Tarea
+              </span>
+            )}
+            <span className={cn(
+              "text-[9px] font-semibold px-1.5 py-0.5 rounded-full border",
+              statusPill.classes,
+            )}>
+              {statusPill.label}
+            </span>
             {task.abcdePriority && (
-              <span className={cn("text-[9px] font-bold px-1 py-0 rounded border", ABCDE_BADGE[task.abcdePriority])}>
+              <span className={cn(
+                "text-[9px] font-bold w-4 h-4 inline-flex items-center justify-center rounded border",
+                ABCDE_BADGE[task.abcdePriority],
+              )}>
                 {task.abcdePriority}
               </span>
             )}
@@ -178,13 +209,26 @@ export function BrainTaskCard({ task, isSelected, onClick, onToggle }: TaskCardP
               {task.description}
             </p>
           )}
-          {due && (
-            <p className={cn(
-              "text-[10px] mt-1.5",
-              isOverdue ? "text-rose-400" : "text-muted-foreground/60"
-            )}>
-              {isOverdue ? "Atrasada · " : ""}{due}
-            </p>
+          {/* Bottom row: assignee + due date */}
+          {(initials || due) && (
+            <div className="flex items-center gap-2 mt-1.5">
+              {initials && (
+                <span
+                  title={task.assigneeName}
+                  className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[9px] font-bold inline-flex items-center justify-center border border-primary/30"
+                >
+                  {initials}
+                </span>
+              )}
+              {due && (
+                <span className={cn(
+                  "text-[10px]",
+                  isOverdue ? "text-rose-400" : "text-muted-foreground/60",
+                )}>
+                  {isOverdue ? "Atrasada · " : ""}{due}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>

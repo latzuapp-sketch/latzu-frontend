@@ -445,7 +445,7 @@ const translations = {
       nav: {
         home: "Today",
         brain: "My knowledge",
-        planning: "Plans",
+        planning: "Calendar",
         chat: "Chat",
         agent: "Agent",
       },
@@ -897,7 +897,7 @@ const translations = {
       nav: {
         home: "Hoy",
         brain: "Mi conocimiento",
-        planning: "Planes",
+        planning: "Calendario",
         chat: "Chat",
         agent: "Agente",
       },

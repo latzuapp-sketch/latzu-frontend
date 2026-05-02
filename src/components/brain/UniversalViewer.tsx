@@ -26,7 +26,8 @@ import Link from "next/link";
 import { NodeDetail } from "@/components/biblioteca/NodeDetail";
 import { BookDetail } from "@/components/biblioteca/BookDetail";
 import { NoteViewer } from "@/components/brain/viewers/NoteViewer";
-import { TaskViewer } from "@/components/brain/viewers/TaskViewer";
+import { TaskIssuePanel } from "@/components/planning/TaskIssueModal";
+import { useTasks } from "@/hooks/usePlanning";
 import { WorkspaceViewer } from "@/components/brain/viewers/WorkspaceViewer";
 import { GoalViewer } from "@/components/brain/viewers/GoalViewer";
 import { FileViewer } from "@/components/brain/viewers/FileViewer";
@@ -98,6 +99,9 @@ function ViewerHeader({
 
 export function UniversalViewer({ item, onClose }: UniversalViewerProps) {
   const router = useRouter();
+  // Hooks called unconditionally so the rules-of-hooks stay happy regardless
+  // of which item kind is open. They're cheap (cache reads) when not the task.
+  const { tasks, createTask, updateTask, deleteTask } = useTasks();
 
   if (item.kind === "node") {
     return (
@@ -136,17 +140,26 @@ export function UniversalViewer({ item, onClose }: UniversalViewerProps) {
   }
 
   if (item.kind === "task") {
+    // Use the same Jira-style ticket UI as the planning board so every task
+    // surface in the app shares one interface (status pill, priority,
+    // assignee, comments, activity, blockers, subtasks, etc).
+    // The panel renders its own top bar + close button — no ViewerHeader.
+    const live = tasks.find((t) => t.id === item.task.id) ?? item.task;
     return (
       <motion.div
         key={`viewer-task-${item.task.id}`}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="h-full overflow-y-auto"
+        className="h-full overflow-hidden flex flex-col"
       >
-        <ViewerHeader kindLabel="Tarea" onClose={onClose} externalHref="/planning" />
-        <div className="px-6 py-5 max-w-3xl mx-auto">
-          <TaskViewer task={item.task} />
-        </div>
+        <TaskIssuePanel
+          task={live}
+          allTasks={tasks}
+          onUpdate={updateTask}
+          onDelete={async (id) => { await deleteTask(id); onClose(); }}
+          onCreateTask={async (input) => { await createTask(input); }}
+          onClose={onClose}
+        />
       </motion.div>
     );
   }
