@@ -15,7 +15,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { useUserStore } from "@/stores/userStore";
 import { trackChatMessage } from "@/lib/events";
 import type { ChatMessage } from "@/types/chat";
-import type { AgentAction, ChatStreamEvent, SendMessageResult, ChatSession, RagSource } from "@/graphql/types";
+import type { ToolCall, ChatStreamEvent, SendMessageResult, ChatSession, RagSource } from "@/graphql/types";
 
 // Tools that modify planning data and should trigger a refetch
 const TASK_TOOLS = new Set(["create_task", "create_multiple_tasks", "update_task"]);
@@ -245,7 +245,7 @@ export function useChat(options: UseChatOptions = {}) {
                         args: event.args ?? {},
                         result: {},
                         status: "success",
-                      } as AgentAction,
+                      } as ToolCall,
                       isPending: true,
                     },
                   });
@@ -261,7 +261,7 @@ export function useChat(options: UseChatOptions = {}) {
                           args: event.args ?? {},
                           result: event.result ?? {},
                           status: event.status ?? "success",
-                        } as AgentAction,
+                        } as ToolCall,
                         isPending: false,
                       },
                     });
@@ -330,7 +330,7 @@ export function useChat(options: UseChatOptions = {}) {
                 role: "agent_action",
                 content: action.toolName,
                 timestamp: new Date(),
-                metadata: { action: action as AgentAction, isPending: false },
+                metadata: { action: action as ToolCall, isPending: false },
               });
               await new Promise<void>((r) => setTimeout(r, 120));
             }

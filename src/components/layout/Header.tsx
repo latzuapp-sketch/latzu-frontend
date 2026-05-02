@@ -16,10 +16,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useUserStore, useIsGuest } from "@/stores/userStore";
 import { useEventStore } from "@/stores/eventStore";
-import { useFocusSignals, useDismissFocusSignal } from "@/hooks/useOrganizerAgent";
-import { useRespondToSignal } from "@/hooks/useGoals";
+import { useAgentActions, useActionMutations } from "@/hooks/useOrganizerAgent";
+import { useRespondToAction } from "@/hooks/useGoals";
 import { getTemplate } from "@/config/templates";
-import type { FocusSignalType, SignalResponseOption } from "@/graphql/types";
+import type { SignalResponseOption } from "@/graphql/types";
 import {
   Bell,
   Search,
@@ -76,11 +76,14 @@ export function Header({ title, onMenuClick, onSearchClick }: HeaderProps) {
   const unreadCount = useEventStore((state) => state.unreadCount);
   const markNotificationRead = useEventStore((state) => state.markNotificationRead);
 
-  const { signals: focusSignals } = useFocusSignals("pending");
-  const { dismiss: dismissSignal } = useDismissFocusSignal();
-  const { respond: respondToSignal } = useRespondToSignal();
+  // Pull all non-silent agent actions (the unified inbox surface for the bell)
+  const { actions: agentActions } = useAgentActions({ status: "pending" });
+  const { dismiss: dismissSignal } = useActionMutations();
+  const { respond: respondToSignal } = useRespondToAction();
   const now = new Date().toISOString();
-  const dueSignals = focusSignals.filter((s) => s.deliverAt <= now);
+  const dueSignals = agentActions.filter(
+    (a) => a.visibility !== "silent" && a.deliverAt <= now,
+  );
   const totalUnread = unreadCount + dueSignals.length;
 
   const template = getTemplate(profileType || undefined);
@@ -207,28 +210,29 @@ export function Header({ title, onMenuClick, onSearchClick }: HeaderProps) {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
 
-              {/* Focus Signals (agent-generated) */}
-              {dueSignals.map((signal) => {
-                const Icon = SIGNAL_ICONS[signal.type] ?? Bell;
+              {/* Agent actions (agent-generated, unified inbox surface) */}
+              {dueSignals.map((action) => {
+                const Icon = SIGNAL_ICONS[action.type] ?? Bell;
                 let options: SignalResponseOption[] = [];
                 try {
-                  options = signal.responseOptions ? JSON.parse(signal.responseOptions) : [];
+                  options = action.responseOptions ? JSON.parse(action.responseOptions) : [];
                 } catch {
                   options = [];
                 }
                 const hasOptions = options.length > 0;
+                const messageText = action.description || action.title;
 
                 return (
                   <DropdownMenuItem
-                    key={signal.id}
+                    key={action.id}
                     className="flex flex-col gap-2 p-3 bg-primary/5 cursor-default focus:bg-primary/5"
                     onSelect={(e) => e.preventDefault()}
                   >
                     <div className="flex items-start gap-3 w-full">
-                      <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${SIGNAL_COLORS[signal.type] ?? "text-muted-foreground"}`} />
-                      <span className="flex-1 text-sm leading-snug">{signal.message}</span>
+                      <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${SIGNAL_COLORS[action.type] ?? "text-muted-foreground"}`} />
+                      <span className="flex-1 text-sm leading-snug">{messageText}</span>
                       <button
-                        onClick={() => dismissSignal(signal.id)}
+                        onClick={() => dismissSignal(action.id)}
                         className="flex-shrink-0 text-muted-foreground hover:text-foreground"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -239,7 +243,7 @@ export function Header({ title, onMenuClick, onSearchClick }: HeaderProps) {
                         {options.map((opt) => (
                           <button
                             key={opt.value}
-                            onClick={() => respondToSignal(signal.id, opt.value, opt.label)}
+                            onClick={() => respondToSignal(action.id, opt.value, opt.label)}
                             className="text-left text-xs px-2 py-1 rounded border border-border hover:bg-primary/10 hover:border-primary/40 transition-colors"
                           >
                             {opt.label}

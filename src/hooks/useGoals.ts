@@ -7,8 +7,8 @@ import { aiClient } from "@/lib/apollo";
 import {
   GET_USER_GOALS,
   CREATE_GOAL,
-  RESPOND_TO_SIGNAL,
-  GET_FOCUS_SIGNALS,
+  RESPOND_TO_ACTION,
+  GET_AGENT_ACTIONS,
 } from "@/graphql/ai/operations";
 import type { GoalNode, DeleteResult } from "@/graphql/types";
 
@@ -63,27 +63,27 @@ export function useCreateGoal() {
   return { createGoal, loading };
 }
 
-// ─── useRespondToSignal ───────────────────────────────────────────────────────
+// ─── useRespondToAction ───────────────────────────────────────────────────────
 
-export function useRespondToSignal() {
+export function useRespondToAction() {
   const [respondMutation, { loading }] = useMutation<{
-    respondToSignal: DeleteResult;
-  }>(RESPOND_TO_SIGNAL, {
+    respondToAction: DeleteResult;
+  }>(RESPOND_TO_ACTION, {
     client: aiClient,
-    refetchQueries: [GET_FOCUS_SIGNALS, GET_USER_GOALS],
+    refetchQueries: [GET_AGENT_ACTIONS, GET_USER_GOALS],
   });
 
   const respond = useCallback(
     async (
-      signalId: string,
+      actionId: string,
       responseValue: string,
       responseLabel?: string
     ): Promise<boolean> => {
       try {
         const { data } = await respondMutation({
-          variables: { signalId, responseValue, responseLabel: responseLabel ?? responseValue },
+          variables: { actionId, responseValue, responseLabel: responseLabel ?? responseValue },
         });
-        return data?.respondToSignal.success ?? false;
+        return data?.respondToAction.success ?? false;
       } catch {
         return false;
       }

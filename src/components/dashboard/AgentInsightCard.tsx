@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Sparkles, AlertTriangle, AlertCircle, Lightbulb, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useUserModel, useDismissFocusSignal, useFocusSignals } from "@/hooks/useOrganizerAgent";
+import { useUserModel, useActionMutations, useAgentActions } from "@/hooks/useOrganizerAgent";
 import { useAllPlanHealth } from "@/hooks/usePlanHealth";
 import type { PlanHealthStatus } from "@/graphql/types";
 import Link from "next/link";
@@ -28,15 +28,18 @@ interface AgentInsightCardProps {
 export function AgentInsightCard({ className }: AgentInsightCardProps) {
   const { userModel, loading: modelLoading } = useUserModel();
   const { healthByPlanId, loading: healthLoading } = useAllPlanHealth();
-  const { signals, refetch: refetchSignals } = useFocusSignals("pending");
-  const { dismiss } = useDismissFocusSignal();
+  const { actions, refetch: refetchSignals } = useAgentActions({ status: "pending" });
+  const { dismiss } = useActionMutations();
 
   const now = new Date().toISOString();
 
-  // Due signals (deliverAt <= now)
+  // Due ambient/inline actions (excludes silent auto-applied ones)
   const dueSignals = useMemo(
-    () => signals.filter((s) => s.deliverAt <= now).slice(0, 2),
-    [signals, now]
+    () =>
+      actions
+        .filter((a) => a.visibility !== "silent" && a.deliverAt <= now)
+        .slice(0, 2),
+    [actions, now]
   );
 
   // At-risk and derailing plans
@@ -116,16 +119,18 @@ export function AgentInsightCard({ className }: AgentInsightCardProps) {
         </div>
       )}
 
-      {/* Due FocusSignals */}
-      {dueSignals.map((signal) => (
+      {/* Due agent actions (inline + ambient) */}
+      {dueSignals.map((action) => (
         <div
-          key={signal.id}
+          key={action.id}
           className="flex items-start gap-2.5 p-2.5 rounded-lg bg-white/[0.04] border border-white/[0.06]"
         >
           <Lightbulb className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-amber-400" />
-          <p className="flex-1 text-xs text-white/75 leading-snug">{signal.message}</p>
+          <p className="flex-1 text-xs text-white/75 leading-snug">
+            {action.description || action.title}
+          </p>
           <button
-            onClick={() => dismiss(signal.id)}
+            onClick={() => dismiss(action.id)}
             className="text-white/30 hover:text-white/60 flex-shrink-0"
           >
             ×

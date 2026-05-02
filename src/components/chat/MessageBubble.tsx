@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { ChatMessage } from "@/types/chat";
-import type { AgentAction, RagSource } from "@/graphql/types";
+import type { ToolCall, RagSource } from "@/graphql/types";
 import { AgentActionCard } from "./AgentActionCard";
 import {
   Brain,
@@ -41,7 +41,7 @@ function MessageBubbleComponent({ message, userImage, userName, isLast, onSugges
 
   // Agent action messages get their own compact card rendering
   if (message.role === "agent_action") {
-    const action = message.metadata?.action as AgentAction | undefined;
+    const action = message.metadata?.action as ToolCall | undefined;
     if (!action) return null;
     const isPending = message.metadata?.isPending as boolean | undefined;
     return <AgentActionCard action={action} isPending={isPending} />;

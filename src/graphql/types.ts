@@ -84,7 +84,7 @@ export interface ChatSession {
 }
 
 /** A single tool call executed by the AI agent during a chat turn. */
-export interface AgentAction {
+export interface ToolCall {
   toolName: string;
   args: Record<string, unknown>;
   result: Record<string, unknown>;
@@ -119,7 +119,7 @@ export interface SendMessageResult {
   /** Knowledge nodes used as RAG context. Empty when RAG found nothing. */
   sources: RagSource[];
   /** Tool calls executed by the agent. Empty for plain chat responses. */
-  actions: AgentAction[];
+  actions: ToolCall[];
   /** Contextual follow-up suggestions for the user. */
   quickReplies: string[];
 }
@@ -260,37 +260,75 @@ export interface UpdateEntityInput {
   properties: Record<string, unknown>;
 }
 
-// ─── Organizer agent types (:8001) ────────────────────────────────────────────
+// ─── Organizer agent — unified AgentAction type (was AgentIntent + FocusSignal) ──
 
-export type AgentIntentType =
+/** Action types the agent can take. Graph mutations + user messages, unified. */
+export type AgentActionType =
+  // Graph mutations (typically silent)
   | "tag_node"
   | "link_nodes"
   | "create_workspace"
+  | "create_workspace_page"
   | "move_to_workspace"
   | "surface_connection"
   | "archive_stale"
   | "merge_nodes"
   | "create_synthesis_node"
+  | "extract_concept"
   | "create_life_area"
   | "link_to_life_area"
   | "build_hierarchy"
   | "update_task_priority"
   | "update_task_due"
   | "deprecate_node"
-  | "queue_focus_signal";
+  // User messages (typically ambient/inline/urgent)
+  | "reminder"
+  | "insight"
+  | "warning"
+  | "milestone"
+  | "suggestion"
+  | "nudge"
+  | "celebration"
+  | "redirect"
+  | "clarification_question";
 
-export type AgentIntentRisk = "low" | "medium" | "high";
-export type AgentIntentStatus = "pending" | "applied" | "dismissed" | "failed";
+/** Where this action surfaces in the UI. */
+export type AgentActionVisibility = "silent" | "ambient" | "inline" | "urgent";
 
-export interface AgentIntent {
+export type AgentActionRisk = "low" | "medium" | "high";
+export type AgentActionStatus =
+  | "pending"
+  | "applied"
+  | "dismissed"
+  | "failed"
+  | "responded"
+  | "delivered";
+
+export interface SignalResponseOption {
+  value: string;
+  label: string;
+}
+
+/** A single proactive action by the agent. Replaces AgentIntent + FocusSignal. */
+export interface AgentAction {
   id: string;
-  type: AgentIntentType;
+  userId: string;
+  type: AgentActionType;
   title: string;
   description: string;
-  risk: AgentIntentRisk;
-  status: AgentIntentStatus;
-  payload: string; // JSON string
+  payload: string;                 // JSON string with action-specific params
+  visibility: AgentActionVisibility;
+  requiresResponse: boolean;
+  responseOptions: string;         // JSON array of SignalResponseOption
+  risk: AgentActionRisk;
+  status: AgentActionStatus;
+  deliverAt: string;
+  relatedNodeIds: string;          // JSON array
+  userResponse: string | null;
+  respondedAt: string | null;
+  wasEffective: boolean | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface InteractionStats {
@@ -305,34 +343,9 @@ export interface RecordInteractionResult {
   recorded: boolean;
 }
 
-export interface IntentActionResult {
-  intentId: string;
+export interface ActionResult {
+  actionId: string;
   success: boolean;
-}
-
-// ─── Smart Organizer types (:8001) ────────────────────────────────────────────
-
-export type FocusSignalType = "reminder" | "insight" | "warning" | "milestone" | "suggestion" | "action" | "nudge" | "celebration" | "redirect";
-export type FocusSignalStatus = "pending" | "delivered" | "dismissed" | "snoozed" | "acted" | "sent";
-
-export interface SignalResponseOption {
-  value: string;
-  label: string;
-}
-
-export interface FocusSignal {
-  id: string;
-  message: string;
-  type: FocusSignalType;
-  deliverAt: string;
-  context: string | null; // JSON string
-  relatedNodeIds: string[];
-  actionPayload: string | null; // JSON string
-  status: FocusSignalStatus;
-  responseOptions: string; // JSON array of SignalResponseOption
-  wasEffective: boolean | null;
-  userResponse: string | null;
-  respondedAt: string | null;
 }
 
 export type GoalStatus = "vague" | "clarifying" | "clear" | "active" | "achieved" | "abandoned";

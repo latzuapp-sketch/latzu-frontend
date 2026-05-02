@@ -5,62 +5,69 @@ import { useMutation, useQuery } from "@apollo/client";
 import { useSession } from "next-auth/react";
 import { aiClient } from "@/lib/apollo";
 import {
-  APPROVE_INTENT,
-  DISMISS_INTENT,
-  DISMISS_FOCUS_SIGNAL,
-  GET_AGENT_INTENTS,
-  GET_FOCUS_SIGNALS,
+  APPLY_ACTION,
+  DISMISS_ACTION,
+  GET_AGENT_ACTIONS,
   GET_USER_MODEL,
   TRACK_INTERACTION,
   TRIGGER_REFLECTION,
 } from "@/graphql/ai/operations";
 import type {
-  AgentIntent,
-  DeleteResult,
-  FocusSignal,
-  IntentActionResult,
+  ActionResult,
+  AgentAction,
+  AgentActionVisibility,
   UserModel,
 } from "@/graphql/types";
 
-// ─── useAgentIntents ──────────────────────────────────────────────────────────
+// ─── useAgentActions ──────────────────────────────────────────────────────────
 
-export function useAgentIntents(status?: string) {
+/** List AgentAction items for the current user. Replaces useAgentIntents + useFocusSignals. */
+export function useAgentActions(opts: {
+  status?: string;
+  visibility?: AgentActionVisibility;
+  limit?: number;
+} = {}) {
   const { data: session } = useSession();
   const userId = (session?.user as { id?: string })?.id ?? null;
 
   const { data, loading, error, refetch } = useQuery<{
-    agentIntents: AgentIntent[];
-  }>(GET_AGENT_INTENTS, {
+    agentActions: AgentAction[];
+  }>(GET_AGENT_ACTIONS, {
     client: aiClient,
-    variables: { userId, status: status ?? null, limit: 20 },
+    variables: {
+      userId,
+      status: opts.status ?? null,
+      visibility: opts.visibility ?? null,
+      limit: opts.limit ?? 50,
+    },
     skip: !userId,
     fetchPolicy: "cache-and-network",
-    pollInterval: 60_000, // refresh every minute to surface new intents
+    pollInterval: 60_000,
   });
 
   return {
-    intents: data?.agentIntents ?? [],
+    actions: data?.agentActions ?? [],
     loading,
     error: error?.message ?? null,
     refetch,
   };
 }
 
-// ─── useIntentActions ─────────────────────────────────────────────────────────
+// ─── useActionMutations ───────────────────────────────────────────────────────
 
-export function useIntentActions() {
-  const [approveMutation, { loading: approving }] = useMutation<{
-    approveIntent: IntentActionResult;
-  }>(APPROVE_INTENT, {
+export function useActionMutations() {
+  const [applyMutation, { loading: applying }] = useMutation<{
+    applyAction: ActionResult;
+  }>(APPLY_ACTION, {
     client: aiClient,
-    refetchQueries: [GET_AGENT_INTENTS],
+    refetchQueries: [GET_AGENT_ACTIONS],
   });
 
   const [dismissMutation, { loading: dismissing }] = useMutation<{
-    dismissIntent: IntentActionResult;
-  }>(DISMISS_INTENT, {
+    dismissAction: ActionResult;
+  }>(DISMISS_ACTION, {
     client: aiClient,
-    refetchQueries: [GET_AGENT_INTENTS],
+    refetchQueries: [GET_AGENT_ACTIONS],
   });
 
   const [triggerMutation, { loading: triggering }] = useMutation(
@@ -68,23 +75,23 @@ export function useIntentActions() {
     { client: aiClient }
   );
 
-  const approve = useCallback(
-    async (intentId: string): Promise<boolean> => {
+  const apply = useCallback(
+    async (actionId: string): Promise<boolean> => {
       try {
-        const { data } = await approveMutation({ variables: { intentId } });
-        return data?.approveIntent.success ?? false;
+        const { data } = await applyMutation({ variables: { actionId } });
+        return data?.applyAction.success ?? false;
       } catch {
         return false;
       }
     },
-    [approveMutation]
+    [applyMutation]
   );
 
   const dismiss = useCallback(
-    async (intentId: string): Promise<boolean> => {
+    async (actionId: string): Promise<boolean> => {
       try {
-        const { data } = await dismissMutation({ variables: { intentId } });
-        return data?.dismissIntent.success ?? false;
+        const { data } = await dismissMutation({ variables: { actionId } });
+        return data?.dismissAction.success ?? false;
       } catch {
         return false;
       }
@@ -101,10 +108,10 @@ export function useIntentActions() {
   }, [triggerMutation]);
 
   return {
-    approve,
+    apply,
     dismiss,
     triggerReflection,
-    loading: approving || dismissing || triggering,
+    loading: applying || dismissing || triggering,
   };
 }
 
@@ -123,7 +130,6 @@ export function useTrackInteraction() {
         durationMs?: number;
       } = {}
     ): void => {
-      // Fire-and-forget: tracking must never block user actions
       trackMutation({
         variables: {
           eventType,
@@ -142,55 +148,6 @@ export function useTrackInteraction() {
   return { track };
 }
 
-// ─── useFocusSignals ──────────────────────────────────────────────────────────
-
-export function useFocusSignals(status?: string) {
-  const { data: session } = useSession();
-  const userId = (session?.user as { id?: string })?.id ?? null;
-
-  const { data, loading, error, refetch } = useQuery<{
-    focusSignals: FocusSignal[];
-  }>(GET_FOCUS_SIGNALS, {
-    client: aiClient,
-    variables: { userId, status: status ?? "pending", limit: 10 },
-    skip: !userId,
-    fetchPolicy: "cache-and-network",
-    pollInterval: 60_000,
-  });
-
-  return {
-    signals: data?.focusSignals ?? [],
-    loading,
-    error: error?.message ?? null,
-    refetch,
-  };
-}
-
-// ─── useDismissFocusSignal ────────────────────────────────────────────────────
-
-export function useDismissFocusSignal() {
-  const [dismissMutation, { loading }] = useMutation<{
-    dismissFocusSignal: DeleteResult;
-  }>(DISMISS_FOCUS_SIGNAL, {
-    client: aiClient,
-    refetchQueries: [GET_FOCUS_SIGNALS],
-  });
-
-  const dismiss = useCallback(
-    async (signalId: string): Promise<boolean> => {
-      try {
-        const { data } = await dismissMutation({ variables: { signalId } });
-        return data?.dismissFocusSignal.success ?? false;
-      } catch {
-        return false;
-      }
-    },
-    [dismissMutation]
-  );
-
-  return { dismiss, loading };
-}
-
 // ─── useUserModel ─────────────────────────────────────────────────────────────
 
 export function useUserModel() {
@@ -204,7 +161,7 @@ export function useUserModel() {
     variables: { userId },
     skip: !userId,
     fetchPolicy: "cache-and-network",
-    pollInterval: 300_000, // refresh every 5 min
+    pollInterval: 300_000,
   });
 
   return {

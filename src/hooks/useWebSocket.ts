@@ -9,14 +9,17 @@ import { useChatStore } from "@/stores/chatStore";
 import type { InteractionType } from "@/types/events";
 import type { ProactiveSuggestion } from "@/types/chat";
 
-interface FocusSignalPush {
+interface AgentActionPush {
   id: string;
-  message: string;
-  type: "reminder" | "insight" | "warning" | "milestone" | "suggestion";
+  type: string;
+  title: string;
+  description: string;
+  payload?: string;
+  visibility: "silent" | "ambient" | "inline" | "urgent";
+  requiresResponse: boolean;
+  responseOptions?: string;
   deliverAt: string;
-  context?: string;
-  relatedNodeIds?: string[];
-  actionPayload?: string;
+  relatedNodeIds?: string;
 }
 
 interface UseWebSocketOptions {
@@ -68,19 +71,19 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     );
     unsubscribersRef.current.push(unsubSuggestion);
 
-    // Focus signals (pushed by notification poller)
+    // Agent actions (pushed by notification poller; replaces focus_signal)
     const addNotification = useEventStore.getState().addNotification;
-    const unsubSignal = websocket.on<FocusSignalPush>("focus_signal", (signal) => {
+    const unsubAction = websocket.on<AgentActionPush>("agent_action", (action) => {
       addNotification({
-        id: signal.id,
+        id: action.id,
         type: "reminder",
-        title: signal.type.charAt(0).toUpperCase() + signal.type.slice(1),
-        message: signal.message,
+        title: action.title || action.type.charAt(0).toUpperCase() + action.type.slice(1),
+        message: action.description,
         timestamp: new Date(),
         read: false,
       });
     });
-    unsubscribersRef.current.push(unsubSignal);
+    unsubscribersRef.current.push(unsubAction);
 
     // Knowledge updates
     if (options.onKnowledgeUpdate) {

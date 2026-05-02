@@ -17,10 +17,10 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { AgentAction } from "@/graphql/types";
+import type { ToolCall } from "@/graphql/types";
 
 interface AgentActionCardProps {
-  action: AgentAction;
+  action: ToolCall;
   isPending?: boolean;
 }
 
@@ -45,7 +45,7 @@ function getPendingLabel(toolName: string, args: Record<string, unknown>): strin
   }
 }
 
-function getLabel(action: AgentAction): string {
+function getLabel(action: ToolCall): string {
   const { toolName, args, result } = action;
   switch (toolName) {
     case "create_task": {

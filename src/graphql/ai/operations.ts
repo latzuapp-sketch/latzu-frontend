@@ -697,19 +697,39 @@ export const GENERATE_TASK_CONTENT = gql`
   }
 `;
 
-// ─── Organizer agent ──────────────────────────────────────────────────────────
+// ─── Organizer agent — unified AgentAction (replaces AgentIntent + FocusSignal) ──
 
-export const GET_AGENT_INTENTS = gql`
-  query GetAgentIntents($userId: String!, $status: String, $limit: Int) {
-    agentIntents(userId: $userId, status: $status, limit: $limit) {
+export const GET_AGENT_ACTIONS = gql`
+  query GetAgentActions(
+    $userId: String!
+    $status: String
+    $visibility: String
+    $limit: Int
+  ) {
+    agentActions(
+      userId: $userId
+      status: $status
+      visibility: $visibility
+      limit: $limit
+    ) {
       id
+      userId
       type
       title
       description
+      payload
+      visibility
+      requiresResponse
+      responseOptions
       risk
       status
-      payload
+      deliverAt
+      relatedNodeIds
+      userResponse
+      respondedAt
+      wasEffective
       createdAt
+      updatedAt
     }
   }
 `;
@@ -746,20 +766,37 @@ export const TRACK_INTERACTION = gql`
   }
 `;
 
-export const APPROVE_INTENT = gql`
-  mutation ApproveIntent($intentId: String!) {
-    approveIntent(intentId: $intentId) {
-      intentId
+export const APPLY_ACTION = gql`
+  mutation ApplyAction($actionId: String!) {
+    applyAction(actionId: $actionId) {
+      actionId
       success
     }
   }
 `;
 
-export const DISMISS_INTENT = gql`
-  mutation DismissIntent($intentId: String!) {
-    dismissIntent(intentId: $intentId) {
-      intentId
+export const DISMISS_ACTION = gql`
+  mutation DismissAction($actionId: String!) {
+    dismissAction(actionId: $actionId) {
+      actionId
       success
+    }
+  }
+`;
+
+export const RESPOND_TO_ACTION = gql`
+  mutation RespondToAction(
+    $actionId: String!
+    $responseValue: String!
+    $responseLabel: String
+  ) {
+    respondToAction(
+      actionId: $actionId
+      responseValue: $responseValue
+      responseLabel: $responseLabel
+    ) {
+      success
+      message
     }
   }
 `;
@@ -776,36 +813,6 @@ export const TRIGGER_REFLECTION = gql`
 export const TRIGGER_DEEP_REFLECTION = gql`
   mutation TriggerDeepReflection {
     triggerDeepReflection {
-      success
-      message
-    }
-  }
-`;
-
-// ─── Focus Signals ────────────────────────────────────────────────────────────
-
-export const GET_FOCUS_SIGNALS = gql`
-  query GetFocusSignals($userId: String!, $status: String, $limit: Int) {
-    focusSignals(userId: $userId, status: $status, limit: $limit) {
-      id
-      message
-      type
-      deliverAt
-      context
-      relatedNodeIds
-      actionPayload
-      status
-      responseOptions
-      wasEffective
-      userResponse
-      respondedAt
-    }
-  }
-`;
-
-export const DISMISS_FOCUS_SIGNAL = gql`
-  mutation DismissFocusSignal($signalId: String!) {
-    dismissFocusSignal(signalId: $signalId) {
       success
       message
     }
@@ -991,11 +998,3 @@ export const CREATE_GOAL = gql`
   }
 `;
 
-export const RESPOND_TO_SIGNAL = gql`
-  mutation RespondToSignal($signalId: String!, $responseValue: String!, $responseLabel: String) {
-    respondToSignal(signalId: $signalId, responseValue: $responseValue, responseLabel: $responseLabel) {
-      success
-      message
-    }
-  }
-`;

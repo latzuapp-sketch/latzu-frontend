@@ -26,27 +26,37 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useAgentIntents, useIntentActions } from "@/hooks/useOrganizerAgent";
-import type { AgentIntent, AgentIntentType } from "@/graphql/types";
+import { useAgentActions, useActionMutations } from "@/hooks/useOrganizerAgent";
+import type { AgentAction, AgentActionType } from "@/graphql/types";
 
-// ─── Icon map by intent type ──────────────────────────────────────────────────
+// ─── Icon map by action type ──────────────────────────────────────────────────
 
-const INTENT_ICONS: Record<AgentIntentType, React.ElementType> = {
+const INTENT_ICONS: Partial<Record<AgentActionType, React.ElementType>> = {
   tag_node: Tag,
   link_nodes: Link2,
   create_workspace: FolderPlus,
+  create_workspace_page: FolderPlus,
   move_to_workspace: FolderInput,
   surface_connection: Eye,
   archive_stale: Archive,
   merge_nodes: GitMerge,
   create_synthesis_node: Layers,
+  extract_concept: Layers,
   create_life_area: Globe,
   link_to_life_area: Link2,
   build_hierarchy: GitBranch,
   update_task_priority: Flag,
   update_task_due: Calendar,
   deprecate_node: EyeOff,
-  queue_focus_signal: Bell,
+  reminder: Bell,
+  insight: Sparkles,
+  warning: Eye,
+  milestone: Sparkles,
+  suggestion: Sparkles,
+  nudge: Bell,
+  celebration: Sparkles,
+  redirect: Eye,
+  clarification_question: Sparkles,
 };
 
 const RISK_COLORS: Record<string, string> = {
@@ -68,7 +78,7 @@ function IntentCard({
   onApprove,
   onDismiss,
 }: {
-  intent: AgentIntent;
+  intent: AgentAction;
   onApprove: (id: string) => Promise<boolean>;
   onDismiss: (id: string) => Promise<boolean>;
 }) {
@@ -156,11 +166,12 @@ interface IntentPanelProps {
 }
 
 export function IntentPanel({ className }: IntentPanelProps) {
-  const { intents, loading, refetch } = useAgentIntents("pending");
-  const { approve, dismiss, triggerReflection } = useIntentActions();
+  const { actions, loading, refetch } = useAgentActions({ status: "pending" });
+  const { apply: approve, dismiss, triggerReflection } = useActionMutations();
   const [collapsed, setCollapsed] = useState(false);
 
-  const pending = intents.filter((i) => i.status === "pending");
+  // Show only inline-visibility actions that need user attention here.
+  const pending = actions.filter((a) => a.visibility === "inline");
 
   if (!loading && pending.length === 0) {
     return (
