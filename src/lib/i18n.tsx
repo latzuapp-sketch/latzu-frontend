@@ -444,7 +444,7 @@ const translations = {
     sidebar: {
       nav: {
         home: "Today",
-        brain: "Encyclopedia",
+        brain: "My knowledge",
         planning: "Plans",
         chat: "Chat",
         agent: "Agent",
@@ -896,7 +896,7 @@ const translations = {
     sidebar: {
       nav: {
         home: "Hoy",
-        brain: "Enciclopedia",
+        brain: "Mi conocimiento",
         planning: "Planes",
         chat: "Chat",
         agent: "Agente",

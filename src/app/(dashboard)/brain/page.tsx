@@ -59,9 +59,9 @@ interface LifeAreaParsed {
 
 function selectionTitle(s: BrainSelection): string {
   switch (s.kind) {
-    case "all":       return "Todo lo que sabés";
+    case "all":       return "Mi conocimiento";
     case "recent":    return "Recientes";
-    case "knowledge": return "Conocimiento";
+    case "knowledge": return "Conceptos";
     case "notes":     return "Notas";
     case "tasks":     return "Tareas";
     case "pages":     return "Spaces";
@@ -74,12 +74,12 @@ function selectionTitle(s: BrainSelection): string {
 
 function selectionSubtitle(s: BrainSelection): string {
   switch (s.kind) {
-    case "all":       return "Tu enciclopedia completa, ordenada por tu agente.";
-    case "recent":    return "Lo último que tiraste a tu enciclopedia.";
-    case "knowledge": return "Conocimiento puro: ideas, libros, links, archivos.";
+    case "all":       return "Tus notas, tareas y spaces. Para ver conceptos indexados, abrí «Conceptos» en el sidebar.";
+    case "recent":    return "Lo último que creaste o editaste.";
+    case "knowledge": return "Conceptos extraídos: libros, links, archivos, ideas indexadas por el agente.";
     case "notes":     return "Tus notas, tipo Google-Keep — siempre tuyas.";
     case "tasks":     return "Cosas por hacer, ordenadas por prioridad ABCDE.";
-    case "pages":     return "Spaces estilo Notion para organizar pages.";
+    case "pages":     return "Spaces estilo Notion para organizar páginas.";
     case "topic":     return "Tema marcado como caliente por tu agente.";
     case "lifeArea":  return "Área de vida detectada por tu agente.";
     case "workspace": return "Tu space personalizado.";
@@ -105,8 +105,10 @@ function filterNodes(
     );
   }
   switch (s.kind) {
-    case "all":       return out;
-    case "recent":    return out.slice(0, 30);
+    // "Todo" no longer includes knowledge nodes — concepts only show under
+    // the dedicated "Conceptos" tree row (s.kind === "knowledge").
+    case "all":       return [];
+    case "recent":    return [];
     case "knowledge": return out;
     case "notes":     return [];
     case "tasks":     return [];

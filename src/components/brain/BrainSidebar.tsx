@@ -159,15 +159,15 @@ export function BrainSidebar({ nodes, noteCount, taskCount, selection, onSelect 
           <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center">
             <Brain className="w-3 h-3 text-white" />
           </div>
-          <span className="text-sm font-heading font-bold">Tu enciclopedia</span>
+          <span className="text-sm font-heading font-bold">Mi conocimiento</span>
         </div>
       </div>
 
       {/* Tree */}
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-3 text-foreground/80">
-        {/* All / Recent quick links */}
+        {/* All / Recent quick links — exclude knowledge nodes from "Todo" */}
         <div className="space-y-0.5">
-          <TreeRow label="Todo" icon={Brain} count={nodes.length + noteCount + taskCount} isActive={isActive({ kind: "all" })} onClick={() => onSelect({ kind: "all" })} />
+          <TreeRow label="Todo" icon={Brain} count={noteCount + taskCount} isActive={isActive({ kind: "all" })} onClick={() => onSelect({ kind: "all" })} />
           <TreeRow label="Recientes" icon={Clock} isActive={isActive({ kind: "recent" })} onClick={() => onSelect({ kind: "recent" })} />
         </div>
 
@@ -175,10 +175,10 @@ export function BrainSidebar({ nodes, noteCount, taskCount, selection, onSelect 
         <div>
           <SectionHeader icon={Layers} label="Mi contenido" />
           <div className="space-y-0.5">
-            <TreeRow label="Conocimiento" icon={Lightbulb} count={nodes.length} isActive={isActive({ kind: "knowledge" })} onClick={() => onSelect({ kind: "knowledge" })} />
             <TreeRow label="Notas" icon={StickyNote} count={noteCount} isActive={isActive({ kind: "notes" })} onClick={() => onSelect({ kind: "notes" })} accent="text-yellow-400" />
             <TreeRow label="Tareas" icon={ListTodo} count={taskCount} isActive={isActive({ kind: "tasks" })} onClick={() => onSelect({ kind: "tasks" })} accent="text-primary" />
             <TreeRow label="Spaces" icon={Layers} isActive={isActive({ kind: "pages" })} onClick={() => onSelect({ kind: "pages" })} accent="text-indigo-400" />
+            <TreeRow label="Conceptos" icon={Lightbulb} count={nodes.length} isActive={isActive({ kind: "knowledge" })} onClick={() => onSelect({ kind: "knowledge" })} accent="text-indigo-300" />
           </div>
         </div>
 
