@@ -30,14 +30,16 @@ export type Variant = "synthesis" | "book" | "video" | "article" | "file" | "not
 
 export function detectVariant(node: KnowledgeNode): Variant {
   const src = node.sourceRef ?? "";
-  if (src.startsWith("synthesis")) return "synthesis";
-  if (src.startsWith("youtube:")) return "video";
-  if (src.startsWith("file:")) return "file";
-  if (src.startsWith("curated:") || node.type === "book") return "book";
-  if (/^https?:\/\//.test(src)) return "article";
+  // Type takes precedence over source — a concept extracted from a curated
+  // book carries sourceRef='curated:...' but it's still a concept, not a book.
+  if (node.type === "book") return "book";
   if (node.type === "note") return "note";
   if (node.type === "person") return "person";
   if (node.type === "event") return "event";
+  if (src.startsWith("synthesis")) return "synthesis";
+  if (src.startsWith("youtube:")) return "video";
+  if (src.startsWith("file:")) return "file";
+  if (/^https?:\/\//.test(src)) return "article";
   if (node.type === "concept" || node.type === "entity") return "concept";
   return "generic";
 }
@@ -162,10 +164,25 @@ function VideoCard({ node, isSelected, onClick }: CardProps) {
   );
 }
 
-/** Book card — spine-like with title and source */
+/** Book card — book-spine visual with title, author, year */
 function BookCard({ node, isSelected, onClick }: CardProps) {
   const meta = VARIANT_META.book;
-  const sourceLabel = formatSourceLabel(node, "book");
+  // Try to pull metadata out of properties (set by the curation pipeline)
+  let author = "";
+  let year: number | string = "";
+  let category = "";
+  let pages: number | string = "";
+  if (node.properties) {
+    try {
+      const p = JSON.parse(node.properties) as Record<string, unknown>;
+      if (typeof p.author === "string") author = p.author;
+      if (typeof p.year === "number" || typeof p.year === "string") year = p.year;
+      if (typeof p.category === "string") category = p.category;
+      if (typeof p.pages === "number" || typeof p.pages === "string") pages = p.pages;
+    } catch {
+      /* ignore */
+    }
+  }
   return (
     <motion.button
       initial={{ opacity: 0, y: 6 }}
@@ -177,14 +194,24 @@ function BookCard({ node, isSelected, onClick }: CardProps) {
       )}
     >
       {/* Spine */}
-      <div className="w-10 bg-gradient-to-b from-emerald-700/40 to-emerald-900/40 flex items-center justify-center shrink-0 border-r border-emerald-500/20">
-        <BookOpen className="w-4 h-4 text-emerald-300/70 rotate-90" />
+      <div className="w-12 bg-gradient-to-b from-emerald-700/50 via-emerald-800/40 to-emerald-900/60 flex items-center justify-center shrink-0 border-r border-emerald-500/30">
+        <BookOpen className="w-4 h-4 text-emerald-200/80 rotate-90" />
       </div>
       <div className="p-3 flex-1 min-w-0">
-        <span className={cn("text-[9px] font-bold uppercase tracking-wider", meta.color)}>{meta.label}</span>
-        <p className="text-sm font-semibold leading-snug line-clamp-2 mt-1">{node.name}</p>
-        {sourceLabel && (
-          <p className="text-[10px] text-muted-foreground mt-1 truncate capitalize">{sourceLabel}</p>
+        <div className="flex items-center gap-1.5 mb-1">
+          <span className={cn("text-[9px] font-bold uppercase tracking-wider", meta.color)}>{meta.label}</span>
+          {category && (
+            <span className="text-[9px] text-emerald-200/60 px-1.5 py-0 rounded bg-emerald-500/10">
+              {category}
+            </span>
+          )}
+        </div>
+        <p className="text-sm font-semibold leading-snug line-clamp-2">{node.name}</p>
+        {author && (
+          <p className="text-xs text-foreground/70 mt-1 truncate">{author}{year ? ` · ${year}` : ""}</p>
+        )}
+        {pages && (
+          <p className="text-[10px] text-muted-foreground/60 mt-1">{pages} págs</p>
         )}
       </div>
     </motion.button>

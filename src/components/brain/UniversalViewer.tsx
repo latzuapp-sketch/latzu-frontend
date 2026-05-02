@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { NodeDetail } from "@/components/biblioteca/NodeDetail";
+import { BookDetail } from "@/components/biblioteca/BookDetail";
 import { NoteViewer } from "@/components/brain/viewers/NoteViewer";
 import { TaskViewer } from "@/components/brain/viewers/TaskViewer";
 import { WorkspaceViewer } from "@/components/brain/viewers/WorkspaceViewer";
@@ -27,6 +28,7 @@ import type { KnowledgeNode } from "@/graphql/types";
 import type { Flashcard } from "@/types/flashcards";
 import type { PlanningTask } from "@/types/planning";
 import type { WorkspaceDoc } from "@/types/workspace";
+import type { LibraryBook } from "@/types/library";
 
 // ─── Tagged union of viewable items ──────────────────────────────────────────
 
@@ -34,7 +36,8 @@ export type ViewerItem =
   | { kind: "node"; node: KnowledgeNode }
   | { kind: "note"; note: Flashcard }
   | { kind: "task"; task: PlanningTask }
-  | { kind: "workspace"; workspace: WorkspaceDoc };
+  | { kind: "workspace"; workspace: WorkspaceDoc }
+  | { kind: "book"; book: LibraryBook };
 
 interface UniversalViewerProps {
   item: ViewerItem;
@@ -131,6 +134,20 @@ export function UniversalViewer({ item, onClose }: UniversalViewerProps) {
         <div className="px-6 py-5 max-w-3xl mx-auto">
           <TaskViewer task={item.task} />
         </div>
+      </motion.div>
+    );
+  }
+
+  if (item.kind === "book") {
+    return (
+      <motion.div
+        key={`viewer-book-${item.book.id}`}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="h-full overflow-y-auto"
+      >
+        <ViewerHeader kindLabel="Libro" onClose={onClose} />
+        <BookDetail book={item.book} onClose={onClose} />
       </motion.div>
     );
   }

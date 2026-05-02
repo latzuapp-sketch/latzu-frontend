@@ -26,7 +26,9 @@ import { BrainNoteCard, BrainTaskCard, BrainPageCard, BrainPlanCard } from "@/co
 import { BrainSidebar, type BrainSelection } from "@/components/brain/BrainSidebar";
 import { BrainAgentPanel, BrainAgentTrigger } from "@/components/brain/BrainAgentPanel";
 import { UniversalViewer, type ViewerItem } from "@/components/brain/UniversalViewer";
-import { useKnowledgeNodes } from "@/hooks/useLibrary";
+import { useKnowledgeNodes, useLibraryBooks } from "@/hooks/useLibrary";
+import { BookCard } from "@/components/biblioteca/BookCard";
+import type { LibraryBook } from "@/types/library";
 import { useUserModel, useAgentActions } from "@/hooks/useOrganizerAgent";
 import { useAllNotes } from "@/hooks/useFlashcards";
 import { useTasks } from "@/hooks/usePlanning";
@@ -59,9 +61,27 @@ interface LifeAreaParsed {
   description?: string;
 }
 
-/** A node is a "book" when it's a curated book or its type is 'book'. */
+/**
+ * A KnowledgeNode is treated as a book ONLY when its type is 'book'.
+ * Used to EXCLUDE the curated book Neo4j entries from the Conceptos view —
+ * the actual "Libros" view in /brain comes from useLibraryBooks() (same
+ * source as /library → Lecturas), not from KnowledgeNodes.
+ */
 function isBookNode(n: KnowledgeNode): boolean {
-  return n.type === "book" || (n.sourceRef?.startsWith("curated:") ?? false);
+  return n.type === "book";
+}
+
+/** Library-book filter for the brain. Books only appear in the Books view. */
+function filterBooks(books: LibraryBook[], s: BrainSelection, search: string): LibraryBook[] {
+  if (s.kind !== "books") return [];
+  const q = search.trim().toLowerCase();
+  if (!q) return books;
+  return books.filter(
+    (b) =>
+      b.title.toLowerCase().includes(q) ||
+      b.author.toLowerCase().includes(q) ||
+      (b.tags ?? []).some((t) => t.toLowerCase().includes(q)),
+  );
 }
 
 function selectionTitle(s: BrainSelection): string {
@@ -120,8 +140,8 @@ function filterNodes(
     // under their own dedicated tree rows.
     case "all":       return [];
     case "recent":    return [];
-    case "knowledge": return out.filter((n) => !isBookNode(n));   // exclude books
-    case "books":     return out.filter(isBookNode);
+    case "knowledge": return out.filter((n) => !isBookNode(n));   // exclude type='book' nodes
+    case "books":     return [];                                   // books come from useLibraryBooks
     case "plans":     return [];
     case "notes":     return [];
     case "tasks":     return [];
@@ -322,8 +342,9 @@ export default function BrainPage() {
   const { plans } = usePlans();
   const { healthByPlanId } = useAllPlanHealth();
   const { workspaces } = useWorkspaces();
+  const { books } = useLibraryBooks();   // same source as /library → Lecturas
 
-  const bookCount = useMemo(() => nodes.filter(isBookNode).length, [nodes]);
+  const bookCount = books.length;
   const activePlanCount = useMemo(() => plans.filter((p) => p.status === "active").length, [plans]);
   const { actions: pendingProposals } = useAgentActions({ status: "pending", limit: 20 });
   const visibleProposalsCount = pendingProposals.filter(
@@ -351,11 +372,16 @@ export default function BrainPage() {
     () => filterPlans(plans, selection, deferredSearch),
     [plans, selection, deferredSearch]
   );
+  const filteredBooks = useMemo(
+    () => filterBooks(books, selection, deferredSearch),
+    [books, selection, deferredSearch]
+  );
   const showWorkspaces = selection.kind === "all" || selection.kind === "pages";
 
   const totalShown =
     filteredNodes.length + filteredNotes.length + filteredTasks.length +
-    filteredPlans.length + (showWorkspaces ? workspaces.length : 0);
+    filteredPlans.length + filteredBooks.length +
+    (showWorkspaces ? workspaces.length : 0);
 
   const synthesisCount = useMemo(
     () => filteredNodes.filter((n) => detectVariant(n) === "synthesis").length,
@@ -396,6 +422,7 @@ export default function BrainPage() {
                 viewing.kind === "node" ? viewing.node.id :
                 viewing.kind === "note" ? viewing.note.id :
                 viewing.kind === "task" ? viewing.task.id :
+                viewing.kind === "book" ? viewing.book.id :
                 viewing.workspace.id
               }`}
               item={viewing}
@@ -519,6 +546,15 @@ export default function BrainPage() {
                     plan={plan}
                     health={healthByPlanId[plan.id] ?? null}
                     onClick={() => router.push(`/plans/${plan.id}`)}
+                  />
+                ))}
+                {/* Books from the library catalog (only shown in Libros view) */}
+                {filteredBooks.map((book, i) => (
+                  <BookCard
+                    key={`book-${book.id}`}
+                    book={book}
+                    index={i}
+                    onClick={() => setViewing({ kind: "book", book })}
                   />
                 ))}
                 {/* Then tasks (action items) */}
