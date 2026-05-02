@@ -16,26 +16,27 @@ const translations = {
       pricing: "Pricing",
       faq: "FAQ",
       login: "Log in",
-      tryFree: "Join waitlist",
+      tryFree: "Start free",
     },
 
     hero: {
-      badge: "Adaptive Intelligence Platform",
-      headline1: "Your second brain.",
-      headline2: "Powered by AI.",
+      badge: "Your personal encyclopedia",
+      headline1: "Drop everything you know.",
+      headline2: "Ask anything.",
       subtitle:
-        "A system that learns how you learn, connects what you know, and gets sharper every time you use it.",
-      ctaPrimary: "Join the waitlist",
-      ctaSecondary: "How it works",
+        "Throw in your notes, books, links, PDFs and screenshots. The AI reads it all, connects the ideas and turns it into your personal encyclopedia. Then you just ask.",
+      ctaPrimary: "Start my encyclopedia",
+      ctaSecondary: "See how it works",
       socialProof: "Free early access · No credit card required",
       onlineStatus: "Online",
       chatMessage1:
-        "Hi! I remember you're preparing your Networking exam on Friday. I recommend reviewing OSPF and BGP today — those are the topics you've struggled with the most.",
-      chatUserMessage: "Perfect, explain OSPF from scratch but quickly",
-      chatMessage2: "OSPF (Open Shortest Path First) is a link-state routing protocol...",
-      floatingMemory: "Memory activated",
-      floatingStreak: "12-day streak 🔥",
-      floatingConcepts: "47 concepts mastered",
+        "I read the 14 things you dropped this week. They cluster around three goals you've been chasing — want me to walk you through what connects them?",
+      chatUserMessage: "Yes — and remind me where I left off",
+      chatMessage2:
+        "You'd been comparing two approaches in your notes from Tuesday. The PDF you saved on Thursday answers exactly that. Here's the thread...",
+      floatingMemory: "Encyclopedia growing",
+      floatingStreak: "342 ideas connected",
+      floatingConcepts: "47 questions answered from your own knowledge",
     },
 
     stats: [
@@ -46,200 +47,200 @@ const translations = {
     ],
 
     moduleStrip: [
-      { label: "Notes & Knowledge" },
-      { label: "Tasks & Projects" },
-      { label: "Book Library" },
-      { label: "Adaptive Learning" },
-      { label: "AI Agent" },
+      { label: "Drop anything in" },
+      { label: "AI organizes it" },
+      { label: "Connections appear" },
+      { label: "Ask in natural language" },
+      { label: "Gets smarter every time" },
     ],
 
     painSection: {
-      badge: "The real problem",
-      title: "5 tools. 5 tabs. No connection between them.",
+      badge: "Why this matters",
+      title: "You already know a lot. You just can't find it.",
       subtitle:
-        "You already have everything you need — scattered across apps that don't talk to each other.",
+        "Notes scattered across apps. Books you read once. PDFs you'll never open again. The knowledge is yours — but no system actually understands it.",
       items: [
         {
-          title: "Constant context switching",
+          title: "Your knowledge is everywhere and nowhere",
           description:
-            "Notes in one app, tasks in another, books somewhere else. You spend more time switching than actually doing.",
+            "Highlights in one place, notes in another, that one PDF you saved six months ago somewhere you don't remember. Searching it by hand never works.",
         },
         {
-          title: "Knowledge trapped in silos",
+          title: "Generic AI doesn't know you",
           description:
-            "Your notes don't know about your tasks. Your books don't connect to your study plans. Nothing sees the full picture.",
+            "A chat that starts from zero every time can't connect what you read last week with what you're thinking today. It only sees the message in front of it.",
         },
         {
-          title: "5 subscriptions, 0 integration",
+          title: "Organizing it manually is a second job",
           description:
-            "You pay for multiple tools separately. None of them knows your goals, your progress, or what you learned last week.",
+            "Tagging, linking, structuring — most people give up after a month. Your knowledge ends up frozen instead of compounding.",
         },
       ],
     },
 
     replacesSection: {
-      badge: "One platform",
-      title: "Every module makes the next one smarter",
+      badge: "One place",
+      title: "Everything you know, in one encyclopedia that thinks",
       subtitle:
-        "Notes feed your knowledge graph. Your graph improves your study plans. Your plans inform your tasks. Everything compounds — nothing is siloed.",
+        "Stop juggling apps. Drop your notes, books, links and screenshots in one place. Latzu reads, connects, and answers — across all of it, as if it were a single mind.",
       items: [
-        { label: "Notes & workspace", sublabel: "Knowledge management" },
-        { label: "Tasks & projects", sublabel: "Planning & execution" },
-        { label: "Book summaries", sublabel: "Curated library of 78 books" },
-        { label: "Adaptive learning", sublabel: "Personalized study paths" },
-        { label: "AI on your knowledge", sublabel: "Agent that connects everything" },
+        { label: "Notes & ideas", sublabel: "Anything you write or capture" },
+        { label: "Tasks & plans", sublabel: "What you said you'd do" },
+        { label: "Books & PDFs", sublabel: "Everything you read, indexed" },
+        { label: "Links & videos", sublabel: "Web pages and YouTube, summarized" },
+        { label: "Photos & screenshots", sublabel: "Read, transcribed, connected" },
       ],
       arrow: "→ Latzu",
     },
 
     whySection: {
-      badge: "The compound flywheel",
-      title: "The intelligence that compounds",
+      badge: "The loop that compounds",
+      title: "It gets smarter every time you use it",
       subtitle:
-        "Each session makes Latzu smarter about you. Not just stored data — a living model of how you think, learn, and work.",
+        "You don't have to organize anything. Each interaction teaches Latzu more about how you think — and the next answer is better than the last.",
       items: [
         {
-          title: "You chat → it learns your style",
+          title: "You drop something in",
           description:
-            "Your AI tutor adapts to your pace, your gaps, and your preferred way of understanding. Every conversation makes it more accurate.",
+            "A note, a PDF, a YouTube link, a photo of your whiteboard. Anything. Latzu reads it, summarizes it and figures out where it fits.",
         },
         {
-          title: "You save a note → the graph connects it",
+          title: "It connects ideas across your knowledge",
           description:
-            "Every idea you capture gets linked to what you already know. Concepts from different areas start talking to each other.",
+            "Every new piece links to what you already had. Concepts from different sources start talking to each other — even ones you saved months apart.",
         },
         {
-          title: "You complete a task → the plan adapts",
+          title: "You ask in plain language",
           description:
-            "Outcomes feed back into your study plan in real time. Behind schedule? It adjusts. Ahead? It accelerates. Never static.",
+            "Search your own knowledge like you'd ask a friend. The answer comes from your encyclopedia — not from the internet, not from someone else's data.",
         },
         {
-          title: "The agent sees all → acts for you",
+          title: "The encyclopedia learns from your questions",
           description:
-            "One agent with a full view of your knowledge, tasks, and goals. It connects ideas you missed, surfaces what's urgent, and organizes what's stale.",
+            "What you ask, what you ignore, what you act on — all of it shapes what Latzu surfaces next. The more you use it, the more it sounds like you.",
         },
       ],
     },
 
     agentSection: {
       badge: "The Organizer Agent",
-      title: "The agent that works while you work",
+      title: "Working in the background, on your encyclopedia",
       subtitle:
-        "Most tools are reactive — they wait for you to ask. Latzu's agent is proactive — it watches, connects, and acts on your behalf.",
+        "Most assistants wait for instructions. Latzu's agent reads what you've added, finds patterns, links related ideas and surfaces what matters — without being asked.",
       points: [
-        "Detects patterns across your notes, tasks, and books",
-        "Proposes connections between ideas you didn't see",
-        "Reorganizes stale content before it becomes noise",
-        "Maps your life areas: work, learning, projects, goals",
-        "Sends focus signals at the right moment — not at random",
+        "Reads everything you drop in: text, PDFs, audio, screenshots",
+        "Connects ideas across notes, books and links automatically",
+        "Spots goals you mentioned in passing and tracks them",
+        "Cleans up what's stale, highlights what's hot",
+        "Pings you at the right moment — never just to remind you it exists",
       ],
       insight:
-        "After a few weeks, Latzu knows you better than any app ever has. And it keeps getting better.",
+        "After a few weeks of dropping things in, your encyclopedia knows you. Every answer gets sharper.",
       activityLog: [
-        { action: "Connected", detail: "\"React Hooks\" → \"State Management\"", time: "2m ago" },
-        { action: "Proposed", detail: "New workspace: \"Frontend Architecture\"", time: "15m ago" },
-        { action: "Signal", detail: "Review \"OSPF\" — 7 days since last seen", time: "1h ago" },
-        { action: "Archived", detail: "3 stale notes from 3 months ago", time: "3h ago" },
+        { action: "Connected", detail: "Note from Tuesday → PDF you saved last month", time: "2m ago" },
+        { action: "Synthesized", detail: "New summary across 5 sources on the same topic", time: "15m ago" },
+        { action: "Surfaced", detail: "An idea you wrote 3 weeks ago, relevant again now", time: "1h ago" },
+        { action: "Cleaned", detail: "12 fragments merged into 3 clean entries", time: "3h ago" },
       ],
     },
 
     integrationsSection: {
-      badge: "Proactive Integrations",
-      title: "Latzu lives where you already work.",
+      badge: "Drops from anywhere",
+      title: "Whatever you already use, becomes part of your encyclopedia.",
       subtitle:
-        "Connect your tools once. The agent reads your calendar, drives, and chats — then proactively organizes and reminds you, without you having to ask.",
+        "Connect once. Latzu pulls from your calendar, drives and saved videos — and indexes them all into the same searchable, askable encyclopedia.",
       integrations: [
-        { name: "WhatsApp", color: "oklch(0.65 0.22 145)", desc: "Morning briefings & reminders" },
-        { name: "Google Calendar", color: "oklch(0.68 0.24 268)", desc: "Reads your schedule, blocks focus time" },
-        { name: "Google Drive", color: "oklch(0.75 0.22 60)", desc: "Indexes your docs into the knowledge graph" },
-        { name: "YouTube", color: "oklch(0.65 0.25 25)", desc: "Extract concepts from any video" },
-        { name: "Web & PDF", color: "oklch(0.75 0.22 200)", desc: "Clip any page or document" },
+        { name: "WhatsApp", color: "oklch(0.65 0.22 145)", desc: "Drop voice notes and messages on the go" },
+        { name: "Google Calendar", color: "oklch(0.68 0.24 268)", desc: "Knows what's on your week" },
+        { name: "Google Drive", color: "oklch(0.75 0.22 60)", desc: "Indexes every doc into your encyclopedia" },
+        { name: "YouTube", color: "oklch(0.65 0.25 25)", desc: "Turns any video into searchable knowledge" },
+        { name: "Web & PDF", color: "oklch(0.75 0.22 200)", desc: "Clip any article or document" },
       ],
       moreLabel: "+ more coming",
       chat: {
         agentName: "Latzu",
         time: "7:58 AM",
         messages: [
-          { from: "agent", text: "Good morning! You have an exam on Thursday. Based on your weak spots, I prepared a 20-min review on React Hooks. Want to start now?" },
-          { from: "user", text: "Yes, send it!" },
-          { from: "agent", text: "Done. I also found 2 chapters from \"The Pragmatic Programmer\" that connect directly to what you're studying. Added to your queue." },
+          { from: "agent", text: "Good morning. You dropped 6 things into your encyclopedia yesterday. Three of them connect to a goal you mentioned weeks ago — want the synthesis?" },
+          { from: "user", text: "Yes, send it" },
+          { from: "agent", text: "Sent. I also found a contradiction between the article you saved last night and a note from March. I marked both for you to revisit." },
         ],
       },
     },
 
     librarySection: {
-      badge: "Book Library",
-      title: "78 books. Not to read. To integrate.",
+      badge: "Books built in",
+      title: "78 books, already part of your encyclopedia.",
       subtitle:
-        "Every book connects to your knowledge graph. Chat with it, pull flashcards from it, or let the agent recommend a chapter based on what you're learning this week.",
+        "We seed your encyclopedia with curated books — fully indexed, summarized and connected to whatever you add. Ask any of them. Mix them with your own notes. Pull lessons in seconds.",
       points: [
-        "AI-enriched chapters, concepts, and exercises",
-        "Auto-generated flashcards — integrated into your decks",
-        "Chat directly with any book",
-        "Agent links book insights to your existing knowledge",
-        "Curated for students, professionals, and founders",
+        "Chapters, key concepts and exercises ready to query",
+        "Pull flashcards from any chapter, in one click",
+        "Chat with any book — it answers from the actual text",
+        "The agent links book ideas to your own notes automatically",
+        "Curated across business, learning, productivity and more",
       ],
     },
 
     featuresSection: {
       badge: "What's inside",
-      title1: "Every tool you need.",
-      title2: "All working together.",
+      title1: "One encyclopedia.",
+      title2: "Every way to use it.",
       subtitle:
-        "Not features bolted together — modules built from the ground up to share intelligence and compound over time.",
+        "Each module is a different lens on the same encyclopedia. Drop in, organize, ask, plan, learn, act — all on top of one growing memory of you.",
       items: [
         {
-          title: "Adaptive AI Tutor",
+          title: "Drop zone",
           description:
-            "Remembers every conversation, knows your weak spots, and adapts its teaching in real time. Explains concepts in multiple ways until you truly understand. Voice narration included.",
+            "Throw in notes, PDFs, links, YouTube videos, photos and screenshots. Latzu reads, transcribes and indexes everything — no folders to set up.",
         },
         {
-          title: "Knowledge Graph",
+          title: "Knowledge graph",
           description:
-            "Capture notes, PDFs, YouTube videos, and web pages. Latzu extracts key concepts and builds a graph of connections — including ones you didn't know existed.",
+            "Every idea you drop in becomes a node connected to what you already had. Discover relationships you never noticed — including across sources you forgot about.",
         },
         {
-          title: "Smart Planning",
+          title: "Ask anything",
           description:
-            "Create plans and tasks from chat — or let the agent build them based on your knowledge gaps. Your schedule adapts as you progress, never static.",
+            "Search your own knowledge in plain language. Get answers grounded in what you actually saved — not in some generic model trained on the internet.",
         },
         {
-          title: "Adaptive Learning Engine",
+          title: "Adaptive plans",
           description:
-            "SM-2 spaced repetition + Bayesian Knowledge Tracing. Measures your real knowledge per concept and prioritizes exactly what needs reinforcement — not what feels easy.",
+            "Tell Latzu a goal — or let it spot one in your notes. It builds a plan, tracks your progress and rewrites it as life moves. Never static.",
         },
         {
-          title: "Learning Analytics",
+          title: "Spaced repetition built in",
           description:
-            "Know exactly where you stand: study streak, mastered concepts, weak topics, time invested. Clear data on your actual progress, not just activity.",
+            "Important ideas resurface at the right time. Pull flashcards from any source — book chapter, article, your own note — and review what actually matters.",
         },
         {
-          title: "AI Studio",
+          title: "Background organizer",
           description:
-            "Generate flashcards, quizzes, summaries, and mind maps from any source in seconds. The agent manages your workflows and creates tasks directly from chat.",
+            "An agent that runs while you do anything else: cleaning duplicates, merging fragments, surfacing forgotten ideas, proposing new connections.",
         },
       ],
     },
 
     howSection: {
       badge: "How it works",
-      title1: "Built for you in",
-      title2: "minutes",
+      title1: "Three steps. No",
+      title2: "setup.",
       steps: [
         {
-          title: "Tell it who you are",
+          title: "Drop everything in",
           description:
-            "Set your goals, your field, your current level. Latzu builds a personalized system from day one — not a generic template you have to configure.",
+            "Notes, PDFs, links, voice memos, photos. Anything you've collected — anything you collect from now on. No folders, no tags, no structure required.",
         },
         {
-          title: "Use it like any app",
+          title: "Latzu reads it and connects it",
           description:
-            "Chat, take notes, read books, manage tasks. Every action feeds the system. Every session makes it smarter about you.",
+            "It summarizes, links related ideas across all your sources and turns the pile into a coherent personal encyclopedia. You don't write a thing.",
         },
         {
-          title: "Watch it compound",
+          title: "Ask anything, in your own words",
           description:
-            "After a few weeks, Latzu knows you better than any app ever has. Your second brain, growing with you — every day.",
+            "Your encyclopedia answers from what you know. Each question makes it sharper. After a few weeks, it sounds like the smartest version of you.",
         },
       ],
     },
@@ -256,14 +257,14 @@ const translations = {
           name: "Free",
           price: "$0",
           period: "/ 7-day trial",
-          description: "Start without commitment. Try all main features.",
-          cta: "Join the waitlist",
+          description: "Start your encyclopedia. No commitment, no card.",
+          cta: "Start free",
           features: [
-            "AI Tutor with 50 messages/day",
-            "Knowledge library (up to 30 nodes)",
-            "Basic planning (3 active plans)",
-            "Personalized daily readings",
-            "Dashboard with basic metrics",
+            "Drop in up to 30 sources (notes, PDFs, links)",
+            "Ask anything across your encyclopedia",
+            "Up to 3 active plans",
+            "Daily personalized briefings",
+            "Basic dashboard with stats",
             "Email support",
           ],
         },
@@ -272,26 +273,26 @@ const translations = {
           badge: "Most popular",
           price: "$10",
           period: "/ month",
-          description: "For students and professionals who want to learn faster.",
-          cta: "Join the waitlist",
+          description: "For people serious about a knowledge that compounds.",
+          cta: "Get Pro",
           featured: true,
           features: [
             "Everything in Free, no limits",
-            "Unlimited messages with AI Tutor",
-            "Unlimited knowledge library",
-            "Unlimited study plans",
-            "Advanced adaptive memory",
-            "Google Calendar integration",
-            "AI agent with tools",
-            "Priority chat support",
+            "Unlimited drops and questions",
+            "Unlimited encyclopedia size",
+            "Unlimited plans, adaptive in real time",
+            "Advanced personal model",
+            "Calendar & drive sync",
+            "Background organizer agent",
+            "Priority support",
           ],
         },
         {
           name: "Max",
           price: "$30",
           period: "/ month",
-          description: "For teams and users who demand maximum AI power.",
-          cta: "Join the waitlist",
+          description: "For teams and users who want the most powerful AI.",
+          cta: "Get Max",
           features: [
             "Everything in Pro",
             "Latest generation AI models",
@@ -337,42 +338,50 @@ const translations = {
       title: "Frequently asked questions",
       items: [
         {
-          q: "How is Latzu different from general-purpose AI assistants?",
-          a: "AI assistants are powerful but start from zero every session — they don't know your goals, your progress, or what you've already learned. Latzu builds a persistent model of you: your knowledge gaps, your learning style, your life areas. And unlike a chatbot, it acts proactively — organizing your workspace, suggesting reviews, tracking your plans — without waiting for you to ask.",
+          q: "How is this different from a regular AI chat?",
+          a: "A regular AI chat starts from zero every conversation — it doesn't know what you've read, written or saved. Latzu only knows what you give it, but it knows it deeply: it reads everything you drop in, connects ideas across all of it, and remembers between sessions. The answers come from your encyclopedia, not from generic internet data.",
         },
         {
-          q: "Do I need a credit card for the trial period?",
-          a: "No. The 7-day Free plan doesn't require a credit card. Just create your account and start learning immediately.",
+          q: "How is this different from a notes app?",
+          a: "A notes app stores text. The organization is on you — you tag, you link, you fight entropy. Latzu reads what you drop in, summarizes it, finds the connections automatically, and answers questions across everything. You stop organizing and start asking.",
         },
         {
-          q: "Can I cancel at any time?",
-          a: "Yes, you can cancel your subscription whenever you want. No contracts, no commitments. Your access continues until the end of the billing period.",
+          q: "What can I drop in?",
+          a: "Notes, PDFs, articles, web links, YouTube videos, photos of your whiteboard or handwritten pages, screenshots, voice memos. Latzu reads, transcribes and indexes them all into your encyclopedia.",
         },
         {
-          q: "How does Latzu learn about me?",
-          a: "With every study session, every message, and every completed task, Latzu builds a unique learning profile for you. This memory model persists between sessions and continuously improves.",
+          q: "Do I need a credit card to start?",
+          a: "No. The free trial doesn't require a credit card. Create an account and start dropping things in immediately.",
         },
         {
-          q: "Does it work for any subject or industry?",
-          a: "Yes. Latzu is domain-agnostic. It works for university students, technology professionals, doctors, lawyers, entrepreneurs, and anyone who wants to learn more efficiently.",
+          q: "Can I cancel anytime?",
+          a: "Yes. No contracts, no commitments. Your access continues until the end of the billing period.",
+        },
+        {
+          q: "How does it learn about me?",
+          a: "Every drop, every question, every action you take shapes Latzu's model of you. It tracks what you care about, the goals you're chasing, the ideas you keep returning to. The more you use it, the more it sounds like you.",
+        },
+        {
+          q: "Does it work for any field?",
+          a: "Yes. Latzu is domain-agnostic. Students, professionals, researchers, founders, lifelong learners — anyone with knowledge worth keeping.",
         },
         {
           q: "Is my data safe?",
-          a: "Your data is private and encrypted. We don't share your information with third parties. You can export or delete your data at any time.",
+          a: "Your data is private and encrypted. We don't share it with third parties. You can export or delete everything at any time.",
         },
         {
-          q: "Is there a discount for students or universities?",
-          a: "Yes. We offer special plans for educational institutions and student groups. Contact us at latzuapp@gmail.com.",
+          q: "Are there discounts for students or universities?",
+          a: "Yes. Special plans available for educational institutions and student groups. Contact us at latzuapp@gmail.com.",
         },
       ],
     },
 
     finalCtaSection: {
-      title1: "Start building",
-      title2: "your second brain.",
+      title1: "Start your",
+      title2: "personal encyclopedia.",
       subtitle:
-        "Join the first users building an AI that truly knows them. The earlier you start, the smarter it gets.",
-      ctaPrimary: "Join the waitlist",
+        "Drop in what you already have. Watch it organize itself. Ask anything — and get sharper answers every week.",
+      ctaPrimary: "Start my encyclopedia",
       ctaSecondary: "Log in",
       socialProof: "Free early access · No credit card required · HTTPS encrypted",
     },
@@ -387,7 +396,7 @@ const translations = {
     },
 
     login: {
-      subtitle: "Adaptive Intelligence for You",
+      subtitle: "Your personal encyclopedia",
       cardTitle: "Welcome",
       cardDescription: "Log in to your account",
       emailRequiredError: "Email and password are required",
@@ -400,14 +409,14 @@ const translations = {
       emailLabel: "Email",
       passwordLabel: "Password",
       signInButton: "Log in",
-      noAccount: "Interested in early access?",
-      registerLink: "Join the waitlist",
+      noAccount: "Don't have an account?",
+      registerLink: "Start free",
       continueWithGoogle: "Continue with Google",
       orDivider: "or",
       features: [
-        { title: "Personalized AI", description: "Learns from you and adapts to your style" },
-        { title: "Dynamic Content", description: "Lessons that evolve with you" },
-        { title: "Real Progress", description: "Measurable results and continuous growth" },
+        { title: "Drop anything in", description: "Notes, PDFs, links, photos — all indexed for you" },
+        { title: "Ask in plain language", description: "Search your own knowledge like a conversation" },
+        { title: "Gets smarter every week", description: "The more you use it, the more it sounds like you" },
       ],
     },
 
@@ -458,27 +467,27 @@ const translations = {
       pricing: "Precios",
       faq: "FAQ",
       login: "Iniciar sesión",
-      tryFree: "Lista de espera",
+      tryFree: "Empezar gratis",
     },
 
     hero: {
-      badge: "Plataforma de Inteligencia Adaptativa",
-      headline1: "Tu segunda mente.",
-      headline2: "Potenciada por IA.",
+      badge: "Tu enciclopedia personal",
+      headline1: "Tirá todo lo que sabés.",
+      headline2: "Preguntá lo que quieras.",
       subtitle:
-        "Un sistema que aprende cómo aprendes, conecta lo que sabes y mejora cada vez que lo usas.",
-      ctaPrimary: "Únete a la lista de espera",
-      ctaSecondary: "Cómo funciona",
+        "Tirá tus notas, libros, links, PDFs y capturas. La IA lee todo, conecta las ideas y lo convierte en tu enciclopedia personal. Después solo preguntás.",
+      ctaPrimary: "Empezar mi enciclopedia",
+      ctaSecondary: "Ver cómo funciona",
       socialProof: "Acceso anticipado gratuito · Sin tarjeta de crédito",
       onlineStatus: "En línea",
       chatMessage1:
-        "Hola! Recuerdo que estás preparando tu examen de Redes el viernes. Te recomiendo repasar OSPF y BGP hoy — son los temas donde más te ha costado.",
-      chatUserMessage: "Perfecto, explícame OSPF desde cero pero rápido",
+        "Leí las 14 cosas que tiraste esta semana. Se agrupan en tres metas que venís siguiendo — ¿querés que te muestre qué las conecta?",
+      chatUserMessage: "Sí — y recordame dónde quedé",
       chatMessage2:
-        "OSPF (Open Shortest Path First) es un protocolo de enrutamiento de estado de enlace...",
-      floatingMemory: "Memoria activada",
-      floatingStreak: "12 días de racha 🔥",
-      floatingConcepts: "47 conceptos dominados",
+        "Estabas comparando dos enfoques en tus notas del martes. El PDF que guardaste el jueves responde justo eso. Acá va el hilo...",
+      floatingMemory: "Enciclopedia creciendo",
+      floatingStreak: "342 ideas conectadas",
+      floatingConcepts: "47 preguntas respondidas con tu propio conocimiento",
     },
 
     stats: [
@@ -489,200 +498,200 @@ const translations = {
     ],
 
     moduleStrip: [
-      { label: "Notas y Conocimiento" },
-      { label: "Tareas y Proyectos" },
-      { label: "Biblioteca de Libros" },
-      { label: "Aprendizaje Adaptativo" },
-      { label: "Agente IA" },
+      { label: "Tirá lo que sea" },
+      { label: "La IA lo organiza" },
+      { label: "Aparecen conexiones" },
+      { label: "Preguntá en lenguaje natural" },
+      { label: "Mejora con cada uso" },
     ],
 
     painSection: {
-      badge: "El problema real",
-      title: "5 herramientas. 5 pestañas. Sin conexión entre ellas.",
+      badge: "Por qué importa",
+      title: "Sabés mucho. Pero no lo encontrás.",
       subtitle:
-        "Ya tienes todo lo que necesitas — disperso en apps que no se hablan entre sí.",
+        "Notas dispersas en apps. Libros que leíste una vez. PDFs que no vas a abrir más. El conocimiento es tuyo — pero ningún sistema lo entiende de verdad.",
       items: [
         {
-          title: "Cambio de contexto constante",
+          title: "Tu conocimiento está en todos lados y en ninguno",
           description:
-            "Notas en una app, tareas en otra, libros en otra más. Gastas más tiempo cambiando de herramienta que haciendo el trabajo.",
+            "Subrayados acá, notas allá, ese PDF que guardaste hace seis meses en algún lugar que no recordás. Buscar a mano nunca funciona.",
         },
         {
-          title: "Conocimiento atrapado en silos",
+          title: "Una IA genérica no te conoce",
           description:
-            "Tus notas no saben de tus tareas. Tus libros no conectan con tus planes de estudio. Ninguna herramienta ve el cuadro completo.",
+            "Un chat que arranca de cero cada vez no puede conectar lo que leíste la semana pasada con lo que estás pensando hoy. Solo ve el mensaje que tiene enfrente.",
         },
         {
-          title: "5 suscripciones, 0 integración",
+          title: "Organizarlo a mano es un segundo trabajo",
           description:
-            "Pagas por varias herramientas por separado. Ninguna conoce tus metas, tu progreso ni lo que aprendiste la semana pasada.",
+            "Etiquetar, vincular, estructurar — la mayoría se rinde al mes. Tu conocimiento queda congelado en vez de acumularse.",
         },
       ],
     },
 
     replacesSection: {
-      badge: "Una sola plataforma",
-      title: "Cada módulo hace al siguiente más inteligente",
+      badge: "Un solo lugar",
+      title: "Todo lo que sabés, en una enciclopedia que piensa",
       subtitle:
-        "Las notas alimentan tu grafo de conocimiento. El grafo mejora tus planes. Los planes informan tus tareas. Todo se acumula — nada queda en silos.",
+        "Dejá de saltar entre apps. Tirá tus notas, libros, links y capturas en un solo lugar. Latzu lee, conecta y responde — sobre todo eso, como si fuera una única mente.",
       items: [
-        { label: "Notas y workspace", sublabel: "Gestión de conocimiento" },
-        { label: "Tareas y proyectos", sublabel: "Planificación y ejecución" },
-        { label: "Resúmenes de libros", sublabel: "Biblioteca curada de 78 libros" },
-        { label: "Aprendizaje adaptativo", sublabel: "Rutas de estudio personalizadas" },
-        { label: "IA sobre tu conocimiento", sublabel: "Agente que conecta todo" },
+        { label: "Notas e ideas", sublabel: "Cualquier cosa que escribas o captures" },
+        { label: "Tareas y planes", sublabel: "Lo que dijiste que ibas a hacer" },
+        { label: "Libros y PDFs", sublabel: "Todo lo que leés, indexado" },
+        { label: "Links y videos", sublabel: "Páginas web y YouTube, resumidos" },
+        { label: "Fotos y capturas", sublabel: "Leídas, transcritas, conectadas" },
       ],
       arrow: "→ Latzu",
     },
 
     whySection: {
-      badge: "El volante compuesto",
-      title: "La inteligencia que se acumula",
+      badge: "El loop que se acumula",
+      title: "Mejora cada vez que la usás",
       subtitle:
-        "Cada sesión hace a Latzu más inteligente sobre ti. No solo datos guardados — un modelo vivo de cómo piensas, aprendes y trabajas.",
+        "No tenés que organizar nada. Cada interacción le enseña a Latzu más sobre cómo pensás — y la próxima respuesta es mejor que la anterior.",
       items: [
         {
-          title: "Chateas → aprende tu estilo",
+          title: "Tirás algo adentro",
           description:
-            "Tu tutor IA se adapta a tu ritmo, tus brechas y tu forma de entender. Cada conversación lo hace más preciso sobre ti.",
+            "Una nota, un PDF, un link de YouTube, una foto de tu pizarra. Lo que sea. Latzu lo lee, lo resume y descubre dónde encaja.",
         },
         {
-          title: "Guardas una nota → el grafo la conecta",
+          title: "Conecta ideas en todo tu conocimiento",
           description:
-            "Cada idea que capturas se vincula con lo que ya sabes. Conceptos de distintas áreas empiezan a hablarse entre sí.",
+            "Cada pieza nueva se vincula con lo que ya tenías. Conceptos de distintas fuentes empiezan a hablarse — incluso los que guardaste con meses de diferencia.",
         },
         {
-          title: "Completas una tarea → el plan se ajusta",
+          title: "Preguntás en lenguaje natural",
           description:
-            "Los resultados alimentan tu plan en tiempo real. ¿Atrasado? Se ajusta. ¿Adelantado? Acelera. Nunca estático.",
+            "Buscá en tu propio conocimiento como si hablaras con un amigo. La respuesta sale de tu enciclopedia — no de internet, no de los datos de otro.",
         },
         {
-          title: "El agente ve todo → actúa por ti",
+          title: "La enciclopedia aprende de tus preguntas",
           description:
-            "Un agente con visión completa de tu conocimiento, tus tareas y tus metas. Conecta ideas que perdiste, muestra lo urgente y organiza lo que se acumula.",
+            "Lo que preguntás, lo que ignorás, lo que ejecutás — todo eso moldea lo que Latzu te muestra después. Cuanto más la usás, más se parece a vos.",
         },
       ],
     },
 
     agentSection: {
       badge: "El Agente Organizador",
-      title: "El agente que trabaja mientras tú trabajas",
+      title: "Trabaja en segundo plano sobre tu enciclopedia",
       subtitle:
-        "La mayoría de herramientas son reactivas — esperan que preguntes. El agente de Latzu es proactivo — observa, conecta y actúa en tu nombre.",
+        "La mayoría de asistentes esperan instrucciones. El agente de Latzu lee lo que agregaste, encuentra patrones, vincula ideas relacionadas y muestra lo que importa — sin que se lo pidas.",
       points: [
-        "Detecta patrones en tus notas, tareas y libros",
-        "Propone conexiones entre ideas que no habías visto",
-        "Reorganiza contenido inactivo antes de que se vuelva ruido",
-        "Mapea tus áreas de vida: trabajo, aprendizaje, proyectos, metas",
-        "Envía señales de foco en el momento adecuado — no al azar",
+        "Lee todo lo que tiraste: texto, PDFs, audio, capturas",
+        "Conecta ideas entre notas, libros y links automáticamente",
+        "Detecta metas que mencionaste de pasada y les hace seguimiento",
+        "Limpia lo que se quedó frío, destaca lo que está caliente",
+        "Te avisa en el momento adecuado — no solo para recordarte que existe",
       ],
       insight:
-        "Después de unas semanas, Latzu te conoce mejor que cualquier app. Y sigue mejorando.",
+        "Después de unas semanas tirando cosas adentro, tu enciclopedia te conoce. Cada respuesta sale más afilada.",
       activityLog: [
-        { action: "Conectó", detail: "\"React Hooks\" → \"Gestión de Estado\"", time: "hace 2m" },
-        { action: "Propuso", detail: "Nuevo workspace: \"Arquitectura Frontend\"", time: "hace 15m" },
-        { action: "Señal", detail: "Repasa \"OSPF\" — 7 días sin verlo", time: "hace 1h" },
-        { action: "Archivó", detail: "3 notas inactivas de hace 3 meses", time: "hace 3h" },
+        { action: "Conectó", detail: "Nota del martes → PDF que guardaste el mes pasado", time: "hace 2m" },
+        { action: "Sintetizó", detail: "Resumen nuevo a partir de 5 fuentes sobre el mismo tema", time: "hace 15m" },
+        { action: "Recuperó", detail: "Una idea que escribiste hace 3 semanas, relevante de nuevo", time: "hace 1h" },
+        { action: "Limpió", detail: "12 fragmentos fusionados en 3 entradas limpias", time: "hace 3h" },
       ],
     },
 
     integrationsSection: {
-      badge: "Integraciones Proactivas",
-      title: "Latzu vive donde ya trabajas.",
+      badge: "Tirá desde donde quieras",
+      title: "Lo que ya usás se vuelve parte de tu enciclopedia.",
       subtitle:
-        "Conecta tus herramientas una sola vez. El agente lee tu calendario, drives y chats — y te organiza y recuerda proactivamente, sin que tengas que pedírselo.",
+        "Conectá una sola vez. Latzu trae cosas de tu calendario, drives y videos guardados — y los indexa todos en la misma enciclopedia que podés buscar y preguntar.",
       integrations: [
-        { name: "WhatsApp", color: "oklch(0.65 0.22 145)", desc: "Resúmenes matutinos y recordatorios" },
-        { name: "Google Calendar", color: "oklch(0.68 0.24 268)", desc: "Lee tu agenda y bloquea tiempo de enfoque" },
-        { name: "Google Drive", color: "oklch(0.75 0.22 60)", desc: "Indexa tus documentos al grafo de conocimiento" },
-        { name: "YouTube", color: "oklch(0.65 0.25 25)", desc: "Extrae conceptos de cualquier video" },
-        { name: "Web & PDF", color: "oklch(0.75 0.22 200)", desc: "Recorta cualquier página o documento" },
+        { name: "WhatsApp", color: "oklch(0.65 0.22 145)", desc: "Tirá notas de voz y mensajes desde el celu" },
+        { name: "Google Calendar", color: "oklch(0.68 0.24 268)", desc: "Sabe qué tenés esta semana" },
+        { name: "Google Drive", color: "oklch(0.75 0.22 60)", desc: "Indexa cada doc a tu enciclopedia" },
+        { name: "YouTube", color: "oklch(0.65 0.25 25)", desc: "Convierte cualquier video en conocimiento buscable" },
+        { name: "Web & PDF", color: "oklch(0.75 0.22 200)", desc: "Recortá cualquier artículo o documento" },
       ],
       moreLabel: "+ más próximamente",
       chat: {
         agentName: "Latzu",
         time: "7:58 AM",
         messages: [
-          { from: "agent", text: "¡Buenos días! Tienes un examen el jueves. Según tus puntos débiles, preparé un repaso de 20 min sobre React Hooks. ¿Empezamos?" },
-          { from: "user", text: "¡Sí, mándalo!" },
-          { from: "agent", text: "Listo. También encontré 2 capítulos de \"El Programador Pragmático\" que conectan directo con lo que estudias. Los agregué a tu cola." },
+          { from: "agent", text: "Buen día. Ayer tiraste 6 cosas a tu enciclopedia. Tres conectan con una meta que mencionaste hace semanas — ¿querés la síntesis?" },
+          { from: "user", text: "Sí, mandala" },
+          { from: "agent", text: "Lista. También encontré una contradicción entre el artículo que guardaste anoche y una nota de marzo. Marqué las dos para que las revises." },
         ],
       },
     },
 
     librarySection: {
-      badge: "Biblioteca de Libros",
-      title: "78 libros. No para leer. Para integrar.",
+      badge: "Libros incluidos",
+      title: "78 libros, ya parte de tu enciclopedia.",
       subtitle:
-        "Cada libro se conecta a tu grafo de conocimiento. Chatea con él, extrae flashcards, o deja que el agente recomiende un capítulo según lo que estás aprendiendo esta semana.",
+        "Sembramos tu enciclopedia con libros curados — totalmente indexados, resumidos y conectados con lo que vos agregás. Preguntales lo que quieras. Mezclalos con tus notas. Sacá lecciones en segundos.",
       points: [
-        "Capítulos, conceptos y ejercicios enriquecidos con IA",
-        "Flashcards autogeneradas — integradas a tus mazos",
-        "Chatea directamente con cualquier libro",
-        "El agente vincula los aprendizajes a tu conocimiento existente",
-        "Curada para estudiantes, profesionales y emprendedores",
+        "Capítulos, conceptos clave y ejercicios listos para consultar",
+        "Sacá flashcards de cualquier capítulo, en un click",
+        "Chateá con cualquier libro — responde desde el texto real",
+        "El agente vincula ideas de los libros con tus notas automáticamente",
+        "Curada en negocios, aprendizaje, productividad y más",
       ],
     },
 
     featuresSection: {
       badge: "Qué incluye",
-      title1: "Cada herramienta que necesitas.",
-      title2: "Todas trabajando juntas.",
+      title1: "Una enciclopedia.",
+      title2: "Mil formas de usarla.",
       subtitle:
-        "No funciones ensambladas — módulos construidos desde cero para compartir inteligencia y acumularse con el tiempo.",
+        "Cada módulo es una lente distinta sobre la misma enciclopedia. Tirá adentro, organizá, preguntá, planificá, aprendé, ejecutá — todo sobre una sola memoria que crece.",
       items: [
         {
-          title: "Tutor IA Adaptativo",
+          title: "Drop zone",
           description:
-            "Recuerda cada conversación, conoce tus puntos débiles y adapta su enseñanza en tiempo real. Explica conceptos de múltiples formas hasta que los entiendas. Narración de voz incluida.",
+            "Tirá notas, PDFs, links, videos de YouTube, fotos y capturas. Latzu lee, transcribe e indexa todo — sin carpetas que armar.",
         },
         {
-          title: "Grafo de Conocimiento",
+          title: "Grafo de conocimiento",
           description:
-            "Captura notas, PDFs, videos de YouTube y páginas web. Latzu extrae los conceptos clave y construye un grafo de conexiones — incluyendo las que no sabías que existían.",
+            "Cada idea que tirás se convierte en un nodo conectado con lo que ya tenías. Descubrí relaciones que nunca viste — incluso entre fuentes que olvidaste.",
         },
         {
-          title: "Planificación Inteligente",
+          title: "Preguntá lo que quieras",
           description:
-            "Crea planes y tareas desde el chat — o deja que el agente los construya según tus brechas de conocimiento. Tu agenda se adapta a medida que avanzas, nunca estática.",
+            "Buscá en tu propio conocimiento en lenguaje natural. Las respuestas vienen de lo que vos guardaste — no de un modelo genérico entrenado con internet.",
         },
         {
-          title: "Motor de Aprendizaje Adaptativo",
+          title: "Planes adaptativos",
           description:
-            "Repetición espaciada SM-2 + Bayesian Knowledge Tracing. Mide tu conocimiento real por concepto y prioriza exactamente lo que necesita refuerzo — no lo que se siente fácil.",
+            "Decile a Latzu una meta — o dejá que la detecte en tus notas. Arma un plan, hace seguimiento y lo reescribe cuando la vida cambia. Nunca estático.",
         },
         {
-          title: "Analytics de Aprendizaje",
+          title: "Repetición espaciada incorporada",
           description:
-            "Sabe exactamente dónde estás: racha de estudio, conceptos dominados, temas débiles, tiempo invertido. Datos claros de tu progreso real, no solo actividad.",
+            "Las ideas importantes vuelven a aparecer en el momento justo. Sacá flashcards de cualquier fuente — capítulo de libro, artículo, tu propia nota — y repasá lo que importa.",
         },
         {
-          title: "Studio IA",
+          title: "Organizador en segundo plano",
           description:
-            "Genera flashcards, quizzes, resúmenes y mapas mentales desde cualquier fuente en segundos. El agente gestiona tus flujos de trabajo y crea tareas directamente desde el chat.",
+            "Un agente que corre mientras hacés otra cosa: limpia duplicados, fusiona fragmentos, recupera ideas olvidadas, propone conexiones nuevas.",
         },
       ],
     },
 
     howSection: {
       badge: "Cómo funciona",
-      title1: "Listo para ti en",
-      title2: "minutos",
+      title1: "Tres pasos. Sin",
+      title2: "configuración.",
       steps: [
         {
-          title: "Cuéntale quién eres",
+          title: "Tirá todo adentro",
           description:
-            "Define tus metas, tu área y tu nivel actual. Latzu construye tu sistema personalizado desde el primer día — no una plantilla genérica que tienes que configurar.",
+            "Notas, PDFs, links, audios, fotos. Cualquier cosa que hayas juntado — y todo lo que junten desde ahora. Sin carpetas, sin etiquetas, sin estructura.",
         },
         {
-          title: "Úsalo como cualquier app",
+          title: "Latzu lo lee y lo conecta",
           description:
-            "Chatea, toma notas, lee libros, gestiona tareas. Cada acción alimenta el sistema. Cada sesión lo hace más inteligente sobre ti.",
+            "Resume, vincula ideas relacionadas entre todas tus fuentes y convierte la pila en una enciclopedia personal coherente. No escribís nada.",
         },
         {
-          title: "Observa cómo se acumula",
+          title: "Preguntá lo que quieras, en tus palabras",
           description:
-            "Después de unas semanas, Latzu te conoce mejor que cualquier app. Tu segunda mente, creciendo contigo — cada día.",
+            "Tu enciclopedia responde desde lo que vos sabés. Cada pregunta la hace más afilada. Después de unas semanas, suena como la mejor versión de vos.",
         },
       ],
     },
@@ -699,14 +708,14 @@ const translations = {
           name: "Free",
           price: "$0",
           period: "/ 7 días de prueba",
-          description: "Empieza sin compromiso. Prueba todas las funciones principales.",
-          cta: "Únete a la lista de espera",
+          description: "Empezá tu enciclopedia. Sin compromiso, sin tarjeta.",
+          cta: "Empezar gratis",
           features: [
-            "Tutor IA con 50 mensajes/día",
-            "Biblioteca de conocimiento (hasta 30 nodos)",
-            "Planificación básica (3 planes activos)",
-            "Lecturas diarias personalizadas",
-            "Dashboard con métricas básicas",
+            "Tirá hasta 30 fuentes adentro (notas, PDFs, links)",
+            "Preguntá lo que quieras sobre tu enciclopedia",
+            "Hasta 3 planes activos",
+            "Resúmenes diarios personalizados",
+            "Dashboard básico con métricas",
             "Soporte por email",
           ],
         },
@@ -715,26 +724,26 @@ const translations = {
           badge: "Más popular",
           price: "$10",
           period: "/ mes",
-          description: "Para estudiantes y profesionales que quieren aprender más rápido.",
-          cta: "Únete a la lista de espera",
+          description: "Para quienes se toman en serio un conocimiento que se acumula.",
+          cta: "Obtener Pro",
           featured: true,
           features: [
             "Todo lo de Free, sin límites",
-            "Mensajes ilimitados con Tutor IA",
-            "Biblioteca ilimitada de conocimiento",
-            "Planes de estudio ilimitados",
-            "Memoria adaptativa avanzada",
-            "Integración con Google Calendar",
-            "Agente IA con herramientas",
-            "Soporte prioritario por chat",
+            "Drops y preguntas ilimitadas",
+            "Tamaño ilimitado de tu enciclopedia",
+            "Planes ilimitados, adaptativos en tiempo real",
+            "Modelo personal avanzado",
+            "Sincronización con Calendar y Drive",
+            "Agente organizador en segundo plano",
+            "Soporte prioritario",
           ],
         },
         {
           name: "Max",
           price: "$30",
           period: "/ mes",
-          description: "Para equipos y usuarios que exigen la máxima potencia de IA.",
-          cta: "Únete a la lista de espera",
+          description: "Para equipos y usuarios que quieren la máxima potencia de IA.",
+          cta: "Obtener Max",
           features: [
             "Todo lo de Pro",
             "Modelos IA de última generación",
@@ -780,42 +789,50 @@ const translations = {
       title: "Preguntas frecuentes",
       items: [
         {
-          q: "¿En qué se diferencia Latzu de los asistentes IA de propósito general?",
-          a: "Los asistentes de IA son poderosos pero empiezan desde cero cada sesión — no conocen tus metas, tu progreso ni lo que ya aprendiste. Latzu construye un modelo persistente de ti: tus brechas de conocimiento, tu estilo de aprendizaje, tus áreas de vida. Y a diferencia de un chatbot, actúa proactivamente — organizando tu workspace, sugiriendo repasos y haciendo seguimiento de tus planes — sin esperar a que preguntes.",
+          q: "¿En qué se diferencia de un chat de IA común?",
+          a: "Un chat común arranca desde cero cada conversación — no sabe lo que leíste, escribiste ni guardaste. Latzu solo sabe lo que vos le des, pero lo sabe en profundidad: lee todo lo que tirás adentro, conecta ideas en todo eso, y recuerda entre sesiones. Las respuestas salen de tu enciclopedia, no de datos genéricos de internet.",
         },
         {
-          q: "¿Necesito tarjeta de crédito para el periodo de prueba?",
-          a: "No. El plan Free de 7 días no requiere tarjeta de crédito. Solo crea tu cuenta y empieza a aprender de inmediato.",
+          q: "¿En qué se diferencia de una app de notas?",
+          a: "Una app de notas guarda texto. La organización corre por tu cuenta — vos etiquetás, vinculás, peleás contra el caos. Latzu lee lo que tirás, resume, encuentra las conexiones automáticamente y responde preguntas sobre todo. Dejás de organizar y empezás a preguntar.",
         },
         {
-          q: "¿Puedo cancelar en cualquier momento?",
-          a: "Sí, puedes cancelar tu suscripción cuando quieras. Sin contratos, sin compromisos. Tu acceso continúa hasta el fin del periodo de facturación.",
+          q: "¿Qué puedo tirar adentro?",
+          a: "Notas, PDFs, artículos, links web, videos de YouTube, fotos de tu pizarra o de hojas escritas a mano, capturas, audios. Latzu lee, transcribe e indexa todo en tu enciclopedia.",
         },
         {
-          q: "¿Cómo aprende Latzu sobre mí?",
-          a: "Con cada sesión de estudio, cada mensaje y cada tarea completada, Latzu construye un perfil de aprendizaje único para ti. Este modelo de memoria persiste entre sesiones y mejora continuamente.",
+          q: "¿Necesito tarjeta de crédito para empezar?",
+          a: "No. La prueba gratuita no requiere tarjeta. Creá tu cuenta y empezá a tirar cosas adentro al toque.",
         },
         {
-          q: "¿Funciona para cualquier materia o industria?",
-          a: "Sí. Latzu es agnóstico al dominio de conocimiento. Funciona para estudiantes universitarios, profesionales de tecnología, médicos, abogados, emprendedores y cualquier persona que quiera aprender más eficientemente.",
+          q: "¿Puedo cancelar cuando quiera?",
+          a: "Sí. Sin contratos, sin compromisos. Tu acceso sigue hasta el fin del periodo de facturación.",
+        },
+        {
+          q: "¿Cómo aprende sobre mí?",
+          a: "Cada cosa que tirás, cada pregunta, cada acción que tomás moldea el modelo que Latzu tiene de vos. Hace seguimiento de lo que te importa, las metas que perseguís, las ideas a las que volvés. Cuanto más la usás, más se parece a vos.",
+        },
+        {
+          q: "¿Funciona para cualquier área?",
+          a: "Sí. Latzu es agnóstico al dominio. Estudiantes, profesionales, investigadores, emprendedores, curiosos — cualquiera con conocimiento que valga la pena guardar.",
         },
         {
           q: "¿Mis datos están seguros?",
-          a: "Tus datos son privados y encriptados. No compartimos tu información con terceros. Puedes exportar o eliminar tus datos en cualquier momento.",
+          a: "Tus datos son privados y encriptados. No los compartimos con terceros. Podés exportar o borrar todo cuando quieras.",
         },
         {
           q: "¿Hay descuento para estudiantes o universidades?",
-          a: "Sí. Ofrecemos planes especiales para instituciones educativas y grupos de estudiantes. Contáctanos en latzuapp@gmail.com.",
+          a: "Sí. Planes especiales para instituciones educativas y grupos de estudiantes. Escribinos a latzuapp@gmail.com.",
         },
       ],
     },
 
     finalCtaSection: {
-      title1: "Empieza a construir",
-      title2: "tu segunda mente.",
+      title1: "Empezá tu",
+      title2: "enciclopedia personal.",
       subtitle:
-        "Únete a los primeros usuarios construyendo una IA que realmente los conoce. Cuanto antes empieces, más inteligente se vuelve.",
-      ctaPrimary: "Únete a la lista de espera",
+        "Tirá adentro lo que ya tenés. Vela organizarse sola. Preguntá lo que quieras — y obtené respuestas más afiladas cada semana.",
+      ctaPrimary: "Empezar mi enciclopedia",
       ctaSecondary: "Iniciar sesión",
       socialProof: "Acceso anticipado gratuito · Sin tarjeta de crédito · HTTPS cifrado",
     },
@@ -830,7 +847,7 @@ const translations = {
     },
 
     login: {
-      subtitle: "Inteligencia Adaptativa para Ti",
+      subtitle: "Tu enciclopedia personal",
       cardTitle: "Bienvenido",
       cardDescription: "Inicia sesión en tu cuenta",
       emailRequiredError: "Email y contraseña son requeridos",
@@ -843,14 +860,14 @@ const translations = {
       emailLabel: "Email",
       passwordLabel: "Contraseña",
       signInButton: "Iniciar sesión",
-      noAccount: "¿Te interesa el acceso anticipado?",
-      registerLink: "Únete a la lista de espera",
+      noAccount: "¿No tenés cuenta?",
+      registerLink: "Empezar gratis",
       continueWithGoogle: "Continuar con Google",
       orDivider: "o",
       features: [
-        { title: "IA Personalizada", description: "Aprende de ti y se adapta a tu estilo" },
-        { title: "Contenido Dinámico", description: "Lecciones que evolucionan contigo" },
-        { title: "Progreso Real", description: "Resultados medibles y crecimiento continuo" },
+        { title: "Tirá lo que sea adentro", description: "Notas, PDFs, links, fotos — todo indexado por vos" },
+        { title: "Preguntá en lenguaje natural", description: "Buscá en tu propio conocimiento como una conversación" },
+        { title: "Mejora cada semana", description: "Cuanto más la usás, más se parece a vos" },
       ],
     },
 
