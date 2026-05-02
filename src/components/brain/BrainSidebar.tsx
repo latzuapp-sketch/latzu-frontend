@@ -16,7 +16,7 @@ import Link from "next/link";
 import {
   Sparkles, Clock, Flame, Compass, Layers, ChevronRight, Brain,
   StickyNote, BookOpen, Lightbulb, User, Calendar, Globe,
-  Play, FileText,
+  Play, FileText, ListTodo,
 } from "lucide-react";
 import { useUserModel } from "@/hooks/useOrganizerAgent";
 import { useWorkspaces } from "@/hooks/useWorkspace";
@@ -28,6 +28,10 @@ import { cn } from "@/lib/utils";
 export type BrainSelection =
   | { kind: "all" }
   | { kind: "recent" }
+  | { kind: "knowledge" }
+  | { kind: "notes" }
+  | { kind: "tasks" }
+  | { kind: "pages" }
   | { kind: "topic"; topic: string }
   | { kind: "lifeArea"; area: string }
   | { kind: "workspace"; id: string; title: string }
@@ -35,6 +39,8 @@ export type BrainSelection =
 
 interface SidebarProps {
   nodes: KnowledgeNode[];
+  noteCount: number;
+  taskCount: number;
   selection: BrainSelection;
   onSelect: (s: BrainSelection) => void;
 }
@@ -110,7 +116,7 @@ function TreeRow({
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
-export function BrainSidebar({ nodes, selection, onSelect }: SidebarProps) {
+export function BrainSidebar({ nodes, noteCount, taskCount, selection, onSelect }: SidebarProps) {
   const { userModel } = useUserModel();
   const { workspaces } = useWorkspaces();
 
@@ -161,8 +167,19 @@ export function BrainSidebar({ nodes, selection, onSelect }: SidebarProps) {
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-3 text-foreground/80">
         {/* All / Recent quick links */}
         <div className="space-y-0.5">
-          <TreeRow label="Todo" icon={Brain} count={nodes.length} isActive={isActive({ kind: "all" })} onClick={() => onSelect({ kind: "all" })} />
+          <TreeRow label="Todo" icon={Brain} count={nodes.length + noteCount + taskCount} isActive={isActive({ kind: "all" })} onClick={() => onSelect({ kind: "all" })} />
           <TreeRow label="Recientes" icon={Clock} isActive={isActive({ kind: "recent" })} onClick={() => onSelect({ kind: "recent" })} />
+        </div>
+
+        {/* Content kinds — what the user creates */}
+        <div>
+          <SectionHeader icon={Layers} label="Mi contenido" />
+          <div className="space-y-0.5">
+            <TreeRow label="Conocimiento" icon={Lightbulb} count={nodes.length} isActive={isActive({ kind: "knowledge" })} onClick={() => onSelect({ kind: "knowledge" })} />
+            <TreeRow label="Notas" icon={StickyNote} count={noteCount} isActive={isActive({ kind: "notes" })} onClick={() => onSelect({ kind: "notes" })} accent="text-yellow-400" />
+            <TreeRow label="Tareas" icon={ListTodo} count={taskCount} isActive={isActive({ kind: "tasks" })} onClick={() => onSelect({ kind: "tasks" })} accent="text-primary" />
+            <TreeRow label="Spaces" icon={Layers} isActive={isActive({ kind: "pages" })} onClick={() => onSelect({ kind: "pages" })} accent="text-indigo-400" />
+          </div>
         </div>
 
         {/* Hot topics from agent's UserModel */}
