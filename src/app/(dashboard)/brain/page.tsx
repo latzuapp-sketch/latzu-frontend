@@ -26,6 +26,7 @@ import { BrainNoteCard, BrainTaskCard, BrainPageCard, BrainPlanCard } from "@/co
 import { BrainSidebar, type BrainSelection } from "@/components/brain/BrainSidebar";
 import { BrainAgentPanel, BrainAgentTrigger } from "@/components/brain/BrainAgentPanel";
 import { UniversalViewer, type ViewerItem } from "@/components/brain/UniversalViewer";
+import { GroupedConcepts } from "@/components/brain/GroupedConcepts";
 import { useKnowledgeNodes, useLibraryBooks } from "@/hooks/useLibrary";
 import { BookCard } from "@/components/biblioteca/BookCard";
 import type { LibraryBook, LibraryFile } from "@/types/library";
@@ -648,7 +649,16 @@ export default function BrainPage() {
             <EmptyState selection={selection} hasAny={nodes.length + notes.length + tasks.length > 0} hasSearch={!!search} onCreateNote={() => setQuickKind("note")} onCreateTask={() => setQuickKind("task")} />
           )}
 
-          {totalShown > 0 && (
+          {/* Conceptos view — grouped by life area (list of lists). */}
+          {selection.kind === "knowledge" && filteredNodes.length > 0 && (
+            <GroupedConcepts
+              nodes={filteredNodes}
+              lifeAreas={lifeAreas}
+              onPick={(node) => setViewing({ kind: "node", node })}
+            />
+          )}
+
+          {totalShown > 0 && selection.kind !== "knowledge" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               <AnimatePresence mode="popLayout">
                 {/* Goals first — the north star */}
