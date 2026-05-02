@@ -208,6 +208,9 @@ export const GET_KNOWLEDGE_NODES = gql`
     $nodeType: String
     $sourceRef: String
     $userId: String
+    $autoCategory: String
+    $autoDomain: String
+    $autoTag: String
     $skip: Int
     $limit: Int
   ) {
@@ -216,6 +219,9 @@ export const GET_KNOWLEDGE_NODES = gql`
       nodeType: $nodeType
       sourceRef: $sourceRef
       userId: $userId
+      autoCategory: $autoCategory
+      autoDomain: $autoDomain
+      autoTag: $autoTag
       skip: $skip
       limit: $limit
     ) {
@@ -227,7 +233,25 @@ export const GET_KNOWLEDGE_NODES = gql`
         content
         sourceRef
         properties
+        autoCategory
+        autoDomain
+        autoDifficulty
+        autoTags
       }
+    }
+  }
+`;
+
+/** Aggregated chip-row filters for /brain. */
+export const GET_KNOWLEDGE_FILTERS = gql`
+  query GetKnowledgeFilters($userId: String, $nodeType: String) {
+    knowledgeFilters(userId: $userId, nodeType: $nodeType) {
+      categories { value count }
+      domains    { value count }
+      difficulties { value count }
+      topTags    { value count }
+      classified
+      unclassified
     }
   }
 `;
@@ -245,6 +269,10 @@ export const GET_KNOWLEDGE_NODE = gql`
       type
       content
       sourceRef
+      autoCategory
+      autoDomain
+      autoDifficulty
+      autoTags
       relationships {
         relType
         nodeId

@@ -201,6 +201,27 @@ export interface KnowledgeNode {
   content: string;
   sourceRef: string | null;
   properties: string | null; // JSON string
+  // Auto-classifier fields (populated by the node_classifier cron)
+  autoCategory?: string | null;
+  autoDomain?: string | null;
+  autoDifficulty?: string | null;
+  autoTags?: string | null; // JSON string array
+}
+
+/** A single facet value (category / domain / tag) with its count. */
+export interface KnowledgeFacet {
+  value: string;
+  count: number;
+}
+
+/** Aggregated auto-classifier filters across the user's nodes. */
+export interface KnowledgeFilters {
+  categories: KnowledgeFacet[];
+  domains: KnowledgeFacet[];
+  difficulties: KnowledgeFacet[];
+  topTags: KnowledgeFacet[];
+  classified: number;
+  unclassified: number;
 }
 
 /** A directed relationship between KnowledgeNodes. */

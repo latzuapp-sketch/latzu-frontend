@@ -13,6 +13,7 @@ import { useSession } from "next-auth/react";
 import { aiClient } from "@/lib/apollo";
 import {
   DELETE_KNOWLEDGE_NODE,
+  GET_KNOWLEDGE_FILTERS,
   GET_KNOWLEDGE_NODE,
   GET_KNOWLEDGE_NODES,
   GET_KNOWLEDGE_STATS,
@@ -20,6 +21,7 @@ import {
   UPDATE_KNOWLEDGE_NODE,
 } from "@/graphql/ai/operations";
 import type {
+  KnowledgeFilters,
   KnowledgeNode,
   KnowledgeNodeDetail,
   KnowledgeNodeList,
@@ -34,6 +36,9 @@ export interface LibraryFilters {
   search?: string;
   nodeType?: string;
   sourceRef?: string;
+  autoCategory?: string;
+  autoDomain?: string;
+  autoTag?: string;
   skip?: number;
   limit?: number;
 }
@@ -86,7 +91,11 @@ export function useLibraryBooks(filters: { category?: string; search?: string } 
 // ─── useKnowledgeNodes ────────────────────────────────────────────────────────
 
 export function useKnowledgeNodes(filters: LibraryFilters = {}) {
-  const { search, nodeType, sourceRef, skip = 0, limit = 60 } = filters;
+  const {
+    search, nodeType, sourceRef,
+    autoCategory, autoDomain, autoTag,
+    skip = 0, limit = 60,
+  } = filters;
   const { data: session } = useSession();
   const userId = (session?.user as { id?: string })?.id ?? null;
 
@@ -99,6 +108,9 @@ export function useKnowledgeNodes(filters: LibraryFilters = {}) {
       nodeType: nodeType || null,
       sourceRef: sourceRef || null,
       userId,
+      autoCategory: autoCategory || null,
+      autoDomain: autoDomain || null,
+      autoTag: autoTag || null,
       skip,
       limit,
     },
@@ -112,6 +124,43 @@ export function useKnowledgeNodes(filters: LibraryFilters = {}) {
   return {
     nodes,
     total,
+    loading,
+    error: error?.message ?? null,
+    refetch,
+  };
+}
+
+// ─── useKnowledgeFilters ──────────────────────────────────────────────────────
+
+/**
+ * Aggregated chip-row filters for /brain. Returns categories, domains,
+ * difficulties and top tags with counts, computed across the user's nodes.
+ */
+export function useKnowledgeFilters(opts: { nodeType?: string } = {}) {
+  const { nodeType } = opts;
+  const { data: session } = useSession();
+  const userId = (session?.user as { id?: string })?.id ?? null;
+
+  const { data, loading, error, refetch } = useQuery<{
+    knowledgeFilters: KnowledgeFilters;
+  }>(GET_KNOWLEDGE_FILTERS, {
+    client: aiClient,
+    variables: { userId, nodeType: nodeType || null },
+    fetchPolicy: "cache-and-network",
+    pollInterval: 5 * 60 * 1000, // refresh every 5 min as classifier ticks
+  });
+
+  const empty: KnowledgeFilters = {
+    categories: [],
+    domains: [],
+    difficulties: [],
+    topTags: [],
+    classified: 0,
+    unclassified: 0,
+  };
+
+  return {
+    filters: data?.knowledgeFilters ?? empty,
     loading,
     error: error?.message ?? null,
     refetch,

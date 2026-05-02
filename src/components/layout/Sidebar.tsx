@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,6 @@ import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 
 export const SIDEBAR_COLLAPSED_WIDTH = 72;
-export const SIDEBAR_EXPANDED_WIDTH = 256;
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -261,9 +259,6 @@ function SidebarFooter({
 // ─── Sidebar ───────────────────────────────────────────────────────────────────
 
 export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
-  const [hovered, setHovered] = useState(false);
-  const collapsed = !hovered;
-
   return (
     <TooltipProvider delayDuration={0}>
       {/* Mobile: Sheet drawer */}
@@ -278,24 +273,19 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         </SheetContent>
       </Sheet>
 
-      {/* Desktop: Fixed mini sidebar that expands on hover (overlay) */}
-      <motion.aside
-        initial={false}
-        animate={{ width: collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH }}
-        transition={{ duration: 0.2, ease: "easeInOut" }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+      {/* Desktop: Fixed mini sidebar — always collapsed, tooltips show labels on hover */}
+      <aside
+        style={{ width: SIDEBAR_COLLAPSED_WIDTH }}
         className={cn(
           "fixed left-0 top-0 z-40 h-screen",
           "bg-sidebar border-r border-sidebar-border",
-          "hidden md:flex flex-col",
-          !collapsed && "shadow-xl"
+          "hidden md:flex flex-col"
         )}
       >
-        <SidebarLogo collapsed={collapsed} />
-        <SidebarNav collapsed={collapsed} />
-        <SidebarFooter collapsed={collapsed} />
-      </motion.aside>
+        <SidebarLogo collapsed={true} />
+        <SidebarNav collapsed={true} />
+        <SidebarFooter collapsed={true} />
+      </aside>
     </TooltipProvider>
   );
 }

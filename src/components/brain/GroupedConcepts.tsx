@@ -3,10 +3,14 @@
 /**
  * GroupedConcepts — renders concept KnowledgeNodes as a list of lists.
  *
- * Outer list: collapsible sections, one per life area the agent detected
- *   (and a "Sin clasificar" bucket for concepts not yet placed in any area).
- * Inner list: a responsive grid of AdaptiveItemCard, the same cards used
- *   on the flat view, so visuals stay consistent.
+ * Outer list: collapsible sections, one per group. Grouping strategy:
+ *   1. If at least one node has `autoCategory` (set by node_classifier),
+ *      bucket by that category — this is the intelligent grouping.
+ *   2. Otherwise fall back to the agent's `lifeAreas` (one bucket per area
+ *      with `node_ids`).
+ *   3. Anything left unbucketed lands in "Sin clasificar".
+ *
+ * Inner list: a responsive grid of AdaptiveItemCard.
  *
  * Empty groups are omitted. Sections are sorted by node count desc,
  * with the unclassified bucket pinned to the bottom.
@@ -37,6 +41,39 @@ interface Group {
   description?: string;
   nodes: KnowledgeNode[];
   classified: boolean;   // false → "Sin clasificar"
+}
+
+/** Bucket each concept by its auto-classifier category. */
+function groupByAutoCategory(nodes: KnowledgeNode[]): Group[] {
+  const buckets = new Map<string, KnowledgeNode[]>();
+  const leftover: KnowledgeNode[] = [];
+  for (const n of nodes) {
+    const cat = n.autoCategory?.trim();
+    if (cat) {
+      const arr = buckets.get(cat) ?? [];
+      arr.push(n);
+      buckets.set(cat, arr);
+    } else {
+      leftover.push(n);
+    }
+  }
+  const groups: Group[] = [...buckets.entries()].map(([name, ns]) => ({
+    key: `cat::${name}`,
+    name,
+    nodes: ns,
+    classified: true,
+  }));
+  groups.sort((a, b) => b.nodes.length - a.nodes.length);
+  if (leftover.length > 0) {
+    groups.push({
+      key: "unsorted",
+      name: "Sin clasificar",
+      description: "La IA todavía no clasificó estos nodos.",
+      nodes: leftover,
+      classified: false,
+    });
+  }
+  return groups;
 }
 
 /** Bucket each concept into the first life area whose node_ids include it. */
@@ -98,7 +135,11 @@ function groupByArea(nodes: KnowledgeNode[], lifeAreas: LifeAreaParsed[]): Group
 }
 
 export function GroupedConcepts({ nodes, lifeAreas, onPick }: GroupedConceptsProps) {
-  const groups = useMemo(() => groupByArea(nodes, lifeAreas), [nodes, lifeAreas]);
+  const groups = useMemo(() => {
+    // Prefer auto-classifier grouping when at least one node has been tagged.
+    const anyClassified = nodes.some((n) => !!n.autoCategory);
+    return anyClassified ? groupByAutoCategory(nodes) : groupByArea(nodes, lifeAreas);
+  }, [nodes, lifeAreas]);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   const toggle = (key: string) => {

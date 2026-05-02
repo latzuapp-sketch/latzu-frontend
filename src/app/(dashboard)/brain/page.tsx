@@ -27,6 +27,12 @@ import { BrainSidebar, type BrainSelection } from "@/components/brain/BrainSideb
 import { BrainAgentPanel, BrainAgentTrigger } from "@/components/brain/BrainAgentPanel";
 import { UniversalViewer, type ViewerItem } from "@/components/brain/UniversalViewer";
 import { GroupedConcepts } from "@/components/brain/GroupedConcepts";
+import {
+  AutoFilterChips,
+  facetsFromNodes,
+  matchesChip,
+  type ChipValue,
+} from "@/components/brain/AutoFilterChips";
 import { useKnowledgeNodes, useLibraryBooks } from "@/hooks/useLibrary";
 import { BookCard } from "@/components/biblioteca/BookCard";
 import type { LibraryBook, LibraryFile } from "@/types/library";
@@ -421,6 +427,12 @@ export default function BrainPage() {
   const deferredSearch = useDeferredValue(search);
   const [quickKind, setQuickKind] = useState<QuickKind | null>(null);
   const [agentPanelOpen, setAgentPanelOpen] = useState(false);
+  const [activeChip, setActiveChip] = useState<ChipValue | null>(null);
+
+  // Reset chip selection when the user jumps to another section/area.
+  useEffect(() => {
+    setActiveChip(null);
+  }, [selection]);
 
   const { nodes, total, loading } = useKnowledgeNodes({ limit: 300 });
   const { notes, refetch: refetchNotes } = useAllNotes();
@@ -491,16 +503,25 @@ export default function BrainPage() {
   );
   const showWorkspaces = selection.kind === "all" || selection.kind === "pages";
 
+  // Auto-filter chips: facets come from the section's nodes (pre-chip) so they
+  // don't disappear once selected; chip selection further narrows what renders.
+  const chipFacets = useMemo(() => facetsFromNodes(filteredNodes), [filteredNodes]);
+  const displayNodes = useMemo(
+    () => filteredNodes.filter((n) => matchesChip(n, activeChip)),
+    [filteredNodes, activeChip],
+  );
+  const chipsHaveAny = chipFacets.some((f) => f.values.length > 0);
+
   const totalShown =
-    filteredNodes.length + filteredNotes.length + filteredTasks.length +
+    displayNodes.length + filteredNotes.length + filteredTasks.length +
     filteredPlans.length + filteredBooks.length +
     filteredGoals.length + filteredFiles.length +
     filteredDecks.length + filteredQuizTasks.length +
     (showWorkspaces ? workspaces.length : 0);
 
   const synthesisCount = useMemo(
-    () => filteredNodes.filter((n) => detectVariant(n) === "synthesis").length,
-    [filteredNodes]
+    () => displayNodes.filter((n) => detectVariant(n) === "synthesis").length,
+    [displayNodes]
   );
 
   const onJumpTopic = (topic: string) => {
@@ -622,6 +643,16 @@ export default function BrainPage() {
               </button>
             )}
           </div>
+
+          {/* Auto-classifier chip row (YouTube-style) — shows when the section
+              has classified knowledge nodes. Filters the cards inline. */}
+          {chipsHaveAny && (
+            <AutoFilterChips
+              available={chipFacets}
+              active={activeChip}
+              onChange={setActiveChip}
+            />
+          )}
         </header>
 
         {/* Body */}
@@ -649,10 +680,11 @@ export default function BrainPage() {
             <EmptyState selection={selection} hasAny={nodes.length + notes.length + tasks.length > 0} hasSearch={!!search} onCreateNote={() => setQuickKind("note")} onCreateTask={() => setQuickKind("task")} />
           )}
 
-          {/* Conceptos view — grouped by life area (list of lists). */}
-          {selection.kind === "knowledge" && filteredNodes.length > 0 && (
+          {/* Conceptos view — grouped by autoCategory when present, falling back
+              to life area. Chips filter the underlying node set. */}
+          {selection.kind === "knowledge" && displayNodes.length > 0 && (
             <GroupedConcepts
-              nodes={filteredNodes}
+              nodes={displayNodes}
               lifeAreas={lifeAreas}
               onPick={(node) => setViewing({ kind: "node", node })}
             />
@@ -729,7 +761,7 @@ export default function BrainPage() {
                   />
                 ))}
                 {/* Knowledge nodes */}
-                {filteredNodes.map((node) => (
+                {displayNodes.map((node) => (
                   <AdaptiveItemCard
                     key={`node-${node.id}`}
                     node={node}
@@ -748,7 +780,7 @@ export default function BrainPage() {
             </div>
           )}
 
-          {filteredNodes.length > 0 && total > nodes.length && (
+          {displayNodes.length > 0 && total > nodes.length && (
             <p className="text-[10px] text-muted-foreground text-center mt-6">
               Mostrando {nodes.length} de {total} ideas. Tirá más con <kbd className="px-1 py-0.5 rounded border border-border/40 bg-muted/40 font-mono">⌘U</kbd>.
             </p>
