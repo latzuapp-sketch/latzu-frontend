@@ -283,7 +283,7 @@ export function BrainSidebar({
                   return (
                     <TreeRow
                       key={`${section.name}-${idx}`}
-                      label={it.label ?? it.kind}
+                      label={it.label ?? it.topic ?? it.area ?? it.nodeType ?? it.kind}
                       icon={iconFor(it.kind)}
                       isActive={isActive(sel)}
                       onClick={() => onSelect(sel)}
