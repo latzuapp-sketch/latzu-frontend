@@ -43,7 +43,7 @@ import {
   ChevronDown, ChevronRight, Search, Sparkles, Inbox, Settings,
   Plus, Trash2, LogOut, Sun, Moon, Layers, GraduationCap,
   Lightbulb, Target, Flag, ListTodo, StickyNote, Folder, Layers3,
-  ClipboardCheck, BookOpen, Compass, type LucideIcon,
+  ClipboardCheck, BookOpen, Compass, MessageSquare, type LucideIcon,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -51,6 +51,10 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useUserStore, useIsGuest } from "@/stores/userStore";
 import { useWorkspaces } from "@/hooks/useWorkspace";
 import { useAgentActions } from "@/hooks/useOrganizerAgent";
+import { useQuery } from "@apollo/client";
+import { aiClient } from "@/lib/apollo";
+import { GET_CHAT_SESSIONS } from "@/graphql/ai/operations";
+import type { ChatSession } from "@/graphql/types";
 import { cn } from "@/lib/utils";
 
 export const NOTION_SIDEBAR_WIDTH = 248;
@@ -231,6 +235,32 @@ function SidebarBody({ onItemClick, onOpenSearch, onOpenChat }: SidebarBodyProps
   const isGuest = useIsGuest();
   const disableGuestMode = useUserStore((state) => state.disableGuestMode);
 
+  const userId = (session?.user as { id?: string })?.id ?? null;
+  const { data: chatSessionsData } = useQuery<{ chatSessions: ChatSession[] }>(
+    GET_CHAT_SESSIONS,
+    {
+      client: aiClient,
+      variables: { userId },
+      skip: !userId,
+      fetchPolicy: "cache-and-network",
+      pollInterval: 60_000,
+    },
+  );
+  const chatSessions = useMemo(() => {
+    const list = chatSessionsData?.chatSessions ?? [];
+    return [...list]
+      .sort((a, b) => {
+        const at = a.updatedAt ?? a.createdAt ?? "";
+        const bt = b.updatedAt ?? b.createdAt ?? "";
+        return bt.localeCompare(at);
+      })
+      .slice(0, 8);
+  }, [chatSessionsData]);
+
+  const currentChatSessionId = pathname === "/brain/chat"
+    ? searchParams.get("session") ?? null
+    : null;
+
   const inboxCount = useMemo(
     () => pendingProposals.filter((a) => a.visibility !== "silent" && a.type !== "clarification_question").length,
     [pendingProposals],
@@ -321,7 +351,7 @@ function SidebarBody({ onItemClick, onOpenSearch, onOpenChat }: SidebarBodyProps
             action={
               <Plus
                 className="w-3 h-3 text-muted-foreground/60 hover:text-foreground cursor-pointer"
-                onClick={() => router.push("/brain?kind=pages")}
+                onClick={() => router.push("/brain/spaces")}
               />
             }
           >
@@ -337,6 +367,39 @@ function SidebarBody({ onItemClick, onOpenSearch, onOpenChat }: SidebarBodyProps
             ))}
           </Section>
         )}
+
+        <Section
+          label="Chats"
+          defaultOpen={true}
+          action={
+            <Plus
+              className="w-3 h-3 text-muted-foreground/60 hover:text-foreground cursor-pointer"
+              onClick={() => router.push("/brain/chat")}
+            />
+          }
+        >
+          <Row
+            icon={MessageSquare}
+            label="Todos los chats"
+            href="/brain/chat"
+            active={pathname === "/brain/chat" && !currentChatSessionId}
+            indent={1}
+          />
+          {chatSessions.length === 0 ? (
+            <p className="px-7 py-1 text-[11px] text-muted-foreground/40 italic">Sin chats todavía</p>
+          ) : (
+            chatSessions.map((s) => (
+              <Row
+                key={s.sessionId}
+                icon={MessageSquare}
+                label={s.title || "Sin título"}
+                href={`/brain/chat?session=${encodeURIComponent(s.sessionId)}`}
+                active={currentChatSessionId === s.sessionId}
+                indent={1}
+              />
+            ))
+          )}
+        </Section>
       </div>
 
       {/* Footer */}
