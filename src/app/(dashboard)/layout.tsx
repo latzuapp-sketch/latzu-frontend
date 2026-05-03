@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, useCallback, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { NotionSidebar, NOTION_SIDEBAR_WIDTH } from "@/components/layout/NotionSidebar";
-import { Header } from "@/components/layout/Header";
+import { Menu } from "lucide-react";
 import { QuickCapture } from "@/components/capture/QuickCapture";
 import { ChatOverlay, CHAT_OVERLAY_WIDTH } from "@/components/chat/ChatOverlay";
 import { CommandPalette } from "@/components/search/CommandPalette";
@@ -122,6 +122,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         onOpenChat={() => setChatOpen(true)}
       />
 
+      {/* Mobile-only floating menu button (the desktop sidebar is always visible) */}
+      {isMobile && (
+        <button
+          onClick={() => setMobileSidebarOpen(true)}
+          aria-label="Abrir menú"
+          className="fixed top-3 left-3 z-30 h-9 w-9 rounded-md bg-card/80 backdrop-blur border border-border/50 flex items-center justify-center text-foreground/80 hover:text-foreground hover:bg-card transition-colors shadow-sm"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+      )}
+
       <motion.main
         initial={false}
         animate={{
@@ -131,8 +142,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         transition={{ duration: 0.2, ease: "easeInOut" }}
         className="min-h-screen"
       >
-        <Header onMenuClick={() => setMobileSidebarOpen(true)} onSearchClick={openPalette} />
-
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
