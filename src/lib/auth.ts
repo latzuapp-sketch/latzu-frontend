@@ -368,7 +368,7 @@ export const authOptions: NextAuthOptions = {
         if (!path || path === '/') return baseUrl;
         return url;
       }
-      return `${baseUrl}/dashboard`;
+      return `${baseUrl}/brain`;
     },
   },
 

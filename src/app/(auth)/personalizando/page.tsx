@@ -86,7 +86,7 @@ export default function PersonalizandoPage() {
           sessionStorage.removeItem("latzu_onboarding");
           sessionStorage.removeItem("latzu_preview");
         } catch { /* ignore */ }
-        router.push("/dashboard");
+        router.push("/brain");
       }, STEP_DURATION * stepsCount + 800)
     );
 

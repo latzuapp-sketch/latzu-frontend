@@ -25,6 +25,7 @@ import { AdaptiveItemCard, detectVariant } from "@/components/brain/AdaptiveItem
 import { BrainNoteCard, BrainTaskCard, BrainPageCard, BrainPlanCard } from "@/components/brain/BrainItemCards";
 import { BrainSidebar, type BrainSelection } from "@/components/brain/BrainSidebar";
 import { BrainAgentPanel, BrainAgentTrigger } from "@/components/brain/BrainAgentPanel";
+import { BrainCreateToolbar } from "@/components/brain/BrainCreateToolbar";
 import { UniversalViewer, type ViewerItem } from "@/components/brain/UniversalViewer";
 import { GroupedConcepts } from "@/components/brain/GroupedConcepts";
 import { MentorPanel } from "@/components/brain/MentorPanel";
@@ -671,39 +672,6 @@ export default function BrainPage() {
                 {totalShown} {totalShown === 1 ? "item" : "items"}
               </span>
 
-              {/* "+" Quick create menu */}
-              <div className="flex items-center rounded-lg border border-border/40 bg-card/60 overflow-hidden">
-                <button
-                  onClick={() => setQuickKind(quickKind === "note" ? null : "note")}
-                  className={cn(
-                    "flex items-center gap-1 text-[10px] px-2 py-1.5 transition-colors",
-                    quickKind === "note" ? "bg-yellow-500/15 text-yellow-300" : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                  )}
-                  title="Nueva nota"
-                >
-                  <StickyNote className="w-3 h-3" /> Nota
-                </button>
-                <span className="w-px h-4 bg-border/50" />
-                <button
-                  onClick={() => setQuickKind(quickKind === "task" ? null : "task")}
-                  className={cn(
-                    "flex items-center gap-1 text-[10px] px-2 py-1.5 transition-colors",
-                    quickKind === "task" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                  )}
-                  title="Nueva tarea"
-                >
-                  <ListTodo className="w-3 h-3" /> Tarea
-                </button>
-                <span className="w-px h-4 bg-border/50" />
-                <button
-                  onClick={() => router.push("/workspace")}
-                  className="flex items-center gap-1 text-[10px] px-2 py-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-                  title="Crear space"
-                >
-                  <Layers className="w-3 h-3" /> Space
-                </button>
-              </div>
-
               {/* Agent panel trigger */}
               <BrainAgentTrigger
                 onClick={() => setAgentPanelOpen((v) => !v)}
@@ -712,6 +680,14 @@ export default function BrainPage() {
               />
             </div>
           </div>
+
+          {/* Prominent per-type create toolbar */}
+          <BrainCreateToolbar
+            onCreated={(kind) => {
+              if (kind === "note") refetchNotes();
+              else if (kind === "task") refetchTasks();
+            }}
+          />
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />

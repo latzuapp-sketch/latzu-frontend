@@ -26,7 +26,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (status === "authenticated" || isGuest) {
-      router.replace("/dashboard");
+      router.replace("/brain");
     }
   }, [status, isGuest, router]);
 

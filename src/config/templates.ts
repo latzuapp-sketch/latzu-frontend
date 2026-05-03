@@ -1,11 +1,7 @@
 // Profile-based template configuration for Latzu Platform
 import type { ProfileType } from "@/types/user";
 import {
-  Home,
-  MessageSquare,
-  CalendarDays,
   Brain,
-  Bot,
   type LucideIcon,
 } from "lucide-react";
 
@@ -55,11 +51,7 @@ export const profileTemplates: Record<ProfileType, TemplateConfig> = {
       { id: "chat-preview",  title: "IA Mentor",     type: "chat-preview",  size: "medium", priority: 3 },
     ],
     sidebarItems: [
-      { id: "home",         label: "Hoy",          href: "/dashboard", icon: Home },
-      { id: "brain",        label: "Mi conocimiento", href: "/brain",  icon: Brain },
-      { id: "planning",     label: "Calendario",   href: "/planning",  icon: CalendarDays },
-      { id: "chat",         label: "Chat",         href: "/chat",      icon: MessageSquare },
-      { id: "agent",        label: "Agente",       href: "/agent",     icon: Bot },
+      { id: "brain", label: "Mi conocimiento", href: "/brain", icon: Brain },
     ],
   },
 
@@ -76,11 +68,7 @@ export const profileTemplates: Record<ProfileType, TemplateConfig> = {
       { id: "chat-preview",  title: "IA Mentor",        type: "chat-preview",  size: "medium", priority: 3 },
     ],
     sidebarItems: [
-      { id: "home",         label: "Hoy",          href: "/dashboard", icon: Home },
-      { id: "brain",        label: "Mi conocimiento", href: "/brain",  icon: Brain },
-      { id: "planning",     label: "Calendario",   href: "/planning",  icon: CalendarDays },
-      { id: "chat",         label: "Chat",         href: "/chat",      icon: MessageSquare },
-      { id: "agent",        label: "Agente",       href: "/agent",     icon: Bot },
+      { id: "brain", label: "Mi conocimiento", href: "/brain", icon: Brain },
     ],
   },
 };

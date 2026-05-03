@@ -21,7 +21,7 @@ function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl") || "/brain";
   const urlError = searchParams.get("error");
   const { t } = useLanguage();
 

@@ -34,7 +34,7 @@ interface SidebarProps {
 function SidebarLogo({ collapsed }: { collapsed: boolean }) {
   return (
     <div className="h-16 flex items-center px-4 border-b border-sidebar-border flex-shrink-0">
-      <Link href="/" className="flex items-center gap-3">
+      <Link href="/brain" className="flex items-center gap-3">
         <div className="w-10 h-10 flex-shrink-0">
           <Image src="/logo.png" alt="Latzu" width={40} height={40} className="w-10 h-10 object-contain" />
         </div>
