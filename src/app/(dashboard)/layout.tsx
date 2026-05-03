@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, useCallback, type ReactNode } from "react";
 import { motion } from "framer-motion";
-import { Sidebar, SIDEBAR_COLLAPSED_WIDTH } from "@/components/layout/Sidebar";
+import { NotionSidebar, NOTION_SIDEBAR_WIDTH } from "@/components/layout/NotionSidebar";
 import { Header } from "@/components/layout/Header";
 import { QuickCapture } from "@/components/capture/QuickCapture";
 import { ChatOverlay, CHAT_OVERLAY_WIDTH } from "@/components/chat/ChatOverlay";
@@ -115,15 +115,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gradient-latzu">
-      <Sidebar
+      <NotionSidebar
         mobileOpen={mobileSidebarOpen}
         onMobileClose={() => setMobileSidebarOpen(false)}
+        onOpenSearch={openPalette}
+        onOpenChat={() => setChatOpen(true)}
       />
 
       <motion.main
         initial={false}
         animate={{
-          marginLeft: isMobile ? 0 : SIDEBAR_COLLAPSED_WIDTH,
+          marginLeft: isMobile ? 0 : NOTION_SIDEBAR_WIDTH,
           marginRight: !isMobile && chatOpen && !isGuest ? CHAT_OVERLAY_WIDTH : 0,
         }}
         transition={{ duration: 0.2, ease: "easeInOut" }}

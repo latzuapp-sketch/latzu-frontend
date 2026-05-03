@@ -15,7 +15,7 @@
 
 import { useMemo, useState, useDeferredValue, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search, Sparkles, X, Loader2, Brain, Filter,
   StickyNote, ListTodo, Layers, Loader, Send,
@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { AdaptiveItemCard, detectVariant } from "@/components/brain/AdaptiveItemCard";
 import { BrainNoteCard, BrainTaskCard, BrainPageCard, BrainPlanCard } from "@/components/brain/BrainItemCards";
-import { BrainSidebar, type BrainSelection } from "@/components/brain/BrainSidebar";
+import type { BrainSelection } from "@/components/brain/BrainSidebar";
 import { BrainAgentPanel, BrainAgentTrigger } from "@/components/brain/BrainAgentPanel";
 import { BrainCreateToolbar } from "@/components/brain/BrainCreateToolbar";
 import { UniversalViewer, type ViewerItem } from "@/components/brain/UniversalViewer";
@@ -438,7 +438,51 @@ function QuickCreate({ kind, onClose, onDone }: { kind: QuickKind; onClose: () =
 export default function BrainPage() {
   const router = useRouter();
   const { userModel } = useUserModel();
-  const [selection, setSelection] = useState<BrainSelection>({ kind: "all" });
+  const searchParams = useSearchParams();
+
+  // Hydrate selection from URL ?kind=... (driven by the outer NotionSidebar)
+  const selectionFromParams = useMemo<BrainSelection>(() => {
+    const kind = searchParams.get("kind") || "all";
+    switch (kind) {
+      case "all":
+      case "recent":
+      case "mentor":
+      case "plans":
+      case "goals":
+      case "tasks":
+      case "notes":
+      case "files":
+      case "pages":
+      case "flashcards":
+      case "quizzes":
+      case "readings":
+      case "knowledge":
+      case "books":
+        return { kind } as BrainSelection;
+      case "topic": {
+        const topic = searchParams.get("topic");
+        return topic ? { kind: "topic", topic } : { kind: "all" };
+      }
+      case "lifeArea": {
+        const area = searchParams.get("area");
+        return area ? { kind: "lifeArea", area } : { kind: "all" };
+      }
+      case "workspace": {
+        const id = searchParams.get("id");
+        const title = searchParams.get("title") ?? "Space";
+        return id ? { kind: "workspace", id, title } : { kind: "all" };
+      }
+      case "type": {
+        const nodeType = searchParams.get("t") ?? searchParams.get("nodeType");
+        return nodeType ? { kind: "type", nodeType } : { kind: "all" };
+      }
+      default:
+        return { kind: "all" };
+    }
+  }, [searchParams]);
+
+  const [selection, setSelection] = useState<BrainSelection>(selectionFromParams);
+  useEffect(() => { setSelection(selectionFromParams); }, [selectionFromParams]);
   const [viewing, setViewing] = useState<ViewerItem | null>(null);
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
@@ -623,24 +667,6 @@ export default function BrainPage() {
 
   return (
     <div className="flex h-[calc(100vh-5rem)] -m-3 md:-m-6 overflow-hidden bg-background relative">
-      {/* Left: Tree sidebar */}
-      <BrainSidebar
-        nodes={nodes}
-        noteCount={notes.length}
-        taskCount={tasks.length}
-        bookCount={bookCount}
-        planCount={activePlanCount}
-        goalCount={activeGoalCount}
-        fileCount={files.length}
-        deckCount={decks.length}
-        quizCount={quizTaskCount}
-        selection={selection}
-        onSelect={(s) => {
-          setSelection(s);
-          setViewing(null);
-        }}
-      />
-
       {/* Center: viewer when an item is open, otherwise the grid */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden relative">
         <AnimatePresence mode="wait">
