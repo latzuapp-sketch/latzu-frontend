@@ -1,16 +1,9 @@
 "use client";
 
 /**
- * BrainSidebar — Notion-like tree.
+ * BrainSidebar — Notion-like tree (static layout).
  *
- * Two layout modes:
- *   1. Static default — sections below, used when the agent hasn't produced a
- *      custom layout yet.
- *   2. Dynamic agent layout — when `userModel.brainTreeLayout` is non-empty,
- *      the agent's sections override the defaults (Phase 3 / "B" — agent
- *      reorganizes the tree based on the user).
- *
- * Default sections (in order of importance for daily use):
+ * Sections (in order of importance for daily use):
  *   - Todo / Recientes
  *   - Mi contenido      → Planes, Metas, Tareas, Notas, Archivos, Spaces
  *   - Estudio           → Flashcards, Quizzes, Lecturas
@@ -92,62 +85,6 @@ const TYPE_ICON: Record<string, React.ElementType> = {
   person: User, event: Calendar, web: Globe, video: Play, file: FileText,
 };
 
-/** Schema for a section the agent dynamically produced. */
-interface AgentSection {
-  name: string;
-  icon?: string;        // semantic icon name (mapped client-side)
-  description?: string;
-  items: Array<{ kind: string; label?: string; topic?: string; area?: string; nodeType?: string; workspaceId?: string }>;
-}
-
-/** Map an icon name from the agent to a lucide component. */
-function iconFor(name: string | undefined): React.ElementType {
-  switch ((name ?? "").toLowerCase()) {
-    case "target":     return Target;
-    case "tasks":      return ListTodo;
-    case "notes":      return StickyNote;
-    case "files":      return Folder;
-    case "spaces":
-    case "pages":      return Layers;
-    case "study":
-    case "graduation": return GraduationCap;
-    case "flashcards": return Layers3;
-    case "quiz":
-    case "quizzes":    return ClipboardCheck;
-    case "books":
-    case "readings":   return BookOpen;
-    case "knowledge":
-    case "concept":    return Lightbulb;
-    case "compass":
-    case "lifearea":   return Compass;
-    case "sparkles":   return Sparkles;
-    case "clock":      return Clock;
-    default:           return Brain;
-  }
-}
-
-/** Map an agent item kind to a BrainSelection. */
-function selectionForAgentItem(item: AgentSection["items"][number]): BrainSelection | null {
-  switch (item.kind) {
-    case "plans":      return { kind: "plans" };
-    case "goals":      return { kind: "goals" };
-    case "tasks":      return { kind: "tasks" };
-    case "notes":      return { kind: "notes" };
-    case "files":      return { kind: "files" };
-    case "pages":      return { kind: "pages" };
-    case "flashcards": return { kind: "flashcards" };
-    case "quizzes":    return { kind: "quizzes" };
-    case "readings":
-    case "books":      return { kind: "readings" };
-    case "knowledge":  return { kind: "knowledge" };
-    case "topic":      return item.topic ? { kind: "topic", topic: item.topic } : null;
-    case "lifeArea":   return item.area ? { kind: "lifeArea", area: item.area } : null;
-    case "workspace":  return item.workspaceId ? { kind: "workspace", id: item.workspaceId, title: item.label ?? "Space" } : null;
-    case "type":       return item.nodeType ? { kind: "type", nodeType: item.nodeType } : null;
-    default:           return null;
-  }
-}
-
 // ─── Section header ───────────────────────────────────────────────────────────
 
 function SectionHeader({ icon: Icon, label, count }: { icon: React.ElementType; label: string; count?: number }) {
@@ -217,10 +154,6 @@ export function BrainSidebar({
     () => safeJsonArray<string>(userModel?.staleAreas).slice(0, 4),
     [userModel?.staleAreas]
   );
-  const agentLayout = useMemo(
-    () => safeJsonArray<AgentSection>(userModel?.brainTreeLayout),
-    [userModel?.brainTreeLayout]
-  );
 
   // Type breakdown
   const typeCounts = useMemo(() => {
@@ -241,7 +174,6 @@ export function BrainSidebar({
   };
 
   const conceptsCount = nodes.length - bookCount;
-  const useAgentLayout = agentLayout.length > 0;
 
   return (
     <aside className="w-64 shrink-0 border-r border-border/40 bg-card/20 flex flex-col h-full overflow-hidden">
@@ -252,15 +184,6 @@ export function BrainSidebar({
             <Brain className="w-3 h-3 text-white" />
           </div>
           <span className="text-sm font-heading font-bold">Mi conocimiento</span>
-          {useAgentLayout && (
-            <span
-              className="ml-auto inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded border border-violet-500/30 bg-violet-500/10 text-violet-300"
-              title="Tu agente reorganizó este árbol según cómo trabajás"
-            >
-              <Sparkles className="w-2.5 h-2.5" />
-              IA
-            </span>
-          )}
         </div>
       </div>
 
@@ -273,31 +196,7 @@ export function BrainSidebar({
           <TreeRow label="Recientes" icon={Clock} isActive={isActive({ kind: "recent" })} onClick={() => onSelect({ kind: "recent" })} />
         </div>
 
-        {useAgentLayout ? (
-          // ── Agent-driven layout ─────────────────────────────────────────────
-          agentLayout.map((section) => (
-            <div key={section.name}>
-              <SectionHeader icon={iconFor(section.icon)} label={section.name} />
-              <div className="space-y-0.5">
-                {section.items.map((it, idx) => {
-                  const sel = selectionForAgentItem(it);
-                  if (!sel) return null;
-                  return (
-                    <TreeRow
-                      key={`${section.name}-${idx}`}
-                      label={it.label ?? it.topic ?? it.area ?? it.nodeType ?? it.kind}
-                      icon={iconFor(it.kind)}
-                      isActive={isActive(sel)}
-                      onClick={() => onSelect(sel)}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          ))
-        ) : (
-          // ── Default static layout ──────────────────────────────────────────
-          <>
+        <>
             {/* Mi contenido — what the user is growing with the agent */}
             <div>
               <SectionHeader icon={Layers} label="Mi contenido" />
@@ -328,8 +227,7 @@ export function BrainSidebar({
                 <TreeRow label="Conceptos" icon={Lightbulb} count={conceptsCount} isActive={isActive({ kind: "knowledge" })} onClick={() => onSelect({ kind: "knowledge" })} accent="text-indigo-300" />
               </div>
             </div>
-          </>
-        )}
+        </>
 
         {/* Auto-detected life areas — always shown when agent has produced them */}
         {lifeAreas.length > 0 && (
@@ -368,8 +266,8 @@ export function BrainSidebar({
           </div>
         )}
 
-        {/* Type breakdown — only on default layout */}
-        {!useAgentLayout && typeCounts.length > 0 && (
+        {/* Type breakdown */}
+        {typeCounts.length > 0 && (
           <div>
             <SectionHeader icon={Layers} label="Por tipo" count={typeCounts.length} />
             <div className="space-y-0.5">
