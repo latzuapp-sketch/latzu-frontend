@@ -279,7 +279,7 @@ export function BrainCreateToolbar({ onCreated }: ToolbarProps) {
 
   return (
     <div className="space-y-0">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-1.5">
         {KIND_ORDER.map((kind) => {
           const theme = THEMES[kind];
           const Icon = theme.icon;
@@ -289,14 +289,14 @@ export function BrainCreateToolbar({ onCreated }: ToolbarProps) {
               key={kind}
               onClick={() => setActive(isActive ? null : kind)}
               className={cn(
-                "h-10 px-4 rounded-xl border inline-flex items-center gap-2 text-sm font-medium transition-all",
+                "h-7 px-2.5 rounded-md border inline-flex items-center gap-1.5 text-[11px] font-medium transition-all",
                 isActive
-                  ? cn(theme.bg, theme.border, "ring-2", theme.ring)
+                  ? cn(theme.bg, theme.border, "ring-1", theme.ring)
                   : cn(theme.bg, theme.border, "hover:scale-[1.02]"),
               )}
               title={theme.hint}
             >
-              <Icon className={cn("w-4 h-4", theme.text)} />
+              <Icon className={cn("w-3 h-3", theme.text)} />
               <span>{theme.label}</span>
             </button>
           );
