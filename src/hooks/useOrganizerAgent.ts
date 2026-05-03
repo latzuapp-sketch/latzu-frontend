@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@apollo/client";
 import { useSession } from "next-auth/react";
 import { aiClient } from "@/lib/apollo";
@@ -10,6 +10,7 @@ import {
   GET_AGENT_ACTIONS,
   GET_USER_MODEL,
   TRACK_INTERACTION,
+  TRACK_INTERACTIONS,
   TRIGGER_REFLECTION,
 } from "@/graphql/ai/operations";
 import type {
@@ -116,9 +117,74 @@ export function useActionMutations() {
 }
 
 // ─── useTrackInteraction ──────────────────────────────────────────────────────
+//
+// Events are buffered client-side (≤10 items / ≤5s) and flushed via the batch
+// mutation `trackInteractions`. Calls before flush coalesce — a single noisy
+// page no longer hits the backend N times. The buffer also flushes on
+// `visibilitychange` (tab hidden) and on unmount, so we don't lose tail events.
+
+type TrackPayload = {
+  eventType: string;
+  targetId?: string | null;
+  targetType?: string | null;
+  workspaceId?: string | null;
+  durationMs?: number | null;
+};
+
+const TRACK_BUFFER_MAX = 10;
+const TRACK_BUFFER_FLUSH_MS = 5_000;
+
+// Module-level buffer so multiple hook consumers share a single queue.
+const trackBuffer: TrackPayload[] = [];
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let flushHandler: ((events: TrackPayload[]) => Promise<void>) | null = null;
+
+function scheduleFlush() {
+  if (flushTimer != null) return;
+  flushTimer = setTimeout(flushNow, TRACK_BUFFER_FLUSH_MS);
+}
+
+function flushNow() {
+  if (flushTimer != null) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  if (trackBuffer.length === 0 || !flushHandler) return;
+  const drained = trackBuffer.splice(0, trackBuffer.length);
+  flushHandler(drained).catch(() => {
+    // silent — telemetry failures should never disrupt the UI
+  });
+}
 
 export function useTrackInteraction() {
-  const [trackMutation] = useMutation(TRACK_INTERACTION, { client: aiClient });
+  const [trackOne] = useMutation(TRACK_INTERACTION, { client: aiClient });
+  const [trackMany] = useMutation(TRACK_INTERACTIONS, { client: aiClient });
+
+  // Bind the latest mutation closure to the module-level flush handler.
+  useEffect(() => {
+    flushHandler = async (events) => {
+      if (events.length === 1) {
+        await trackOne({ variables: events[0] });
+        return;
+      }
+      await trackMany({ variables: { events } });
+    };
+    return () => {
+      flushHandler = null;
+    };
+  }, [trackOne, trackMany]);
+
+  // Flush on tab hide and on unmount so we don't lose tail events.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushNow();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      flushNow();
+    };
+  }, []);
 
   const track = useCallback(
     (
@@ -130,22 +196,49 @@ export function useTrackInteraction() {
         durationMs?: number;
       } = {}
     ): void => {
-      trackMutation({
-        variables: {
-          eventType,
-          targetId: opts.targetId ?? null,
-          targetType: opts.targetType ?? null,
-          workspaceId: opts.workspaceId ?? null,
-          durationMs: opts.durationMs ?? null,
-        },
-      }).catch(() => {
-        // silent — tracking failures are non-critical
+      trackBuffer.push({
+        eventType,
+        targetId: opts.targetId ?? null,
+        targetType: opts.targetType ?? null,
+        workspaceId: opts.workspaceId ?? null,
+        durationMs: opts.durationMs ?? null,
       });
+      if (trackBuffer.length >= TRACK_BUFFER_MAX) {
+        flushNow();
+      } else {
+        scheduleFlush();
+      }
     },
-    [trackMutation]
+    []
   );
 
   return { track };
+}
+
+// ─── usePageTelemetry ─────────────────────────────────────────────────────────
+//
+// Drop-in for any dashboard route. Emits `page.viewed` on mount and
+// `page.exited` with `durationMs` on unmount. No-op on the server.
+
+export function usePageTelemetry(pathname: string, opts: { targetId?: string } = {}) {
+  const { track } = useTrackInteraction();
+  const enteredAt = useRef<number | null>(null);
+
+  useEffect(() => {
+    enteredAt.current = Date.now();
+    track("page.viewed", { targetId: opts.targetId, targetType: "route", workspaceId: pathname });
+    return () => {
+      const ms = enteredAt.current != null ? Date.now() - enteredAt.current : 0;
+      track("page.exited", {
+        targetId: opts.targetId,
+        targetType: "route",
+        workspaceId: pathname,
+        durationMs: ms,
+      });
+      enteredAt.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 }
 
 // ─── useUserModel ─────────────────────────────────────────────────────────────

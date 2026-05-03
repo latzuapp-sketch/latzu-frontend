@@ -295,10 +295,31 @@ export default function PlanningPage() {
     });
     if (props.status === "done") {
       track("task.completed", { targetId: id, targetType: "task" });
+
+      // Detect a phase milestone: if every other task that shares this task's
+      // phaseIndex is now done, the user just finished a phase.
+      const justDone = tasks.find((t) => t.id === id);
+      const phaseIdx = justDone?.phaseIndex;
+      const planId = justDone?.planId;
+      if (phaseIdx != null && planId) {
+        const phaseTasks = tasks.filter(
+          (t) => t.planId === planId && t.phaseIndex === phaseIdx,
+        );
+        const allDone = phaseTasks.length > 0 && phaseTasks.every(
+          (t) => t.id === id || t.status === "done",
+        );
+        if (allDone) {
+          track("plan.milestone", {
+            targetId: planId,
+            targetType: "plan",
+            workspaceId: String(phaseIdx),
+          });
+        }
+      }
     } else {
       track("task.updated", { targetId: id, targetType: "task" });
     }
-  }, [session?.user?.id, session?.user?.name, updateTask, track]);
+  }, [session?.user?.id, session?.user?.name, updateTask, track, tasks]);
 
   const filteredTasks = useMemo(() => {
     let list = [...boardTasks];

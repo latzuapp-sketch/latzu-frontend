@@ -223,7 +223,11 @@ export function Header({ title, onMenuClick, onSearchClick }: HeaderProps) {
                         {options.map((opt) => (
                           <button
                             key={opt.value}
-                            onClick={() => respondToSignal(action.id, opt.value, opt.label)}
+                            // Pass the whole option so typed-action buttons
+                            // (open_task, complete_task, snooze, …) route
+                            // through executeActionButton and the backend
+                            // performs the real graph mutation.
+                            onClick={() => respondToSignal(action.id, opt)}
                             className="text-left text-xs px-2 py-1 rounded border border-border hover:bg-primary/10 hover:border-primary/40 transition-colors"
                           >
                             {opt.label}

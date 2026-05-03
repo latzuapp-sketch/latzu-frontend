@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, useCallback, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Sidebar, SIDEBAR_COLLAPSED_WIDTH } from "@/components/layout/Sidebar";
@@ -11,6 +11,7 @@ import { ChatOverlay, CHAT_OVERLAY_WIDTH } from "@/components/chat/ChatOverlay";
 import { CommandPalette } from "@/components/search/CommandPalette";
 import { useUserStore, useIsGuest } from "@/stores/userStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { usePageTelemetry } from "@/hooks/useOrganizerAgent";
 import { websocket } from "@/lib/websocket";
 
 interface DashboardLayoutProps {
@@ -20,11 +21,14 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const isMobile = useIsMobile();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const isGuest = useIsGuest();
+
+  usePageTelemetry(pathname || "/");
   const guestId = useUserStore((state) => state.guestId);
   const setProfileType = useUserStore((state) => state.setProfileType);
   const setTenantId = useUserStore((state) => state.setTenantId);

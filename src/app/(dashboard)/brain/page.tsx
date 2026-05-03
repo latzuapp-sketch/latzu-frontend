@@ -27,6 +27,7 @@ import { BrainSidebar, type BrainSelection } from "@/components/brain/BrainSideb
 import { BrainAgentPanel, BrainAgentTrigger } from "@/components/brain/BrainAgentPanel";
 import { UniversalViewer, type ViewerItem } from "@/components/brain/UniversalViewer";
 import { GroupedConcepts } from "@/components/brain/GroupedConcepts";
+import { MentorPanel } from "@/components/brain/MentorPanel";
 import {
   AutoFilterChips,
   facetsFromNodes,
@@ -177,6 +178,7 @@ function selectionTitle(s: BrainSelection): string {
   switch (s.kind) {
     case "all":        return "Mi conocimiento";
     case "recent":     return "Recientes";
+    case "mentor":     return "Tu mentor";
     case "knowledge":  return "Conceptos";
     case "books":      return "Libros";
     case "plans":      return "Planes";
@@ -199,6 +201,7 @@ function selectionSubtitle(s: BrainSelection): string {
   switch (s.kind) {
     case "all":        return "Todo tu mundo: planes, metas, tareas, notas, archivos y spaces.";
     case "recent":     return "Lo último que creaste o editaste.";
+    case "mentor":     return "Foco actual, metas activas, lo que el mentor te quiere decir.";
     case "knowledge":  return "Conceptos puros: ideas, nodos extraídos. (Lecturas aparte en Estudio.)";
     case "books":      return "Libros disponibles — curados + los que vos sumaste.";
     case "plans":      return "Planes que estás corriendo con la IA. Adaptan su carga según tu progreso.";
@@ -238,6 +241,7 @@ function filterNodes(
     // "Todo" no longer includes knowledge nodes — concepts/books only show
     // under their own dedicated tree rows.
     case "all":        return [];
+    case "mentor":     return [];                                   // MentorPanel renders separately
     case "recent":     return [];
     case "knowledge":  return out.filter((n) => !isBookNode(n));   // exclude type='book' nodes
     case "books":      return [];                                   // books come from useLibraryBooks
@@ -759,9 +763,12 @@ export default function BrainPage() {
             </div>
           )}
 
-          {!loading && totalShown === 0 && (
+          {!loading && totalShown === 0 && selection.kind !== "mentor" && (
             <EmptyState selection={selection} hasAny={nodes.length + notes.length + tasks.length > 0} hasSearch={!!search || !!activeChip} onCreateNote={() => setQuickKind("note")} onCreateTask={() => setQuickKind("task")} />
           )}
+
+          {/* Mentor unified panel — focus + goals + signals + history. */}
+          {selection.kind === "mentor" && <MentorPanel />}
 
           {/* Conceptos view — grouped by autoCategory when present, falling back
               to life area. Chips filter the underlying node set. */}
@@ -773,7 +780,7 @@ export default function BrainPage() {
             />
           )}
 
-          {totalShown > 0 && selection.kind !== "knowledge" && (
+          {totalShown > 0 && selection.kind !== "knowledge" && selection.kind !== "mentor" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               <AnimatePresence mode="popLayout">
                 {/* Goals first — the north star */}

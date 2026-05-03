@@ -40,6 +40,7 @@ export type BrainSelection =
   // Top-level
   | { kind: "all" }
   | { kind: "recent" }
+  | { kind: "mentor" }          // unified mentor panel: focus + goals + signals
   // Mi contenido
   | { kind: "plans" }
   | { kind: "goals" }
@@ -267,6 +268,7 @@ export function BrainSidebar({
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-3 text-foreground/80">
         {/* Always-visible quick links */}
         <div className="space-y-0.5">
+          <TreeRow label="Mi mentor" icon={Sparkles} isActive={isActive({ kind: "mentor" })} onClick={() => onSelect({ kind: "mentor" })} />
           <TreeRow label="Todo" icon={Brain} count={planCount + goalCount + taskCount + noteCount} isActive={isActive({ kind: "all" })} onClick={() => onSelect({ kind: "all" })} />
           <TreeRow label="Recientes" icon={Clock} isActive={isActive({ kind: "recent" })} onClick={() => onSelect({ kind: "recent" })} />
         </div>

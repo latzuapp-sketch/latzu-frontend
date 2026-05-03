@@ -772,6 +772,15 @@ export const TRACK_INTERACTION = gql`
   }
 `;
 
+export const TRACK_INTERACTIONS = gql`
+  mutation TrackInteractions($events: [InteractionEventInput!]!) {
+    trackInteractions(events: $events) {
+      eventId
+      recorded
+    }
+  }
+`;
+
 export const APPLY_ACTION = gql`
   mutation ApplyAction($actionId: String!) {
     applyAction(actionId: $actionId) {
@@ -803,6 +812,25 @@ export const RESPOND_TO_ACTION = gql`
     ) {
       success
       message
+    }
+  }
+`;
+
+/**
+ * Execute a typed button action attached to an AgentAction's response option.
+ * `payload` is a JSON-encoded string. The mentor backend may return
+ * `navigateTo` (e.g. "/brain?task=abc") which the UI should push.
+ */
+export const EXECUTE_ACTION_BUTTON = gql`
+  mutation ExecuteActionButton(
+    $actionId: String!
+    $kind: String!
+    $payload: String
+  ) {
+    executeActionButton(actionId: $actionId, kind: $kind, payload: $payload) {
+      success
+      message
+      navigateTo
     }
   }
 `;

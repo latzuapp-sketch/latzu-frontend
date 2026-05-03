@@ -9,6 +9,7 @@ import { aiClient } from "@/lib/apollo";
 import { SEND_MESSAGE } from "@/graphql/ai/operations";
 import type { LibraryBook } from "@/types/library";
 import { BOOK_CATEGORY_CONFIG } from "@/data/curated-books";
+import { useTrackInteraction } from "@/hooks/useOrganizerAgent";
 import { Button } from "@/components/ui/button";
 import {
   X, Sparkles, Lightbulb, SendHorizonal, Loader2,
@@ -52,12 +53,51 @@ export function BookDetail({ book, onClose }: BookDetailProps) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [expandedChapter, setExpandedChapter] = useState<number | null>(0);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { track } = useTrackInteraction();
+  const chapterTimers = useRef<Record<number, number>>({});
 
   const [sendMsg, { loading }] = useMutation(SEND_MESSAGE, { client: aiClient });
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Track when a chapter is opened/closed. A chapter counts as "read" once the
+  // user has kept it expanded for ≥30s.
+  useEffect(() => {
+    if (expandedChapter == null) return;
+    const idx = expandedChapter;
+    const startedAt = Date.now();
+    chapterTimers.current[idx] = startedAt;
+    const t = setTimeout(() => {
+      track("book.chapter.read", {
+        targetId: book.id,
+        targetType: "book",
+        durationMs: 30_000,
+        workspaceId: String(idx),
+      });
+    }, 30_000);
+    return () => {
+      clearTimeout(t);
+      const stayed = Date.now() - startedAt;
+      if (stayed > 1_500) {
+        track("book.chapter.dwell", {
+          targetId: book.id,
+          targetType: "book",
+          durationMs: stayed,
+          workspaceId: String(idx),
+        });
+      }
+    };
+  }, [expandedChapter, book.id, track]);
+
+  // When the last chapter has been opened, treat the book as completed.
+  useEffect(() => {
+    const total = book.chapters.length;
+    if (total > 0 && expandedChapter === total - 1) {
+      track("book.completed", { targetId: book.id, targetType: "book" });
+    }
+  }, [expandedChapter, book.chapters.length, book.id, track]);
 
   const ask = async (question: string) => {
     if (!question.trim() || loading) return;

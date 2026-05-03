@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWorkspace, useWorkspaces } from "@/hooks/useWorkspace";
 import { useWorkspacePages } from "@/hooks/useWorkspacePages";
+import { useTrackInteraction } from "@/hooks/useOrganizerAgent";
 import { WorkspaceSidebar } from "@/components/workspace/WorkspaceSidebar";
 import { PageContent } from "@/components/workspace/PageContent";
 import type { WorkspacePage, PageType } from "@/types/workspace";
@@ -18,6 +19,13 @@ export default function WorkspaceDetailPage() {
 
   const { workspace, loading: wsLoading } = useWorkspace(id);
   const { updateWorkspace } = useWorkspaces();
+  const { track } = useTrackInteraction();
+
+  // Emit workspace.visited once per workspace mount.
+  useEffect(() => {
+    if (!id) return;
+    track("workspace.visited", { targetId: id, targetType: "workspace", workspaceId: id });
+  }, [id, track]);
   const {
     pages,
     loading: pagesLoading,

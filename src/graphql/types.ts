@@ -325,9 +325,29 @@ export type AgentActionStatus =
   | "responded"
   | "delivered";
 
+/**
+ * One button on an AgentAction notification. When `action` + `payload` are set,
+ * tapping routes through `executeActionButton` and the backend performs a real
+ * graph mutation (open task, mark done, snooze, pause goal, …). When omitted,
+ * falls back to the legacy free-text response (used for goal clarification).
+ *
+ * Action kinds mirror apps/ai/services/agent_actions.py::ACTION_KINDS.
+ */
 export interface SignalResponseOption {
   value: string;
   label: string;
+  action?:
+    | "open_task"
+    | "complete_task"
+    | "start_chat"
+    | "unlock_next_phase"
+    | "mark_blocker"
+    | "pause_goal"
+    | "resume_goal"
+    | "defer_goal"
+    | "snooze"
+    | "dismiss";
+  payload?: Record<string, unknown>;
 }
 
 /** A single proactive action by the agent. Replaces AgentIntent + FocusSignal. */
