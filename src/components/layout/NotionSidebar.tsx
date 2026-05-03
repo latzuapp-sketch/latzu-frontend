@@ -41,7 +41,7 @@ import { useState, useMemo, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown, ChevronRight, Search, Sparkles, Inbox, Settings,
-  Plus, Trash2, LogOut, Brain, Sun, Moon, Layers, GraduationCap,
+  Plus, Trash2, LogOut, Sun, Moon, Layers, GraduationCap,
   Lightbulb, Target, Flag, ListTodo, StickyNote, Folder, Layers3,
   ClipboardCheck, BookOpen, Compass, type LucideIcon,
 } from "lucide-react";
@@ -236,12 +236,12 @@ function SidebarBody({ onItemClick, onOpenSearch, onOpenChat }: SidebarBodyProps
     [pendingProposals],
   );
 
-  const currentKind = pathname === "/brain" ? (searchParams.get("kind") || "all") : "";
-  const currentWorkspaceId = pathname === "/brain" && currentKind === "workspace"
+  const currentWorkspaceId = pathname === "/brain"
+    && searchParams.get("kind") === "workspace"
     ? searchParams.get("id") ?? null
     : null;
 
-  const isActive = (kind: string) => pathname === "/brain" && currentKind === kind;
+  const isActive = (path: string) => pathname === path;
   const userName = session?.user?.name || (isGuest ? "Invitado" : "Latzu");
   const initial = (userName || "L").charAt(0).toUpperCase();
 
@@ -280,7 +280,7 @@ function SidebarBody({ onItemClick, onOpenSearch, onOpenChat }: SidebarBodyProps
           <span className="text-[10px] text-muted-foreground/50 font-mono">⌘K</span>
         } />
         <Row icon={Sparkles} label="Latzu AI" onClick={onOpenChat} />
-        <Row icon={Inbox} label="Inbox" href="/brain?kind=mentor" active={isActive("mentor")}
+        <Row icon={Inbox} label="Inbox" href="/brain" active={isActive("/brain")}
              trailing={inboxCount > 0 ? (
                <span className="ml-auto h-4 min-w-[16px] px-1 rounded-full bg-primary/80 text-white text-[10px] font-semibold flex items-center justify-center">
                  {inboxCount > 99 ? "99+" : inboxCount}
@@ -292,30 +292,25 @@ function SidebarBody({ onItemClick, onOpenSearch, onOpenChat }: SidebarBodyProps
       {/* Tree sections */}
       <div className="flex-1 overflow-y-auto pb-2 mt-1">
         <Section label="Mi conocimiento" defaultOpen={true}>
-          <Row icon={Sparkles} label="Mentor"
-               href="/brain?kind=mentor" active={isActive("mentor")} indent={1} />
-          <Row icon={Brain} label="Todo"
-               href="/brain?kind=all" active={isActive("all") || (pathname === "/brain" && !currentKind)} indent={1} />
-          <Row icon={ListTodo} label="Recientes"
-               href="/brain?kind=recent" active={isActive("recent")} indent={1} />
+          <Row icon={Sparkles} label="Hoy" href="/brain" active={isActive("/brain")} indent={1} />
 
           <Expandable icon={Layers} label="Mi contenido" indent={1} defaultOpen={true}>
-            <Row icon={Target}     label="Planes"   href="/brain?kind=plans"  active={isActive("plans")}  indent={2.5} />
-            <Row icon={Flag}       label="Metas"    href="/brain?kind=goals"  active={isActive("goals")}  indent={2.5} />
-            <Row icon={ListTodo}   label="Tareas"   href="/brain?kind=tasks"  active={isActive("tasks")}  indent={2.5} />
-            <Row icon={StickyNote} label="Notas"    href="/brain?kind=notes"  active={isActive("notes")}  indent={2.5} />
-            <Row icon={Folder}     label="Archivos" href="/brain?kind=files"  active={isActive("files")}  indent={2.5} />
-            <Row icon={Layers}     label="Spaces"   href="/brain?kind=pages"  active={isActive("pages")}  indent={2.5} />
+            <Row icon={Target}     label="Planes"   href="/brain/plans"   active={isActive("/brain/plans")}   indent={2.5} />
+            <Row icon={Flag}       label="Metas"    href="/brain/goals"   active={isActive("/brain/goals")}   indent={2.5} />
+            <Row icon={ListTodo}   label="Tareas"   href="/brain/tasks"   active={isActive("/brain/tasks")}   indent={2.5} />
+            <Row icon={StickyNote} label="Notas"    href="/brain/notes"   active={isActive("/brain/notes")}   indent={2.5} />
+            <Row icon={Folder}     label="Archivos" href="/brain/files"   active={isActive("/brain/files")}   indent={2.5} />
+            <Row icon={Layers}     label="Spaces"   href="/brain/spaces"  active={isActive("/brain/spaces")}  indent={2.5} />
           </Expandable>
 
           <Expandable icon={GraduationCap} label="Estudio" indent={1}>
-            <Row icon={Layers3}        label="Flashcards" href="/brain?kind=flashcards" active={isActive("flashcards")} indent={2.5} />
-            <Row icon={ClipboardCheck} label="Quizzes"    href="/brain?kind=quizzes"    active={isActive("quizzes")}    indent={2.5} />
-            <Row icon={BookOpen}       label="Lecturas"   href="/brain?kind=readings"   active={isActive("readings")}   indent={2.5} />
+            <Row icon={Layers3}        label="Flashcards" href="/brain/flashcards" active={isActive("/brain/flashcards")} indent={2.5} />
+            <Row icon={ClipboardCheck} label="Quizzes"    href="/brain/quizzes"    active={isActive("/brain/quizzes")}    indent={2.5} />
+            <Row icon={BookOpen}       label="Lecturas"   href="/brain/readings"   active={isActive("/brain/readings")}   indent={2.5} />
           </Expandable>
 
           <Expandable icon={Lightbulb} label="Conocimiento" indent={1}>
-            <Row icon={Lightbulb} label="Conceptos" href="/brain?kind=knowledge" active={isActive("knowledge")} indent={2.5} />
+            <Row icon={Lightbulb} label="Conceptos" href="/brain/concepts" active={isActive("/brain/concepts")} indent={2.5} />
           </Expandable>
         </Section>
 
