@@ -340,7 +340,18 @@ function SidebarBody({ onItemClick, onOpenSearch, onOpenChat }: SidebarBodyProps
       </div>
 
       {/* Footer */}
-      <div className="border-t border-border/40 px-1.5 py-1.5 shrink-0 space-y-px">
+      <div className="border-t border-border/40 px-3 py-3 shrink-0 space-y-2">
+        {/* Oval "Nuevo chat" CTA */}
+        <Link
+          href="/brain/chat"
+          className="w-full h-9 rounded-full bg-gradient-to-r from-primary to-accent text-primary-foreground inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold shadow-sm hover:opacity-95 transition-opacity"
+          onClick={onItemClick}
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          Nuevo chat
+        </Link>
+
+        <div className="space-y-px pt-1">
         <Row
           icon={theme === "dark" ? Sun : Moon}
           label={theme === "dark" ? "Tema claro" : "Tema oscuro"}
@@ -348,6 +359,7 @@ function SidebarBody({ onItemClick, onOpenSearch, onOpenChat }: SidebarBodyProps
         />
         <Row icon={Trash2} label="Papelera" onClick={() => { /* placeholder */ }} />
         <Row icon={LogOut} label={isGuest ? "Salir de invitado" : "Cerrar sesión"} onClick={handleSignOut} />
+        </div>
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
-import { Circle, Loader, CheckCircle2, Loader2 } from "lucide-react";
+import { Circle, Loader, CheckCircle2, Loader2, Plus } from "lucide-react";
 import { BrainPageShell } from "@/components/brain/BrainPageShell";
 import { BrainTaskCard } from "@/components/brain/BrainItemCards";
 import { UniversalViewer, type ViewerItem } from "@/components/brain/UniversalViewer";
@@ -15,9 +15,9 @@ const COLUMNS: { id: TaskStatus; label: string; icon: typeof Circle; accent: str
   { id: "done",        label: "Hecho",        icon: CheckCircle2,  accent: "text-emerald-400" },
 ];
 
-/** Tasks — three-column kanban board grouped by status. */
+/** Tasks — kanban + inline "Quick add" composer at top of "Por hacer". */
 export default function BrainTasksPage() {
-  const { tasks, loading, setStatus, refetch } = useTasks();
+  const { tasks, loading, setStatus, createTask, refetch } = useTasks();
   const [viewing, setViewing] = useState<ViewerItem | null>(null);
 
   const grouped = useMemo(() => {
@@ -35,16 +35,14 @@ export default function BrainTasksPage() {
   }, [tasks]);
 
   const open = (task: PlanningTask) => setViewing({ kind: "task", task });
-  const toggle = (id: string, current: TaskStatus) => {
+  const toggle = (id: string, current: TaskStatus) =>
     setStatus(id, current === "done" ? "todo" : "done");
-  };
 
   return (
     <BrainPageShell
       title="Tareas"
       subtitle="Lo que tenés que hacer, agrupado por estado"
       count={tasks.length}
-      onCreated={refetch}
     >
       <AnimatePresence>
         {viewing && (
@@ -55,10 +53,6 @@ export default function BrainTasksPage() {
       {loading && tasks.length === 0 ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : tasks.length === 0 ? (
-        <div className="text-center py-20 text-sm text-muted-foreground">
-          Aún no hay tareas. Usá el botón <span className="text-sky-300 font-medium">Tarea</span> de arriba.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -72,6 +66,9 @@ export default function BrainTasksPage() {
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">{col.label}</h3>
                   <span className="ml-auto text-[10px] text-muted-foreground/60">{items.length}</span>
                 </div>
+
+                {col.id === "todo" && <InlineTaskCreator onCreate={async (title) => { await createTask({ title, status: "todo" }); }} />}
+
                 <div className="space-y-2 flex-1">
                   {items.map((t) => (
                     <BrainTaskCard
@@ -82,7 +79,7 @@ export default function BrainTasksPage() {
                       onToggle={() => toggle(t.id, t.status)}
                     />
                   ))}
-                  {items.length === 0 && (
+                  {items.length === 0 && col.id !== "todo" && (
                     <p className="text-[11px] text-muted-foreground/40 italic px-1">Sin tareas</p>
                   )}
                 </div>
@@ -92,5 +89,62 @@ export default function BrainTasksPage() {
         </div>
       )}
     </BrainPageShell>
+  );
+}
+
+function InlineTaskCreator({ onCreate }: { onCreate: (title: string) => Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [busy, setBusy] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { if (open) setTimeout(() => ref.current?.focus(), 30); }, [open]);
+
+  const submit = async () => {
+    const t = title.trim();
+    if (!t || busy) return;
+    setBusy(true);
+    try { await onCreate(t); setTitle(""); setOpen(false); }
+    finally { setBusy(false); }
+  };
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="w-full mb-2 h-8 rounded-md border border-dashed border-sky-500/40 text-sky-300/70 hover:bg-sky-500/10 hover:text-sky-200 text-xs inline-flex items-center justify-center gap-1.5 transition-colors"
+      >
+        <Plus className="w-3 h-3" />
+        Nueva tarea
+      </button>
+    );
+  }
+  return (
+    <div className="mb-2 rounded-md border border-sky-500/40 bg-sky-500/10 p-2">
+      <input
+        ref={ref}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") { setOpen(false); setTitle(""); }
+          if (e.key === "Enter") { e.preventDefault(); submit(); }
+        }}
+        placeholder="Título de la tarea"
+        className="w-full bg-transparent text-xs outline-none placeholder:text-sky-300/40"
+      />
+      <div className="flex items-center justify-end gap-1.5 mt-1">
+        <button onClick={() => { setOpen(false); setTitle(""); }} className="text-[10px] px-2 py-0.5 rounded text-muted-foreground hover:text-foreground">
+          Esc
+        </button>
+        <button
+          onClick={submit}
+          disabled={!title.trim() || busy}
+          className="text-[10px] px-2 py-0.5 rounded bg-sky-500/30 text-sky-100 hover:bg-sky-500/40 disabled:opacity-40 inline-flex items-center gap-1"
+        >
+          {busy ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : null}
+          Crear
+        </button>
+      </div>
+    </div>
   );
 }

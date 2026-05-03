@@ -6,33 +6,30 @@
  * Provides:
  *   • Page title + subtitle
  *   • Optional item count chip
- *   • The prominent BrainCreateToolbar
+ *   • Optional toolbar slot to the right of the title (per-type creator)
  *   • A scrollable body
  *
- * Each leaf page (e.g. /brain/notes) decides its own grid/list layout and
- * passes it as children. The viewer modal is owned by the leaf, since each
- * type opens different items.
+ * Each leaf page decides its own grid/list AND its own creation pattern
+ * — a notes page might inline a textarea, a files page a drop zone, a
+ * decks page a single-line input. The shell is intentionally minimal.
  */
 
 import type { ReactNode } from "react";
-import { BrainCreateToolbar } from "@/components/brain/BrainCreateToolbar";
 
 interface ShellProps {
   title: string;
   subtitle?: string;
   count?: number;
-  /** Optional element rendered to the right of the title (e.g. status filter pills). */
+  /** Optional element rendered to the right of the title (e.g. per-type creator button). */
   toolbar?: ReactNode;
-  /** Called whenever the create toolbar successfully creates an item. */
-  onCreated?: () => void;
   children: ReactNode;
 }
 
-export function BrainPageShell({ title, subtitle, count, toolbar, onCreated, children }: ShellProps) {
+export function BrainPageShell({ title, subtitle, count, toolbar, children }: ShellProps) {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       {/* Header */}
-      <header className="px-6 pt-6 pb-3 border-b border-border/30 shrink-0 space-y-3">
+      <header className="px-6 pt-6 pb-4 border-b border-border/30 shrink-0">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-xl font-heading font-bold capitalize truncate">{title}</h1>
@@ -47,8 +44,6 @@ export function BrainPageShell({ title, subtitle, count, toolbar, onCreated, chi
             {toolbar}
           </div>
         </div>
-
-        <BrainCreateToolbar onCreated={onCreated} />
       </header>
 
       {/* Body */}

@@ -10,7 +10,7 @@ import { useTasks } from "@/hooks/usePlanning";
 
 /** Quizzes — quiz-typed PlanningTasks listed with completion + score. */
 export default function BrainQuizzesPage() {
-  const { tasks, loading, refetch } = useTasks();
+  const { tasks, loading } = useTasks();
   const [viewing, setViewing] = useState<ViewerItem | null>(null);
 
   const quizzes = useMemo(
@@ -23,11 +23,10 @@ export default function BrainQuizzesPage() {
       title="Quizzes"
       subtitle="Evaluaciones generadas por la IA, ligadas a tareas de tus planes"
       count={quizzes.length}
-      onCreated={refetch}
     >
       <AnimatePresence>
         {viewing && (
-          <UniversalViewer item={viewing} onClose={() => { setViewing(null); refetch(); }} />
+          <UniversalViewer item={viewing} onClose={() => setViewing(null)} />
         )}
       </AnimatePresence>
 
